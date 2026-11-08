@@ -797,8 +797,7 @@ function scheduleChoicesHtml(attr, t, rule, n, amts, mode, daysDates, billWord) 
 }
 const eventName = x => x.once ? `${x.bill.name} · one-time fee` : x.fee ? `${x.bill.name} · split fee` : x.membership ? `${x.bill.name} · membership` : x.bill.name;
 
-/* ---------- income sources: active dates ---------- */
-function sourceActive(s, t) {
+/* ---------- income sources: active dates ---------- */function sourceActive(s, t) {
   if (s.mobilizedOnly) return state.mobilized && t > MOBILIZE_LAST_CIVILIAN;
   if (state.mobilized && (s.id === 'civ' || s.id === 'drill') && t > MOBILIZE_LAST_CIVILIAN) return false;
   return true;
@@ -997,7 +996,8 @@ function smoothing(ws) {
     }
   }
   const each = round5(gap / prep.length);
-  const evenAllocs = prep.map(i => ({ from: i, to: k, amount: each }));  opts.push({ id: 'even', title: prep.length > 1 ? `${money(each)} from each of the next ${prep.length} ${unit}s` : `${money(each)} from ${short(ws[prep[0]].start)}`, detail: describe(evenAllocs), allocs: evenAllocs });
+  const evenAllocs = prep.map(i => ({ from: i, to: k, amount: each }));
+  opts.push({ id: 'even', title: prep.length > 1 ? `${money(each)} from each of the next ${prep.length} ${unit}s` : `${money(each)} from ${short(ws[prep[0]].start)}`, detail: describe(evenAllocs), allocs: evenAllocs });
   const clear = prep.filter(i => ws[i].roomLow >= 250);
   if (clear.length > 0 && clear.length < prep.length) {
     const e2 = round5(gap / clear.length);
@@ -1597,7 +1597,6 @@ function screenNow() {
   } else if (pay && pay.actual != null) {
     top = `<p class="small mt8">Paycheck confirmed at ${money(pay.actual)}.</p>`;
   }
-
   if (!w0.income.length && !w0.onHand && !eb) {
     top += `<button class="tint tap stack gap4 mt8" style="border:0" data-action="onhand">
       <span style="font-size:15px;font-weight:700">Nothing comes in until ${long(w0.end)}</span>
@@ -1996,7 +1995,8 @@ function refreshPrep() {
   chart.innerHTML = waveChart(pv.after);
   const covered = pv.prepared >= need;
   if (covered && !prepWasCovered && !reduceMotion()) { chart.classList.remove('settle'); void chart.offsetWidth; chart.classList.add('settle'); }
-  prepWasCovered = covered;  document.getElementById('prep-val').innerHTML = `${money(pv.prepared)} <span class="small" style="font-weight:600">of ${money(need)}</span>`;
+  prepWasCovered = covered;
+  document.getElementById('prep-val').innerHTML = `${money(pv.prepared)} <span class="small" style="font-weight:600">of ${money(need)}</span>`;
   document.getElementById('prep-text').innerHTML = prepText(ws, sm.k, pv, need);
   updateRail(); save();
 }
@@ -2375,12 +2375,14 @@ function saveIncome() {
   go('income');
 }
 
+/* One-tap starts on Add a bill: [chip, frequency, setup type that picks the icon] */
+const QUICK_MONTHLY = [['Student loan', 'monthly', 'Student loan'], ['Credit card', 'monthly', 'Credit card minimum'], ['Car payment', 'monthly', 'Car payment'], ['Phone', 'monthly', 'Phone'], ['Utilities', 'monthly', 'Utilities'], ['Internet', 'monthly', 'Internet'], ['Childcare', 'monthly', 'Childcare'], ['Subscriptions', 'monthly', 'Subscriptions']];
+const QUICK_RARE = [['Car insurance', 'semiannual', 'Car insurance'], ['Registration', 'yearly', 'Vehicle registration'], ['Memberships', 'yearly', 'Memberships'], ['Taxes', 'quarterly', 'Estimated taxes'], ['Holidays', 'once', 'Holiday gifts']];
 function screenAdd() {
   const f = state.form;
   if (f.id) return addMarkup(f, billPreview(f).preview, billPreview(f).note, billPreview(f).valid, []);
   const { preview, note, valid } = billPreview(f);
-  const quick = [['Car insurance', 'semiannual'], ['Registration', 'yearly'], ['Memberships', 'yearly'], ['Taxes', 'quarterly'], ['Holidays', 'once']];
-  return addMarkup(f, preview, note, valid, quick);
+  return addMarkup(f, preview, note, valid, QUICK_MONTHLY.concat(QUICK_RARE));
 }
 
 function billPreview(f) {
@@ -2393,8 +2395,7 @@ function billPreview(f) {
     preview = occ.map(t => withYear(t)).join(' · ');
     const ws = computeWindows();
     const lands = ws.find(w => occ[0] >= w.start && occ[0] < w.end);
-    note = lands ? `First one lands in ${lands.i === 0 ? 'this ' + unitWord() : `the ${short(lands.start)} ${unitWord()}`}.` : `First one is beyond the next six ${unitWord()}s.`;
-    if (f.freq === 'monthly' && parts(parse(f.due))[2] > 28) note += ' In shorter months it moves to the last day.';
+    note = lands ? `First one lands in ${lands.i === 0 ? 'this ' + unitWord() : `the ${short(lands.start)} ${unitWord()}`}.` : `First one is beyond the next six ${unitWord()}s.`;    if (f.freq === 'monthly' && parts(parse(f.due))[2] > 28) note += ' In shorter months it moves to the last day.';
     if (f.freq === 'biweekly') note += ' Every 14 days, which is not the same as twice a month.';
     if (f.kind === 'estimate' && amount > 0) note += ` Shown as ~${money(amount)} until you confirm it.`;
     if (f.plan && amount > 0) {
@@ -2535,7 +2536,7 @@ function saveBill() {
   if (fields.plan && fields.plan.since < fields.start) fields.start = fields.plan.since;
   if (existing) { Object.assign(existing, fields); if (!fields.plan) delete existing.plan; }
   else {
-    const b = Object.assign({ id: 'b' + Date.now(), added: iso(TODAY) }, fields);
+    const b = Object.assign({ id: 'b' + Date.now(), added: iso(TODAY) }, fields, f.preset ? { preset: f.preset } : {});
     // what the person said about payments that already came due
     const items = billRecentItems(f);
     state.bills.push(b, ...applyRecent(b, items, f.recent, TODAY));
@@ -2567,9 +2568,10 @@ function addMarkup(f, preview, note, valid, quick) {
       ${f.unconfirmed ? '<div class="warn"><span style="font-size:15px;color:var(--amber-body);line-height:1.5">This amount isn’t confirmed yet. Check your latest bill, then save it as Exact.</span></div>' : ''}
       ${quick.length ? `<button class="card tap row" data-action="surprise" style="text-align:left"><span class="stack gap4"><span style="font-size:15px;font-weight:700">Something came up?</span><span class="small">A repair or a doctor’s bill. See what it does and how to cover it.</span></span><span style="color:var(--royal);font-weight:700">›</span></button>` : ''}
       ${quick.length ? `<div class="tint stack gap10">
-        <span style="font-size:15px;font-weight:700">Any bills that only come a few times a year?</span>
-        <span style="font-size:14px;color:var(--muted-2);line-height:1.45">These cause most surprises. One tap to start:</span>
-        <div class="chips">${quick.map(([n, fr]) => `<button class="chip ${f.name === n ? 'on' : ''}" data-quick="${n}|${fr}">${n}</button>`).join('')}</div>
+        <span style="font-size:15px;font-weight:700">Start with a common one</span>
+        <span style="font-size:14px;color:var(--muted-2);line-height:1.45">Tap one, then rename it if you like (“Navient”). Have two? Add it twice.</span>
+        ${[['Every month', quick.filter(x => x[1] === 'monthly')], ['A few times a year · these cause most surprises', quick.filter(x => x[1] !== 'monthly')]].map(([lab, list]) => `<span class="legend" style="margin-top:4px">${lab}</span>
+        <div class="chips">${list.map(([n, fr, pre]) => `<button class="chip ${f.preset === pre && f.freq === fr ? 'on' : ''}" data-quick="${n}|${fr}|${pre}">${n}</button>`).join('')}</div>`).join('')}
       </div>` : ''}
     </section>
     <form class="pad stack gap14 mt20" data-form="bill">
@@ -2995,7 +2997,8 @@ function screenGoalEdit() {
       <div class="card stack gap8 preview-card">
         <span class="small" style="font-weight:600">What this changes</span>
         <span id="g-preview" class="${pv.valid ? 'body' : 'ph'}">${pv.text}</span>
-        <div id="g-suggest">${goalSuggestHtml(pv)}</div>      </div>
+        <div id="g-suggest">${goalSuggestHtml(pv)}</div>
+      </div>
       ${f.id ? `<label class="row card" style="cursor:pointer"><span class="stack gap4"><span style="font-weight:700">Pause this goal</span><span class="small">For a tight stretch. Nothing is set aside until you turn it back on.</span></span><input type="checkbox" data-gpause ${f.paused ? 'checked' : ''} style="width:22px;height:22px"></label>` : ''}
       <p class="decision-note">Press Save on the wave. Alon only plans it; you move the money to savings yourself.</p>
       ${f.fund ? fundLearn() : ''}
@@ -3191,8 +3194,7 @@ function rowsHtml(rows) {
 /* The ways to cover it that are actually possible for this person right now. */
 function coverAvail(v) {
   return [['fund', 'Use your surprise fund', v.fundSaved > 0], ['goals', 'Use money saved for goals', v.otherSaved > 0], ['skip', 'Pause goal set-asides while you pay it', v.activeGoals]]
-    .filter(x => x[2]).map(x => [x[0], x[1]]);
-}
+    .filter(x => x[2]).map(x => [x[0], x[1]]);}
 function coverDesc(key, v, f) {
   const u = unitWord();
   if (key === 'fund') {
@@ -3961,12 +3963,10 @@ function screenOb() {
   } else if (st === 'bills' || st === 'rare') {
     const list = st === 'bills' ? o.bills : o.rare;
     const defs = st === 'bills' ? OB_BILLS.map(b => [b[0], '']) : OB_RARE.map(b => [b[0], b[2]]);
-    const used = list.map(b => b.preset);
-    const another = nm => `Another ${obNoun(nm)}`;
     body = (st === 'bills'
       ? q('What other bills come every month?', 'Tap the ones you have, then add amounts. Estimates are fine; you can fix them anytime.')
       : q('Any bills that only come a few times a year?', 'These cause most money surprises, so they’re worth a minute. Skip any you don’t have.')) +
-      `<section class="mt20"><div class="chips">${defs.map(([nm, lab]) => used.includes(nm) ? `<button class="chip" data-obadd="${st}|${nm}">+ ${another(nm)}</button>` : `<button class="chip" data-obadd="${st}|${nm}">+ ${nm}${lab ? ` <span style="font-weight:500;opacity:.75">· ${lab}</span>` : ''}</button>`).join('')}<button class="chip" data-obadd="${st}|other">+ Something else</button></div></section>
+      `<section class="mt20"><div class="chips">${defs.map(([nm, lab]) => `<button class="chip" data-obadd="${st}|${nm}">+ ${nm}${lab ? ` <span style="font-weight:500;opacity:.75">· ${lab}</span>` : ''}</button>`).join('')}<button class="chip" data-obadd="${st}|other">+ Something else</button></div></section>
       <section class="stack gap10 mt20">${list.map((b, i) => `<div class="card stack gap10">
         <div class="row">${b.custom ? `<input class="input" style="min-height:44px" data-obf="${st}.${i}.name" value="${esc(b.name)}" placeholder="${b.preset ? `Which one? e.g. ${obExample(b.preset)}` : 'What is it?'}" aria-label="Bill name" autocomplete="off">` : `<span style="font-size:16px;font-weight:700">${esc(b.name)}${st === 'rare' ? `<span class="small" style="display:block;font-weight:500">${freqLabel(b.freq)}</span>` : ''}</span>`}<button class="linkish" style="color:var(--muted);font-size:13px" data-obdel="${st}|${i}" aria-label="Remove ${esc(b.name || 'bill')}">Remove</button></div>
         <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px">
@@ -3993,8 +3993,8 @@ function screenOb() {
       </div>`).join('')}</section>
       ${o.plans.length ? '<p class="small mt8">Plans without an amount are skipped. A split rent goes on the rent question.</p>' : '<p class="small mt14">Splitting your rent? That goes on the rent question.</p>'}`;
     footer = foot(o.plans.length ? '' : `<button class="secondary" data-ob="skip">Nothing right now</button>`);
-  } else if (st === 'everyday') {
-    body = q('About how much goes to everyday things each week?', 'Groceries, gas, the small stuff. A rough guess is fine. Without it, every forecast looks better than real life.') +      `<section class="stack gap14 mt20"><div class="chips">${[50, 100, 150, 200, 300].map(v => `<button class="chip ${String(o.everyday) === String(v) ? 'on' : ''}" data-obamt="${v}">$${v}</button>`).join('')}</div>${money_('ob-everyday', 'everyday', 'Per week', o.everyday)}</section>`;
+  } else if (st === 'everyday') {    body = q('About how much goes to everyday things each week?', 'Groceries, gas, the small stuff. A rough guess is fine. Without it, every forecast looks better than real life.') +
+      `<section class="stack gap14 mt20"><div class="chips">${[50, 100, 150, 200, 300].map(v => `<button class="chip ${String(o.everyday) === String(v) ? 'on' : ''}" data-obamt="${v}">$${v}</button>`).join('')}</div>${money_('ob-everyday', 'everyday', 'Per week', o.everyday)}</section>`;
   } else if (st === 'cushion') {
     const u = o.way === 'gig' ? 'week' : o.way === 'benefit' ? 'month' : 'paycheck';
     const choice = (k, t, d) => `<button class="tap option ${o.fund === k ? 'on' : ''}" aria-pressed="${o.fund === k}" data-obfund="${k}"><span class="radio"></span><span><span class="t">${t}</span><span class="d">${d}</span></span></button>`;
@@ -4592,7 +4592,7 @@ app.addEventListener('click', e => {
     return go('now');
   }
 
-  if (ds.quick) { const [n, fr] = ds.quick.split('|'); state.form.name = n; state.form.freq = fr; return render(); }
+  if (ds.quick) { const [n, fr, pre] = ds.quick.split('|'); state.form.name = n; state.form.freq = fr; state.form.preset = pre || null; return render(); }
   if (ds.kind) { state.form.kind = ds.kind; return render(); }
   if (ds.freq) { state.form.freq = ds.freq; return render(true); }
   if (ds.freqmore !== undefined) { state.form.allFreq = true; return render(true); }
@@ -4793,32 +4793,3 @@ function ask() {
 /* Forms never submit (some previews block form submission); buttons and Enter call the same functions. */
 app.addEventListener('submit', e => {
   e.preventDefault();
-  if (e.target.dataset.form === 'ask') ask();
-  if (e.target.dataset.form === 'bill') saveBill();
-});
-
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape' && (state.sheet || state.menuOpen)) { state.sheet = null; state.menuOpen = false; render(); return; }
-  if (e.key !== 'Enter' || !e.target.closest) return;
-  const form = e.target.closest('form');
-  if (e.target.id === 'sheet-amt') { e.preventDefault(); document.querySelector('[data-action="sheet-save"]').click(); return; }
-  if (!form || e.target.tagName !== 'INPUT') return;
-  e.preventDefault();
-  if (form.dataset.form === 'ask') ask();
-  if (form.dataset.form === 'bill') saveBill();
-});
-document.addEventListener('keydown', e => {
-  if (e.key === 'Enter' && e.target && e.target.dataset && e.target.dataset.ifield) { e.preventDefault(); saveIncome(); }
-  if (e.key === 'Enter' && e.target && e.target.dataset && e.target.dataset.obf && obValid()) { e.preventDefault(); obClick({ ob: 'next' }); }
-  if (e.key === 'Enter' && e.target && e.target.dataset && e.target.dataset.gfield) { e.preventDefault(); saveGoal(); }
-  if (e.key === 'Enter' && e.target && e.target.dataset && e.target.dataset.sfield) { e.preventDefault(); saveSurprise(); }
-  if (e.key === 'Enter' && e.target && e.target.dataset && e.target.dataset.pfield && state.screen === 'plan') { e.preventDefault(); savePlan(); }
-});
-
-load();
-render();
-fbFlush();
-document.addEventListener('scroll', e => { if (e.target && e.target.id === 'wave-scroll') waveEdges(); }, true);
-</script>
-</body>
-</html>
