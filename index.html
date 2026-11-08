@@ -94,7 +94,7 @@
 
   .dot { width: 8px; height: 8px; border-radius: 4px; display: inline-block; flex-shrink: 0; }
   .dot.ok { background: var(--ok-dot); }
-  .dot.warn { background: var(--amber-dot); }
+  .dot.warn { background: var(--amber-dot); padding: 0; border: 0; border-radius: 4px; }   /* not the .warn card */
   .dot.est { border: 2px solid var(--est-dot); }
   .dot.range { background: linear-gradient(90deg, var(--royal) 50%, var(--tint) 50%); border: 1px solid var(--royal); }
 
@@ -145,19 +145,27 @@
 
   .decision { font-size: 20px; font-weight: 800; color: var(--royal); }
 
-  .wave-labels { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); text-align: center; font-size: 12px; gap: 2px; }
+  .wave-labels { display: grid; grid-template-columns: repeat(var(--n, 6), minmax(0, 1fr)); text-align: center; font-size: 12px; gap: 2px; }
   .wave-labels button { background: none; border: 0; padding: 4px 0; cursor: pointer; display: flex; flex-direction: column; gap: 1px; align-items: center; border-radius: 10px; }
   .wave-labels button:hover { background: var(--tint); }
   .wave-labels .d { color: #475768; }
+  .wave-scroll { overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; scrollbar-width: none; margin: 0 -4px; padding: 14px 4px 0; overscroll-behavior-x: contain; }
+  .wave-scroll.more { -webkit-mask-image: linear-gradient(90deg, #000 95%, transparent); mask-image: linear-gradient(90deg, #000 95%, transparent); }
+  .pc-arrow[aria-disabled="true"] { opacity: .35; cursor: default; }
+  .wave-scroll::-webkit-scrollbar { display: none; }
+  .wave-strip { position: relative; }
+  .wave-strip .wave-labels button { scroll-snap-align: start; }
+  .wave-labels .far .d, .wave-labels .far strong { color: #7C8794; }
+  .wave-labels .x { font-size: 10.5px; font-weight: 800; color: var(--royal); background: var(--tint); border-radius: 6px; padding: 1px 5px; margin-top: 2px; }
   .wave-labels .t { color: #475768; font-size: 10.5px; white-space: nowrap; letter-spacing: -.01em; }
   .wave-labels strong.short { color: var(--amber-text); }
-  .pc-track { display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; scroll-behavior: smooth; padding: 2px 2px 8px; margin: 0 -2px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .pc-track { display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; scroll-behavior: smooth; padding: 2px 2px 8px; margin: 0 -2px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
   .pc-track::-webkit-scrollbar { display: none; }
-  .pc-track::after { content: ''; flex: 0 0 calc(18% - 12px); }   /* room for the last card to come fully into view */
-  .pc-card { flex: 0 0 82%; scroll-snap-align: start; text-align: left; display: flex; flex-direction: column; gap: 8px; padding: 16px; border-radius: 20px; border: 1px solid var(--line); background: var(--white); color: var(--navy); font: inherit; cursor: pointer; }
+  .pc-track::after { content: ''; flex: 0 0 calc(38% - 10px); }   /* room for the last card to come fully into view */
+  .pc-card { flex: 0 0 62%; min-width: 0; scroll-snap-align: start; text-align: left; display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; border-radius: 18px; border: 1px solid var(--line); background: var(--white); color: var(--navy); font: inherit; cursor: pointer; }
   .pc-card.short { background: var(--amber-bg); border-color: var(--amber-line); }
-  .pc-date { font-size: 13px; font-weight: 700; color: var(--muted-2); text-transform: uppercase; letter-spacing: .05em; }
-  .pc-room { font-size: 30px; font-weight: 800; letter-spacing: -.02em; white-space: nowrap; }
+  .pc-date { font-size: 13px; font-weight: 700; color: var(--muted-2); }
+  .pc-room { font-size: 24px; font-weight: 800; letter-spacing: -.02em; white-space: nowrap; }
   .pc-card.short .pc-room { color: var(--amber-text); }
   .pc-sub { font-size: 13px; color: var(--muted); }
   .pc-sub em { font-style: normal; font-weight: 700; color: var(--muted-2); white-space: nowrap; }
@@ -167,7 +175,13 @@
   .pc-badge.plain { background: #EEF1F5; color: var(--muted-2); }
   .pc-items { display: flex; flex-direction: column; gap: 4px; font-size: 14px; border-top: 1px solid var(--line); padding-top: 8px; }
   .pc-items .row span:last-child { font-variant-numeric: tabular-nums; }
-  .pc-note { font-size: 13px; line-height: 1.45; color: var(--royal); font-weight: 600; }
+  .pc-tag { margin-top: 4px; font-size: 12px; font-weight: 700; line-height: 1.3; padding: 4px 8px; border-radius: 8px; background: var(--tint); color: var(--royal); align-self: flex-start; max-width: 100%; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .pc-tag.warm { background: #FBEBD0; color: var(--amber-text); }
+  .pc-tag.plain, .pc-tag.bill { background: #EEF1F5; color: var(--muted-2); }
+  .pc-more { font-weight: 800; opacity: .75; }
+  .pc-nav { display: flex; align-items: center; gap: 4px; }
+  .pc-arrow { width: 44px; height: 44px; margin: -6px -4px; border: 0; background: none; display: grid; place-items: center; color: var(--royal); cursor: pointer; border-radius: 50%; }
+  .pc-arrow svg { width: 32px; height: 32px; padding: 7px; border-radius: 50%; border: 1px solid var(--chip-line); background: var(--white); box-sizing: border-box; }
   .legend-row { display: flex; gap: 14px; font-size: 12px; color: var(--muted); align-items: center; flex-wrap: wrap; }
   .legend-row span { display: flex; align-items: center; gap: 6px; }
 
@@ -222,6 +236,34 @@
   .hero.big { font-size: 96px; letter-spacing: -.05em; }
   .hero.big.range { font-size: 46px; letter-spacing: -.03em; }
   .hero-sub { font-size: 16px; font-weight: 600; }
+  /* V3 look: purpose first, calm status, cards with icon tiles */
+  .quick-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+  .quick { min-height: 40px; padding: 0 14px; border-radius: 999px; background: var(--white); border: 1px solid var(--chip-line); color: var(--royal); font-size: 14px; font-weight: 700; cursor: pointer; }
+  .hello { font-size: 16px; font-weight: 600; color: var(--muted-2); }
+  .status-pill { display: inline-flex; align-items: center; gap: 8px; align-self: flex-start; padding: 5px 14px 5px 5px; border-radius: 999px; background: var(--white); border: 1px solid var(--line); font-size: 14px; font-weight: 700; color: var(--navy); }
+  .status-pill .ic { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; flex: none; }
+  .status-pill.ok .ic { background: var(--ok-dot); }
+  .status-pill.tight .ic { background: var(--tint); }
+  .status-pill.short { background: var(--amber-bg); border-color: var(--amber-line); color: var(--amber-text); }
+  .status-pill.short .ic { background: var(--amber-dot); }
+  .facts { margin: 0; font-size: 14px; color: var(--muted-2); line-height: 1.5; }
+  .facts .spec-link { font-weight: 700; color: var(--navy); text-transform: none; letter-spacing: 0; }
+  .tile { width: 40px; height: 40px; border-radius: 12px; background: var(--tint); display: grid; place-items: center; flex: none; }
+  .tile.warm { background: var(--amber-bg); }
+  .row-card { background: var(--white); border: 1px solid var(--line); border-radius: 20px; padding: 0 14px; }
+  .row-card .line-item .lead { display: flex; align-items: center; gap: 12px; min-width: 0; text-align: left; }
+  .row-card .line-item .end { display: flex; align-items: center; gap: 8px; flex: none; }
+  .next-up { display: flex; align-items: center; gap: 12px; width: 100%; padding: 14px; border-radius: 20px; background: var(--white); border: 1px solid var(--line); text-align: left; cursor: pointer; }
+  .next-up .stack { flex: 1; min-width: 0; }
+  .purpose { margin: 0; font-size: 15px; color: var(--muted-2); line-height: 1.5; }
+  .opt { border: 1px solid var(--field-line); }
+  .opt:has(input:checked) { border-color: var(--royal); box-shadow: inset 0 0 0 1px var(--royal); }
+  .opt input[type=checkbox] { -webkit-appearance: none; appearance: none; width: 24px !important; height: 24px !important; border-radius: 50%; border: 2px solid var(--chip-line); background: var(--white); margin: 0; flex: none; cursor: pointer; }
+  .opt input[type=checkbox]:checked { border-color: var(--royal); background: var(--royal) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14'%3E%3Cpath d='M3 7.2 5.8 10 11 4.2' fill='none' stroke='white' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 14px no-repeat; }
+  .opt input[type=checkbox]:disabled { opacity: .5; cursor: default; }
+  .outcome-ic { width: 72px; height: 72px; border-radius: 50%; display: grid; place-items: center; margin: 8px auto 0; }
+  .change-row { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 15px; }
+  .change-row:last-child { border-bottom: 0; }
   .scroller.paper-clear { background: radial-gradient(90% 40% at 85% 0%, rgba(255,255,255,.75) 0%, rgba(255,255,255,0) 60%), linear-gradient(180deg, #CFE4F9 0%, #E2EEFA 24%, rgba(250,247,240,0) 58%), var(--ivory); }
   .scroller.paper-short { background: radial-gradient(60% 34% at 88% 0%, #F7C978 0%, rgba(247,201,120,.45) 38%, rgba(247,201,120,0) 70%), linear-gradient(180deg, #FBE3BF 0%, #FCEEDA 26%, rgba(250,247,240,0) 60%), var(--ivory); }
   .quiet-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
@@ -912,9 +954,8 @@ function computeWindows(reserves, count) {
 }
 function statusOf(room) {
   if (room < 0) return 'Short';
-  if (room < 100) return 'Tight';
-  if (room < 250) return 'Narrow';
-  return 'Clear';
+  if (room < 250) return 'Tight';
+  return 'Covered';
 }
 
 /* ---------- smoothing: options for the first short future window (planned on the low case) ---------- */
@@ -956,8 +997,7 @@ function smoothing(ws) {
     }
   }
   const each = round5(gap / prep.length);
-  const evenAllocs = prep.map(i => ({ from: i, to: k, amount: each }));
-  opts.push({ id: 'even', title: prep.length > 1 ? `${money(each)} from each of the next ${prep.length} ${unit}s` : `${money(each)} from ${short(ws[prep[0]].start)}`, detail: describe(evenAllocs), allocs: evenAllocs });
+  const evenAllocs = prep.map(i => ({ from: i, to: k, amount: each }));  opts.push({ id: 'even', title: prep.length > 1 ? `${money(each)} from each of the next ${prep.length} ${unit}s` : `${money(each)} from ${short(ws[prep[0]].start)}`, detail: describe(evenAllocs), allocs: evenAllocs });
   const clear = prep.filter(i => ws[i].roomLow >= 250);
   if (clear.length > 0 && clear.length < prep.length) {
     const e2 = round5(gap / clear.length);
@@ -1175,12 +1215,12 @@ function everydayRow(w, clickable) {
    dashed line is the typical case. Nothing moves. */
 const CLEAR_AT = 250;
 function waveChart(ws) {
-  const W = 342, H = 132, calm = 100, top = 22;
+  const W = 60 * ws.length, H = 132, calm = 100, top = 22;   // 60 units per paycheck: each crest sits over its date
   const rough = v => Math.max(0, CLEAR_AT - v);
   const lows = ws.map(w => w.roomLow), typs = ws.map(w => w.roomTyp);
   const den = Math.max(500, ...lows.map(rough));              // a fixed floor, so a small dip stays small
   const y = v => calm - rough(v) / den * (calm - top);
-  const xs = ws.map((w, i) => 21 + i * 60);
+  const xs = ws.map((w, i) => 30 + i * 60);
   /* The surface: a smooth line through each paycheck's height, plus the small, steady waves
      of normal life. Those small waves are 20px long and cross zero exactly at every
      paycheck, so each paycheck's height is still exactly its number. */
@@ -1227,7 +1267,7 @@ function waveChart(ws) {
   const curls = ws.map((w, i) => w.roomLow < 0 ? curl(xs[i], y(w.roomLow), (y0 - y(w.roomLow)) / 22) : '').join('');
   const today = `<circle cx="${xs[0]}" cy="${y(lows[0]).toFixed(1)}" r="4.5" fill="#fff" stroke="#1659D0" stroke-width="2"/>`;
   const label = ws.map(w => `${windowShortName(w)} ${range(w.roomLow, w.roomTyp)}`).join(', ');
-  return `<svg width="100%" viewBox="0 0 ${W} ${H}" role="img" aria-label="The next six ${persona().unit}s as the sea: calm when there’s room, a swell when one is tight, a breaking whitecap when one is short. ${label}" style="display:block;border-radius:18px;overflow:visible">
+  return `<svg width="100%" viewBox="0 0 ${W} ${H}" role="img" aria-label="The next ${ws.length} ${persona().unit}s as the sea: calm when there’s room, a swell when one is tight, a breaking whitecap when one is short. ${label}" style="display:block;border-radius:18px;overflow:visible">
     <defs>
       <linearGradient id="${uid}-w" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7FAEEE"/><stop offset="1" stop-color="#3C78DA"/></linearGradient>
       <linearGradient id="${uid}-a" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#EAF2FC"/></linearGradient>
@@ -1253,8 +1293,8 @@ function waveChart(ws) {
   </svg>`;
 }
 
-const CONTEXT = { data: 'Your data', pool: 'Tide pool', plan: 'Bills', options: 'Answer', surprise: 'Came up', goals: 'Goals', 'goal-edit': 'Goals', 'income-edit': 'Income', check: 'Spend', year: 'Year', now: 'Now', detail: 'Now', waves: 'Ahead', why: 'Ahead', add: 'Bills', bills: 'Bills', payday: 'Payday', income: 'Income' };
-const DOCK_HINT = { data: 'Ask about your data', pool: 'Ask about your tide pool', add: 'Ask about this bill', plan: 'Ask about paying in parts', 'goal-edit': 'Ask about this goal', goals: 'Ask about saving', surprise: 'Ask what you can do', 'income-edit': 'Ask about this income', income: 'Ask about your income', check: 'Ask before you buy', why: 'Ask why it’s short', payday: 'Ask about this paycheck', bills: 'Ask about your bills', options: 'Ask a follow-up', detail: 'Ask about this paycheck' };
+const CONTEXT = { outcome: 'Done', data: 'Your data', pool: 'Tide pool', plan: 'Bills', options: 'Answer', surprise: 'Came up', goals: 'Goals', 'goal-edit': 'Goals', 'income-edit': 'Income', check: 'Spend', year: 'Year', now: 'Now', detail: 'Now', waves: 'Ahead', why: 'Ahead', add: 'Bills', bills: 'Bills', payday: 'Payday', income: 'Income' };
+const DOCK_HINT = { outcome: 'Ask about what changed', data: 'Ask about your data', pool: 'Ask about your tide pool', add: 'Ask about this bill', plan: 'Ask about paying in parts', 'goal-edit': 'Ask about this goal', goals: 'Ask about saving', surprise: 'Ask what you can do', 'income-edit': 'Ask about this income', income: 'Ask about your income', check: 'Ask before you buy', why: 'Ask why it’s short', payday: 'Ask about this paycheck', bills: 'Ask about your bills', options: 'Ask a follow-up', detail: 'Ask about this paycheck' };
 function dock() {
   return `<div class="dock">
     <form class="ask" data-form="ask">
@@ -1371,6 +1411,7 @@ function railActions() {
     case 'year': return [go('Back', 'now'), act('Share', 'share-year', { aria: 'Share your year card' }), null];
     case 'about': return state.persona ? [go('Back', 'now'), null, null] : null;
     case 'pool': return [go('Back', 'now'), act('Add', 'pool-other', { aria: 'Carry some forward' }), go('Ahead', 'waves')];
+    case 'outcome': return [go('Ahead', 'waves'), act('Done', 'outcome-done'), null];
     case 'data': return !state.persona ? null : [go('Back', 'now'), act('Backup', 'backup', { aria: 'Save a backup' }), null];
     case 'feedback': return [go('Back', state.fbFrom || 'now'), act('Send', 'send-feedback', { disabled: !fbValid(), hint: 'Pick one or write a sentence first.', aria: 'Send feedback' }), null];
     case 'income': return [go('Back', 'now'), state.persona === 'reservist' ? act(state.mobilized ? 'Undo' : 'What if', 'mobilize', { aria: state.mobilized ? 'Back to current income' : 'What if I am mobilized' }) : act('Add', 'add-income', { aria: 'Add income' }), go('Bills', 'bills')];
@@ -1499,9 +1540,7 @@ const compact = n => Math.abs(n) >= 1000 ? (n < 0 ? '−' : '') + '$' + (Math.ab
 /* Paychecks ahead: one card per paycheck, about six months out. Swipe, or use Previous/Next.
    Further out is less certain, and the cards say so. */
 const carouselCount = () => ({ month: 6, week: 13 })[persona().unit] || 14;   // today's plus about six months ahead
-function paycheckCard(w, extras) {
-  const u = unitWord(), isShort = w.roomLow < 0;
-  const far = w.start > addDays(TODAY, 92);
+function windowBadges(w, extras) {
   const badges = [];
   const ex = extras.find(e => e.extra >= w.start && e.extra < w.end);
   if (ex) badges.push(['tide', `${ordinal(ex.count)} paycheck in ${monthName(ex.month)}`]);
@@ -1511,49 +1550,36 @@ function paycheckCard(w, extras) {
   if (w.poolOut > 0) badges.push(['plain', `${money(w.poolOut)} to tide pool`]);
   if (w.goalTotal) badges.push(['plain', `${money(w.goalTotal)} to goals`]);
   w.items.filter(x => LONG_FREQS.includes(x.bill.freq) && x.bill.freq !== 'once' && !x.bill.plan).forEach(x => badges.push(['warm', `${x.bill.name}, ${freqLabel(x.bill.freq).toLowerCase()}`]));
-  const top = [...w.items].filter(x => !x.membership).sort((a, b) => b.amount - a.amount).slice(0, 3);
-  const note = ex && !w.items.some(x => /rent|mortgage/i.test(x.bill.name)) && !isShort
-    ? 'No rent in this one. A good time to set some aside or catch up on a goal.' : '';
-  return `<button class="pc-card ${isShort ? 'short' : ''}" data-window="${w.i}" aria-label="${windowEyebrow(w)}: ${range(w.roomLow, w.roomTyp)} left">
-    <span class="pc-date">${w.i === 0 ? 'This ' + u : long(w.start)}</span>
-    <span class="pc-room">${range(w.roomLow, w.roomTyp)}</span>
-    <span class="pc-sub">${isShort ? 'could come up short' : `not yet spoken for · ${extraPct(w)}% of what comes in`}${far ? ' · <em>rough look</em>' : ''}</span>
-    ${badges.length ? `<span class="pc-badges">${badges.map(([k, t]) => `<span class="pc-badge ${k}">${esc(t)}</span>`).join('')}</span>` : ''}
-    <span class="pc-items">${top.length ? top.map(x => `<span class="row"><span>${esc(eventName(x))}${x.part && !x.bill.standalone ? ` <span style="color:var(--muted)">(${x.part} of ${x.parts})</span>` : ''}</span><span>${x.bill.plan ? moneyExact(x.amount) : money(x.amount)}</span></span>`).join('') : '<span class="row"><span>No bills due</span><span></span></span>'}</span>
-    ${note ? `<span class="pc-note">${note}</span>` : ''}
-  </button>`;
+  return { badges, ex };
 }
-function carouselHtml() {
-  const ws = computeWindows(null, carouselCount());
+/* The arrows and the edge fade follow where the strip is: dim at an end, fade only while there's more. */
+function waveEdges() {
+  const t = document.getElementById('wave-scroll'); if (!t) return;
+  const atStart = t.scrollLeft <= 8, atEnd = t.scrollLeft + t.clientWidth >= t.scrollWidth - 8;
+  t.classList.toggle('more', !atEnd);
+  document.querySelectorAll('[data-wavestep]').forEach(b => b.setAttribute('aria-disabled', String(b.dataset.wavestep === '-1' ? atStart : atEnd)));
+}
+/* Now's paychecks: the wave and its dates scroll together, six at a time, about half a year ahead. */
+function waveStrip() {
+  const ws = computeWindows(null, carouselCount()), n = ws.length, u = unitWord();
   const extras = extraPaychecks(400);
-  const nextExtra = extras[0];
-  const u = unitWord();
-  return `<section class="stack gap10 mt20" aria-label="${u === 'week' ? 'Weeks' : 'Paychecks'} ahead">
-    <div class="quiet-head"><span class="eyebrow" style="font-size:11px;letter-spacing:.09em;text-transform:uppercase;font-weight:700">${u === 'week' ? 'Weeks' : u === 'window' ? 'Months' : 'Paychecks'} ahead</span><span class="small" id="pc-count">1 of ${ws.length}</span></div>
-    ${extraLine(extras)}
-    <div class="pc-track" id="pc-track" tabindex="0">${ws.map(w => paycheckCard(w, extras)).join('')}</div>
-    <div style="display:flex;gap:8px">
-      <button class="secondary" style="min-height:42px;flex:1" data-pcstep="-1" aria-label="Previous ${u}">← Previous</button>
-      <button class="secondary" style="min-height:42px;flex:1" data-pcstep="1" aria-label="Next ${u}">Next →</button>
+  const labels = ws.map(w => {
+    const far = w.start > addDays(TODAY, 92), { ex } = windowBadges(w, extras);
+    return `<button data-window="${w.i}" class="${far ? 'far' : ''}" aria-label="${windowEyebrow(w)}: ${range(w.roomLow, w.roomTyp)}${w.roomLow < 0 ? ' short' : ' left'}${ex ? `, ${ordinal(ex.count)} paycheck this month` : ''}${far ? ', a rough look' : ''}"><span class="d" style="${w.i === 0 ? 'font-weight:700' : ''}">${windowShortName(w)}</span><strong class="${w.roomLow < 0 ? 'short' : ''}">${compact(w.roomLow)}</strong>${w.roomTyp !== w.roomLow ? `<span class="t">to ${compact(w.roomTyp)}</span>` : ''}${ex ? `<span class="x">${ordinal(ex.count)}</span>` : ''}</button>`;
+  }).join('');
+  return `<div class="wave-scroll" id="wave-scroll" tabindex="0" aria-label="${u === 'week' ? 'Weeks' : 'Paychecks'} ahead. Swipe for more">
+      <div class="wave-strip" style="width:${(n / 6 * 100).toFixed(2)}%;--n:${n}">${waveChart(ws)}<div class="wave-labels">${labels}</div></div>
     </div>
-    <p class="small" style="margin:0;color:var(--muted)">Further out is a rough look: it uses today’s bills and estimates, and gets less certain the further it goes.</p>
-  </section>`;
+    ${extraLine(extras, ws.some(w => w.start > addDays(TODAY, 92)) ? ' Grey dates are a rough look.' : '')}`;
 }
-function extraLine(extras) {
-  if (!extras.length) return '';
+function extraLine(extras, tail) {
+  if (!extras.length) return tail ? `<p class="small" style="margin:0">${tail.trim()}</p>` : '';
   const [y, m] = parts(TODAY);
   const nowMonth = extras[0].month === Date.UTC(y, m, 1);
   const e = nowMonth ? extras[1] : extras[0];
-  const head = nowMonth ? `This month has ${extras[0].count} paychecks; ${short(extras[0].extra)} is the ${ordinal(extras[0].count)}. ` : '';
-  return `<p class="small" style="margin:0">${head}${e ? `Your next ${e.count}-paycheck month is <strong style="color:var(--navy)">${monthName(e.month)} ${parts(e.month)[0]}</strong>: ${listJoin(e.days.map(short))}.` : ''}</p>`;
+  const head = nowMonth ? `${monthName(extras[0].month)} has ${extras[0].count} paychecks. ` : '';
+  return `<p class="small" style="margin:0">${head}${e ? `Next ${e.count}-paycheck month: <strong style="color:var(--navy)">${monthName(e.month)} ${parts(e.month)[0]}</strong>.` : ''}${tail || ''}</p>`;
 }
-function pcIndex() {
-  const t = document.getElementById('pc-track'); if (!t) return 0;
-  const cards = [...t.children], left = t.scrollLeft;
-  let best = 0; cards.forEach((c, i) => { if (Math.abs(c.offsetLeft - t.offsetLeft - left) < Math.abs(cards[best].offsetLeft - t.offsetLeft - left)) best = i; });
-  return best;
-}
-function pcUpdateCount() { const c = document.getElementById('pc-count'), t = document.getElementById('pc-track'); if (c && t) c.textContent = `${pcIndex() + 1} of ${t.children.length}`; }
 function screenNow() {
   const p = persona();
   const ws = computeWindows();
@@ -1649,27 +1675,30 @@ function screenNow() {
     <div class="pad now-a">
       ${top}
       <section class="stack gap8 mt24">
-        ${nowSpec(w0)}
-        <span class="hero big ${isRange ? 'range' : ''} ${w0.roomLow < 0 ? 'short' : ''}" style="margin-top:10px;white-space:nowrap;font-size:${heroSize(range(w0.roomLow, w0.roomTyp))}px">${range(w0.roomLow, w0.roomTyp)}</span>
-        <span class="hero-sub">not yet spoken for${isRange && p.rangeNote ? `<span class="small" style="display:block;font-weight:500;font-size:14px">${p.rangeNote.charAt(0).toUpperCase() + p.rangeNote.slice(1)}</span>` : ''}</span>
-        <div style="display:flex;gap:6px 22px;flex-wrap:wrap;margin-top:2px">
-          <button class="linkish" style="text-align:left" data-go="detail">See what's in it</button>
-          <button class="linkish" style="text-align:left" data-go="check">What can I spend?</button>
-          <button class="linkish" style="text-align:left" data-action="surprise">Something came up?</button>
+        <span class="hello">${greeting()}</span>
+        <span class="hero big ${isRange ? 'range' : ''} ${w0.roomLow < 0 ? 'short' : ''}" style="margin-top:4px;white-space:nowrap;font-size:${heroSize(range(w0.roomLow, w0.roomTyp))}px">${range(w0.roomLow, w0.roomTyp)}</span>
+        <span class="hero-sub">${leftLine(w0)}${isRange && p.rangeNote ? `<span class="small" style="display:block;font-weight:500;font-size:14px">${p.rangeNote.charAt(0).toUpperCase() + p.rangeNote.slice(1)}</span>` : ''}</span>
+        ${eb ? '' : statusPill(ws)}
+        ${nowFacts(w0)}
+        <div class="quick-row">
+          <button class="quick" data-go="detail">What’s in it</button>
+          <button class="quick" data-go="check">What can I spend?</button>
+          <button class="quick" data-action="surprise">Something came up?</button>
         </div>
       </section>
     </div>
     <section class="pad now-b mt20">
       <div class="stack gap12">
-        <div class="quiet-head"><span class="eyebrow" style="font-size:11px;letter-spacing:.09em;text-transform:uppercase;font-weight:700">Next six ${p.unit}s</span><button class="linkish" data-go="waves">See all</button></div>
-        ${waveChart(ws)}
-        <div class="wave-labels">${ws.map(w => `<button data-window="${w.i}" aria-label="${windowEyebrow(w)}: ${range(w.roomLow, w.roomTyp)}"><span class="d" style="${w.i === 0 ? 'font-weight:700' : ''}">${windowShortName(w)}</span><strong class="${w.roomLow < 0 ? 'short' : ''}">${compact(w.roomLow)}</strong>${w.roomTyp !== w.roomLow ? `<span class="t">to ${compact(w.roomTyp)}</span>` : ''}</button>`).join('')}</div>
-        ${carouselHtml()}
-        <div class="legend-row"><span><svg width="18" height="8" viewBox="0 0 18 8" aria-hidden="true"><path d="M1,4 Q5.5,1 10,4 T19,4" fill="none" stroke="#1659D0" stroke-width="2"/></svg>Small waves: room</span><span><span style="width:14px;height:10px;border-radius:7px 7px 2px 2px;background:linear-gradient(#3D7BE0,#A9C5F0)"></span>Swell: tight</span>${ws.some(w => w.roomLow < 0) ? `<span><span style="width:14px;height:10px;border-radius:7px 7px 2px 2px;background:#fff;border:1.5px solid var(--royal)"></span>Whitecap: short</span>` : ''}${ws.some(w => w.roomTyp !== w.roomLow) ? `<span><span style="width:16px;border-top:2px dashed #8FB0EA"></span>Typical</span>` : ''}</div>
+        <div class="quiet-head"><span class="eyebrow" style="font-size:11px;letter-spacing:.09em;text-transform:uppercase;font-weight:700">${p.unit === 'month' ? 'Months' : p.unit === 'week' ? 'Weeks' : 'Paychecks'} ahead</span>
+          <span class="pc-nav"><button class="linkish" data-go="waves" style="margin-right:4px">See all</button>
+            <button class="pc-arrow" data-wavestep="-1" aria-label="Earlier ${p.unit}s"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3.5 5.5 8l4.5 4.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+            <button class="pc-arrow" data-wavestep="1" aria-label="Later ${p.unit}s"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></span></div>
+        ${waveStrip()}
+        <div class="legend-row"><span><svg width="18" height="8" viewBox="0 0 18 8" aria-hidden="true"><path d="M1,4 Q5.5,1 10,4 T19,4" fill="none" stroke="#1659D0" stroke-width="2"/></svg>Covered</span><span><span style="width:14px;height:10px;border-radius:7px 7px 2px 2px;background:linear-gradient(#3D7BE0,#A9C5F0)"></span>Tight</span>${ws.some(w => w.roomLow < 0) ? `<span><span style="width:14px;height:10px;border-radius:7px 7px 2px 2px;background:#fff;border:1.5px solid var(--royal)"></span>Short</span>` : ''}${ws.some(w => w.roomTyp !== w.roomLow) ? `<span><span style="width:16px;border-top:2px dashed #8FB0EA"></span>Typical</span>` : ''}</div>
         <div class="wide-only stack mt8">${ws.map(w => `<button class="line-item tap" data-window="${w.i}"><span><span class="name">${windowEyebrow(w)}</span><span class="meta ${w.roomLow < 0 ? 'warn-t' : ''}">${w.status}${w.roomTyp !== w.roomLow ? ' on a lighter ' + p.unit : ''} · ${w.items.length} bills</span></span><span class="amt" style="${w.roomLow < 0 ? 'color:var(--amber-text)' : ''}">${range(w.roomLow, w.roomTyp)}</span></button>`).join('')}</div>
       </div>
     </section>
-    <div class="pad now-c">${notice}${poolOffer(w0)}${poolLine(ws)}${reliefCard()}${goalsLine(w0)}</div>
+    <div class="pad now-c">${notice}${nextUpCard(ws)}${poolOffer(w0)}${poolLine(ws)}${reliefCard()}${goalsLine(w0)}</div>
   </main>
   ${dock()}`;
 }
@@ -1692,6 +1721,136 @@ function heroSize(text) {
 }
 
 /* The quiet facts around the hero: small, uppercase, out of the way. */
+/* ---------- V3: purpose first, calm status ---------- */
+const ICON_PATHS = {
+  home: '<path d="M3 9.5 10 4l7 5.5V17H3z"/><path d="M8 17v-4.5h4V17"/>',
+  phone: '<rect x="6" y="2.5" width="8" height="15" rx="2"/><path d="M9 14.5h2"/>',
+  car: '<path d="M3.5 13.5v-3l1.6-4.2a1.5 1.5 0 0 1 1.4-1h7a1.5 1.5 0 0 1 1.4 1l1.6 4.2v3z"/><path d="M3.5 13.5v2M16.5 13.5v2M3.5 10.5h13"/>',
+  shield: '<path d="M10 2.5 16 5v4.5c0 4-2.6 6.6-6 8-3.4-1.4-6-4-6-8V5z"/>',
+  cap: '<path d="M2 8 10 4l8 4-8 4z"/><path d="M5.5 9.8V13c0 1.2 2 2.5 4.5 2.5s4.5-1.3 4.5-2.5V9.8"/>',
+  bolt: '<path d="M11 2.5 4.5 11H10l-1 6.5L15.5 9H10z"/>',
+  wifi: '<path d="M2.5 8a11 11 0 0 1 15 0M5 10.8a7.3 7.3 0 0 1 10 0M7.6 13.5a3.6 3.6 0 0 1 4.8 0"/><path d="M10 16.2v.1"/>',
+  card: '<rect x="2.5" y="5" width="15" height="10" rx="2"/><path d="M2.5 8.5h15M5.5 12h3"/>',
+  play: '<rect x="2.5" y="4" width="15" height="12" rx="2.5"/><path d="M8.5 7.5v5l4-2.5z"/>',
+  cart: '<path d="M2.5 3.5h2l1.8 9h9l1.7-6.5H5.4"/><path d="M8 16.3v.1M14 16.3v.1"/>',
+  heart: '<path d="M10 16.5s-6.5-3.8-6.5-8.3A3.5 3.5 0 0 1 10 6a3.5 3.5 0 0 1 6.5 2.2c0 4.5-6.5 8.3-6.5 8.3z"/>',
+  wrench: '<path d="M12.5 3a4 4 0 0 0-3.8 5.2L3.3 13.6a1.6 1.6 0 0 0 2.3 2.3L11 10.5A4 4 0 0 0 16.2 6.7l-2.4 2.4-2.3-.6-.6-2.3L13.3 3.8A4 4 0 0 0 12.5 3z"/>',
+  parts: '<rect x="2.5" y="4" width="6.5" height="12" rx="1.8"/><rect x="11" y="4" width="6.5" height="12" rx="1.8"/>',
+  receipt: '<path d="M5 2.5h10v15l-2.5-1.6L10 17.5l-2.5-1.6L5 17.5z"/><path d="M7.5 7h5M7.5 10.5h5"/>'
+};
+function billKind(b) {
+  if (b.surprise && b.kind) return { car: 'car', medical: 'heart', home: 'wrench' }[b.kind] || 'receipt';
+  // the name decides; a bill picked from a setup chip ("Navient" from Student loan) falls back to that type
+  return kindFromName(b.name) || kindFromName(b.preset) || (b.plan ? 'parts' : 'receipt');
+}
+function kindFromName(name) {
+  const n = (name || '').toLowerCase();
+  if (!n) return null;
+  if (/rent|mortgage|housing|hoa/.test(n)) return 'home';
+  if (/insur/.test(n)) return 'shield';
+  if (/phone|mobile|cell|wireless/.test(n)) return 'phone';
+  if (/credit|\bcard\b|visa|amex/.test(n)) return 'card';
+  if (/\bcar\b|auto|vehicle|registration|truck/.test(n)) return 'car';
+  if (/student|tuition|school|college/.test(n)) return 'cap';
+  if (/electric|power|gas bill|water|utilit|energy|sewer|trash/.test(n)) return 'bolt';
+  if (/internet|wifi|wi-fi|cable|broadband/.test(n)) return 'wifi';
+  if (/card|credit|visa|amex|loan/.test(n)) return 'card';
+  if (/netflix|spotify|hulu|stream|subscription|gym|membership|music|disney|youtube|prime/.test(n)) return 'play';
+  if (/grocer|food|daycare|childcare/.test(n)) return 'cart';
+  if (/medical|doctor|hospital|dental|health|pharmacy|clinic/.test(n)) return 'heart';
+  if (/repair|hvac|plumb|furnace|roof|fix/.test(n)) return 'wrench';
+  return null;
+}
+const iconSvg = (kind, color) => `<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="${color || '#1659D0'}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON_PATHS[kind] || ICON_PATHS.receipt}</svg>`;
+const tileHtml = (b, warm) => `<span class="tile ${warm ? 'warm' : ''}">${iconSvg(billKind(b), warm ? '#7A4F0F' : null)}</span>`;
+const CHEV = '<svg class="chev" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5" fill="none" stroke="#7C8794" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+function greeting() {
+  const h = new Date().getHours();
+  return h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
+}
+const unitWord2 = () => { const u = persona().unit; return u === 'month' ? 'window' : u; };
+/* One calm line that answers "am I okay?": short now, tight now, covered until the first short one, or covered all the way. */
+function statusPill(ws) {
+  const w0 = ws[0], u = unitWord2(), inc = w0.incomeTyp || w0.incomeLow || 0;
+  const k = ws.findIndex(w => w.roomLow < 0);
+  const check = '<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 7.2 5.8 10 11 4.2" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const wave = c => `<svg width="16" height="8" viewBox="0 0 28 14" aria-hidden="true"><path d="M1 9 C5 9 5 3 9 3 C13 3 13 11 17 11 C21 11 21 5 27 5" fill="none" stroke="${c}" stroke-width="3" stroke-linecap="round"/></svg>`;
+  const pill = (cls, ic, text) => `<span class="status-pill ${cls}" role="status"><span class="ic">${ic}</span>${text}</span>`;
+  if (w0.roomLow < 0) return pill('short', wave('#fff'), `This ${u} is ${money(-w0.roomLow)} short`);
+  if (w0.status === 'Tight') return pill('tight', wave('#1659D0'), `Tight until ${short(w0.end)}`);
+  if (k > 0) return pill('ok', check, `Covered until ${short(ws[k].start)}`);
+  return pill('ok', check, `Covered for the next ${ws.length} ${u}s`);
+}
+/* The numbers behind the big one, in one line; each opens where it comes from. */
+function nowFacts(w0) {
+  const p = persona(), bits = [];
+  const link = (go, v, label) => `<button class="spec-link" data-go="${go}" aria-label="${label}: ${v}. Tap to see">${v}</button> ${label.toLowerCase()}`;
+  bits.push(link('income', range(w0.incomeLow, w0.incomeTyp), w0.onHand ? 'Available' : 'Coming in'));
+  if (w0.drawn) bits.push(link('detail', money(w0.drawn), 'From savings'));
+  bits.push(link('detail', money(w0.spoken), 'Spoken for'));
+  if (w0.days > 14 && w0.roomLow > 0) bits.push(`about ${money(w0.roomLow / (w0.days / 7))} a week`);
+  return `<p class="facts">${bits.join(' · ')}</p>`;
+}
+function leftLine(w0) {
+  const p = persona();
+  if (p.unit === 'week') return w0.roomLow < 0 ? 'short this week' : 'left this week';
+  if (p.unit === 'month') {
+    const next = state.sources.find(s => occurrences(s, w0.end, addDays(w0.end, 1)).length);
+    return `${w0.roomLow < 0 ? 'short before' : 'left until'} ${next ? esc(next.name) + ' on ' : ''}${long(w0.end)}`;
+  }
+  return `${w0.roomLow < 0 ? 'short before' : 'left until'} ${long(w0.end)}`;
+}
+/* The next thing that happens, so nobody has to read a list to find it. */
+function nextUpCard(ws) {
+  const all = [].concat(...ws.map(w => w.items)).filter(x => x.date >= TODAY && x.amount > 0 && x.bill && !x.fee && !x.membership).sort((a, b) => a.date - b.date);
+  const x = all[0];
+  if (!x) return '';
+  const when = x.date === TODAY ? 'Today' : Math.round((x.date - TODAY) / 864e5) === 1 ? 'Tomorrow' : long(x.date);
+  return `<button class="next-up tap mt14" data-editbill="${x.bill.id}">${tileHtml(x.bill)}
+    <span class="stack gap2"><span class="eyebrow" style="font-size:12px">Next up · ${when}</span><span style="font-size:16px;font-weight:700">${esc(eventName(x))}</span></span>
+    <span style="font-size:17px;font-weight:700;white-space:nowrap">${x.bill.status === 'estimate' ? '~' : ''}${moneyExact(x.amount)}</span>${CHEV}</button>`;
+}
+/* After a decision: what it did, honestly. Better and worse both shown. */
+function snapWindows() { return computeWindows().map(w => ({ i: w.i, name: windowShortName(w), room: w.roomLow, start: w.start })); }
+function showOutcome(before, what, sub) {
+  state.outcome = { before, what, sub };
+  go('outcome');
+}
+function screenOutcome() {
+  const o = state.outcome;
+  if (!o) { state.screen = 'now'; return screenNow(); }
+  const ws = computeWindows(), u = unitWord2();
+  const k = ws.findIndex(w => w.roomLow < 0);
+  const ok = k < 0;
+  const title = ws[0].roomLow < 0 ? `This ${u} is ${money(-ws[0].roomLow)} short`
+    : k > 0 ? `You’re covered until ${short(ws[k].start)}`
+    : `You’re covered for the next ${ws.length} ${u}s`;
+  const rows = ws.map((w, n) => ({ w, b: o.before[n] })).filter(r => r.b && Math.round(r.b.room) !== Math.round(r.w.roomLow));
+  const fmt = v => v < 0 ? `${money(-v)} short` : money(v);
+  const icon = ok ? '<svg width="34" height="34" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 7.2 5.8 10 11 4.2" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+    : '<svg width="40" height="20" viewBox="0 0 28 14" aria-hidden="true"><path d="M1 9 C5 9 5 3 9 3 C13 3 13 11 17 11 C21 11 21 5 27 5" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/></svg>';
+  return `${header('now', 'Now')}
+  <main>
+    <section class="pad stack gap10 mt8" style="text-align:center">
+      <span class="outcome-ic" style="background:${ok ? 'var(--ok-dot)' : 'var(--amber-dot)'}">${icon}</span>
+      <span class="small" style="font-weight:700">${esc(o.what)}</span>
+      <h1 class="h1" style="margin:0">${title}</h1>
+      ${o.sub ? `<p class="purpose">${o.sub}</p>` : ''}
+    </section>
+    <section class="pad mt20"><div class="card stack gap4">
+      <span class="eyebrow" style="font-size:12px">What changed</span>
+      ${rows.length ? rows.map(r => {
+        const better = r.w.roomLow > r.b.room;
+        return `<div class="change-row"><span style="font-weight:600">${r.b.name}</span><span><span style="color:var(--muted)">${fmt(r.b.room)}</span> → <strong style="color:${r.w.roomLow < 0 ? 'var(--amber-text)' : 'var(--navy)'}">${fmt(r.w.roomLow)}</strong> <span class="small" style="font-weight:700;color:${better ? '#1F6B50' : 'var(--amber-text)'}">${better ? 'better' : 'tighter'}</span></span></div>`;
+      }).join('') : '<p class="small">No paycheck in the next six changed.</p>'}
+    </div></section>
+    <section class="pad mt20 stack gap12">${waveChart(ws)}
+      <button class="primary" data-go="waves">See my ${u}s</button>
+      <button class="secondary" data-action="outcome-done">Back to Now</button>
+    </section>
+  </main>
+  ${dock()}`;
+}
 function nowSpec(w0) {
   const p = persona();
   const rows = [];
@@ -1753,15 +1912,17 @@ function screenDetail() {
   ${dock()}`;
 }
 
+let UP_EXTRAS = [];
 function screenWaves() {
   const p = persona();
   const ws = computeWindows(null, carouselCount());
+  UP_EXTRAS = extraPaychecks(400);
   const cards = ws.map(w => {
     const open = !!state.openWindows[w.i];
     const isShort = w.roomLow < 0;
     const pct = Math.min(100, Math.round(w.spoken / Math.max(1, w.incomeLow) * 100));
     const top = [...w.items].sort((a, b) => b.amount - a.amount);
-    const summary = top.slice(0, 3).map(eventName).join(', ') + (top.length > 3 ? `, +${top.length - 3} more` : '');
+    const summary = top.slice(0, 3).map(x => eventName(x) + (x.part && !x.bill.standalone ? ` (${x.part} of ${x.parts})` : '')).join(', ') + (top.length > 3 ? `, +${top.length - 3} more` : '');
     const pace = w.days > 14 && w.roomLow > 0 ? ` · about ${money(w.roomLow / (w.days / 7))} a week` : '';
     const items = onHandRow(w) + w.income.map(incomeRow).join('') +
       w.items.map(x => itemRow(x, { static: true })).join('') +
@@ -1774,10 +1935,11 @@ function screenWaves() {
       everydayRow(w, false);
     return `<div class="${isShort ? 'warn' : 'card'} window-card ${open ? 'open' : ''} stack gap10">
       <button class="tap row" style="background:none;border:0;padding:0;align-items:flex-start" data-toggle="${w.i}" aria-expanded="${open}">
-        <span class="stack gap4"><span style="font-size:16px;font-weight:700">${windowEyebrow(w)}</span><span style="font-size:13px;color:${isShort ? 'var(--amber-body)' : 'var(--muted)'}">${range(w.incomeLow, w.incomeTyp)} ${w.onHand ? 'available' : 'coming in'} · ${w.days} days${pace}</span></span>
+        <span class="stack gap4"><span style="font-size:16px;font-weight:700">${windowEyebrow(w)}</span><span style="font-size:13px;color:${isShort ? 'var(--amber-body)' : 'var(--muted)'}">${range(w.incomeLow, w.incomeTyp)} ${w.onHand ? 'available' : 'coming in'}${pace}</span></span>
         <span class="stack gap4" style="align-items:flex-end"><span style="font-size:20px;font-weight:800;white-space:nowrap;${isShort ? 'color:var(--amber-text)' : ''}">${range(w.roomLow, w.roomTyp)}</span><span style="font-size:12px;font-weight:700;color:${isShort ? 'var(--amber-text)' : 'var(--muted-2)'}">${w.status}${w.roomTyp !== w.roomLow ? ' on a lighter ' + p.unit : ''}</span></span>
       </button>
       <div class="bar thin ${isShort ? 'amber' : ''}"><div style="width:${pct}%"></div></div>
+      ${(() => { const bs = windowBadges(w, UP_EXTRAS).badges; return bs.length ? `<span class="pc-badges">${bs.map(([k, t]) => `<span class="pc-badge ${k}">${esc(t)}</span>`).join('')}</span>` : ''; })()}
       <span style="font-size:14px;color:${isShort ? 'var(--amber-body)' : 'var(--muted)'};line-height:1.45">${open ? '' : esc(summary)}</span>
       ${w.items.filter(x => x.part && x.part === x.parts && (x.bill.freq === 'once' || x.bill.count)).map(x => `<span style="font-size:14px;font-weight:600;color:var(--royal)">Last payment for ${esc(x.bill.name)}. After this, it’s done.</span>`).join('')}
       <div class="items">${items}</div>
@@ -1834,8 +1996,7 @@ function refreshPrep() {
   chart.innerHTML = waveChart(pv.after);
   const covered = pv.prepared >= need;
   if (covered && !prepWasCovered && !reduceMotion()) { chart.classList.remove('settle'); void chart.offsetWidth; chart.classList.add('settle'); }
-  prepWasCovered = covered;
-  document.getElementById('prep-val').innerHTML = `${money(pv.prepared)} <span class="small" style="font-weight:600">of ${money(need)}</span>`;
+  prepWasCovered = covered;  document.getElementById('prep-val').innerHTML = `${money(pv.prepared)} <span class="small" style="font-weight:600">of ${money(need)}</span>`;
   document.getElementById('prep-text').innerHTML = prepText(ws, sm.k, pv, need);
   updateRail(); save();
 }
@@ -2679,15 +2840,16 @@ function screenBills() {
   if (state.bills.some(b => b.surprise)) groups.push(['Something came up', state.bills.filter(b => b.surprise)]);
   return `${header('now', 'Now')}
   <main>
-    <section class="pad stack gap8 mt8"><h1 class="h1">Your bills</h1><p class="body">Each bill is a rule. Alon turns it into dates in your forecast. Tap any bill to change or remove it.</p></section>
+    <section class="pad stack gap8 mt8"><h1 class="h1">Your bills</h1><p class="purpose">Everything you pay, and when. Tap one to change it.</p></section>
     ${groups.map(([title, list]) => `
-      <section class="pad stack mt24"><h2 class="h2" style="font-size:16px;margin-bottom:4px">${title}</h2>
-      ${list.length ? list.map(b => {
+      <section class="pad stack mt24"><h2 class="h2" style="font-size:16px;margin-bottom:8px">${title}</h2>
+      ${list.length ? '<div class="row-card">' + list.map(b => {
         const nd = nextDue(b);
         const st = b.status === 'estimate' ? 'Estimate' : b.status === 'unconfirmed' ? 'Not confirmed' : 'Confirmed';
-        const meta = b.plan ? planStatus(b) : `${freqLabel(b.freq)} · ${nd ? 'next ' + short(nd) : 'done'} · ${st}`;
-        return `<button class="line-item tap" data-editbill="${b.id}"><span><span class="name">${esc(b.name)}</span><span class="meta">${meta} · Tap to edit</span></span><span class="amt">${b.status === 'estimate' ? '~' : ''}${b.plan ? moneyExact(b.amount) : money(b.amount)}</span></button>`;
-      }).join('') : `<p class="small">${title === 'Paying in parts' ? 'Nothing yet. A split rent, a pay-later purchase or a payment plan goes here.' : 'None yet.'}</p>`}
+        const when = !nd ? 'Done' : b.freq === 'once' ? short(nd) : (LONG_FREQS.includes(b.freq) ? `${freqLabel(b.freq)} · ${short(nd)}` : `Due ${short(nd)}`);
+        const meta = b.plan ? planStatus(b) : `${when}${st === 'Confirmed' ? '' : ' · ' + st.toLowerCase()}`;
+        return `<button class="line-item tap" data-editbill="${b.id}" style="width:100%"><span class="lead">${tileHtml(b)}<span><span class="name">${esc(b.name)}</span><span class="meta">${meta}</span></span></span><span class="end"><span class="amt">${b.status === 'estimate' ? '~' : ''}${b.plan ? moneyExact(b.amount) : money(b.amount)}</span>${CHEV}</span></button>`;
+      }).join('') + '</div>' : `<p class="small">${title === 'Paying in parts' ? 'Nothing yet. A split rent, a pay-later purchase or a payment plan goes here.' : 'None yet.'}</p>`}
       ${title === 'A few times a year' && list.some(b => /tax/i.test(b.name)) ? `<div class="mt8">${taxLearn(list.find(b => /tax/i.test(b.name)))}</div>` : ''}
       </section>`).join('')}
     <div class="pad stack gap10 mt24"><button class="primary" data-go="add">Add a bill</button><button class="secondary" data-action="add-plan">Add something you’re paying in parts</button></div>
@@ -2833,8 +2995,7 @@ function screenGoalEdit() {
       <div class="card stack gap8 preview-card">
         <span class="small" style="font-weight:600">What this changes</span>
         <span id="g-preview" class="${pv.valid ? 'body' : 'ph'}">${pv.text}</span>
-        <div id="g-suggest">${goalSuggestHtml(pv)}</div>
-      </div>
+        <div id="g-suggest">${goalSuggestHtml(pv)}</div>      </div>
       ${f.id ? `<label class="row card" style="cursor:pointer"><span class="stack gap4"><span style="font-weight:700">Pause this goal</span><span class="small">For a tight stretch. Nothing is set aside until you turn it back on.</span></span><input type="checkbox" data-gpause ${f.paused ? 'checked' : ''} style="width:22px;height:22px"></label>` : ''}
       <p class="decision-note">Press Save on the wave. Alon only plans it; you move the money to savings yourself.</p>
       ${f.fund ? fundLearn() : ''}
@@ -3065,7 +3226,7 @@ function screenSurprise() {
     const disabled = key === 'fund' ? !(v.valid && v.fundSaved) : key === 'goals' ? !(v.valid && v.otherSaved) : !(v.valid && v.activeGoals);
     const use = key === 'fund' ? 'fundUse' : key === 'goals' ? 'goalsUse' : null;
     const shown = use && f.cover[key] && v.valid ? (f[use] != null ? f[use] : String(key === 'fund' ? v.b.fundUsed : v.b.goalsUsed)) : null;
-    return `<div class="card stack gap8" style="${disabled ? 'opacity:.6' : ''}">
+    return `<div class="card opt stack gap8" style="${disabled ? 'opacity:.6' : ''}">
       <label class="row" style="cursor:${disabled ? 'default' : 'pointer'};align-items:flex-start;gap:12px"><span class="stack gap4"><span style="font-weight:700">${title}</span><span class="small" id="s-${key}-desc">${v.valid ? coverDesc(key, v, f) : 'Add what it is and how much first.'}</span></span>
         <input type="checkbox" data-scover="${key}" ${f.cover[key] && !disabled ? 'checked' : ''} ${disabled ? 'disabled' : ''} style="width:22px;height:22px;flex:none;margin-top:2px" aria-label="${title}"></label>
       ${shown != null && !disabled ? `<div class="field"><label for="s-${use}">How much to use</label><input class="input" id="s-${use}" data-sfield="${use}" inputmode="decimal" value="${esc(shown)}" autocomplete="off"></div>` : ''}
@@ -3074,8 +3235,8 @@ function screenSurprise() {
   return `${header(back, back === 'now' ? 'Now' : 'Back')}
   <main>
     <section class="pad stack gap14 mt8">
-      <h1 class="h1">Something came up</h1>
-      <p class="body">A repair, a doctor’s bill, something that broke. Add it, see what it does to your next ${u}s, then pick how to cover it.</p>
+      <h1 class="h1">Something came up?</h1>
+      <p class="purpose">A repair, a doctor’s bill, something that broke. See what it does to your next ${u}s before you decide how to cover it.</p>
       <div class="chips">${SURPRISE_KINDS.map(([k, label]) => `<button type="button" class="chip ${f.kind === k ? 'on' : ''}" aria-pressed="${f.kind === k}" data-skind="${k}">${label}</button>`).join('')}</div>
       <div class="field"><label for="s-name">What is it?</label><input class="input" id="s-name" data-sfield="name" value="${esc(f.name)}" placeholder="e.g. Furnace repair" autocomplete="off"></div>
       <div class="stack gap14">
@@ -3140,14 +3301,13 @@ function refreshSurprise() {
 function saveSurprise() {
   const f = state.surpriseForm;
   if (!surpriseValid(f)) { toast('Add what it is and how much first.'); return; }
-  const sid = 's' + Date.now();
+  const sid = 's' + Date.now(), before = snapWindows();
   const b = surpriseBuild(f, sid);
   state.bills = b.bills; state.goals = b.goals; state.draws = b.draws; state.picked = null;
   state.surprises = (state.surprises || []).concat([{ id: sid, name: b.bill.name, kind: f.kind, amount: b.amount, parts: b.n, each: b.each, due: b.due, on: iso(TODAY), drawn: b.added.drawn, skips: b.added.skips }]);
   state.surpriseForm = null; state.surpriseBack = null;
   const used = b.fundUsed + b.goalsUsed;
-  toast(`${b.bill.name} added.${used ? ` ${money(used)} comes from your savings.` : ''} Forecast updated.`);
-  go('now');                                     // Now is where its effect shows
+  showOutcome(before, `${b.bill.name} added`, `${b.n > 1 ? `${b.n} payments of ${money(b.each)}. ` : ''}${used ? `${money(used)} comes from your savings. ` : ''}Every paycheck below already counts it.`);
 }
 /* Removing the bill puts everything back: the savings it used and the goal set-asides it skipped. */
 function undoSurprise(sid) {
@@ -3348,7 +3508,7 @@ function poolOffer(w0) {
   const e = extraOf(w0), q1 = floor5(e * .25), q2 = floor5(e * .5);
   return `<div class="card stack gap10 mt14">
     <span class="eyebrow" style="color:var(--royal)">Tide pool</span>
-    <span style="font-size:17px;font-weight:700;line-height:1.35">This ${unitWord()} has ${money(e)} extra, ${extraPct(w0)}% of what comes in.</span>
+    <span style="font-size:17px;font-weight:700;line-height:1.35">This ${unitWord()} has ${money(e)} left, ${extraPct(w0)}% of what comes in.</span>
     <span class="small">${(() => { const ahead = computeWindows().find(w => w.i > 0 && w.roomLow < 0); return ahead ? `${windowShortName(ahead)} could come up ${money(-ahead.roomLow)} short. Carry some forward and your tide pool covers it automatically.` : `Carry some forward? Your tide pool covers a short ${unitWord()} later on its own.`; })()} The rest is yours to spend.</span>
     <div class="chips">${q1 >= 5 ? `<button class="chip" data-pooladd="${q1}">25% · ${money(q1)}</button>` : ''}${q2 >= 5 && q2 !== q1 ? `<button class="chip" data-pooladd="${q2}">50% · ${money(q2)}</button>` : ''}<button class="chip" data-action="pool-other">Other amount</button></div>
     <button class="linkish" style="text-align:left;font-size:14px;color:var(--muted-2)" data-action="pool-dismiss">Not this time</button>
@@ -3422,7 +3582,7 @@ function screenPool() {
   const ws = computeWindows(null, carouselCount());
   const going = P.adds.filter(a => a.done == null && parse(a.from) >= TODAY).sort((a, b) => parse(a.from) - parse(b.from));
   const covers = ws.filter(w => w.poolIn > 0);
-  const extras = ws.filter(w => w.roomLow >= 50 && !P.adds.some(a => a.from === iso(w.start) && a.done !== false)).slice(0, 6);
+  const extras = ws.filter(w => w.roomLow >= 50 && extraPct(w) >= 15 && !P.adds.some(a => a.from === iso(w.start) && a.done !== false)).slice(0, 6);
   const last = ws[ws.length - 1];
   return `${header('now', 'Now')}
   <main>
@@ -3439,8 +3599,8 @@ function screenPool() {
     ${going.length ? `<section class="pad stack mt24"><h2 class="h2" style="font-size:16px;margin-bottom:4px">Going in</h2>
       ${going.map(a => `<div class="line-item"><span><span class="name">From ${short(parse(a.from))}</span><span class="meta"><span class="dot" style="background:var(--royal)"></span>Planned · Alon asks on that payday</span></span><span class="row" style="gap:12px"><span class="amt">${money(a.amount)}</span><button class="linkish" style="font-size:13px;color:var(--muted)" data-poolremove="${a.id}" aria-label="Remove ${money(a.amount)} from ${short(parse(a.from))}">Remove</button></span></div>`).join('')}
     </section>` : ''}
-    ${extras.length ? `<section class="pad stack mt24"><h2 class="h2" style="font-size:16px;margin-bottom:4px">${u === 'week' ? 'Weeks' : 'Paychecks'} with extra</h2>
-      ${extras.map(w => `<button class="line-item tap" data-poolfrom="${iso(w.start)}"><span><span class="name">${windowShortName(w)}</span><span class="meta">${money(extraOf(w))} extra · ${extraPct(w)}% of what comes in · Tap to carry some forward</span></span><span class="amt" style="color:var(--royal)">＋</span></button>`).join('')}
+    ${extras.length ? `<section class="pad stack mt24"><h2 class="h2" style="font-size:16px;margin-bottom:4px">${u === 'week' ? 'Weeks' : 'Paychecks'} with room to spare</h2>
+      ${extras.map(w => `<button class="line-item tap" data-poolfrom="${iso(w.start)}"><span><span class="name">${windowShortName(w)}</span><span class="meta">${money(extraOf(w))} left · ${extraPct(w)}% of what comes in · Tap to carry some forward</span></span><span class="amt" style="color:var(--royal)">＋</span></button>`).join('')}
     </section>` : ''}
     <section class="pad mt20">${learn('pool', 'How is this different from the surprise fund?',
       `<p>The tide pool smooths ordinary ups and downs: a light ${u}, a month with a big bill. Alon uses it automatically when a ${u} would come up short.</p>
@@ -3570,6 +3730,18 @@ function obRentBill(o) {
   }
   return b;
 }
+/* A setup card's name. Left blank on a second card of a kind, it becomes "Student loan 2". */
+function obBillName(list, n) {
+  const b = list[n], typed = (b.name || '').trim();
+  if (typed || !b.preset) return typed;
+  const same = list.filter(x => x.preset === b.preset);
+  return same.length > 1 ? `${b.preset} ${same.indexOf(b) + 1}` : b.preset;
+}
+const OB_EXAMPLES = { 'Student loan': 'Navient', 'Credit card minimum': 'Chase', 'Car payment': 'Honda', 'Phone': 'Verizon', 'Car insurance': 'GEICO', 'Utilities': 'Water', 'Internet': 'Xfinity', 'Subscriptions': 'Netflix', 'Childcare': 'Daycare', 'Vehicle registration': 'Second car', 'Memberships': 'Costco' };
+const OB_NOUNS = { 'Credit card minimum': 'credit card', 'Utilities': 'utility', 'Subscriptions': 'subscription', 'Memberships': 'membership', 'Estimated taxes': 'tax payment', 'Holiday gifts': 'gift', 'School costs': 'school cost', 'Childcare': 'childcare bill' };
+const obNoun = p => OB_NOUNS[p] || p.toLowerCase();
+const obExample = p => OB_EXAMPLES[p] || 'a short name';
+const obTyped = (bill, b) => (b.preset ? Object.assign(bill, { preset: b.preset }) : bill);
 /* Every bill from setup, before the recent-payment answers are applied. */
 function obBills(o) {
   const bills = [];
@@ -3581,8 +3753,8 @@ function obBills(o) {
     bills.push({ id: 'obp' + n, name: x.name.trim(), amount: Math.round(each * left * 100) / 100, freq: 'once', start: x.next, status: 'confirmed', standalone: true,
       plan: { parts: left, every: x.every, day2: null, first: 0, fee: 0, membership: 0, since: x.next, kind: x.kind } });
   });
-  o.bills.forEach((b, n) => { if (obNum(b.amount) > 0 && b.name.trim() && b.date) bills.push({ id: 'ob' + n, name: b.name.trim(), amount: obNum(b.amount), freq: 'monthly', start: b.date, status: b.est ? 'estimate' : 'confirmed' }); });
-  o.rare.forEach((b, n) => { if (obNum(b.amount) > 0 && b.name.trim() && b.date) bills.push({ id: 'obr' + n, name: b.name.trim(), amount: obNum(b.amount), freq: b.freq, start: b.date, status: b.freq === 'once' ? 'estimate' : 'confirmed' }); });
+  o.bills.forEach((b, n) => { const nm = obBillName(o.bills, n); if (obNum(b.amount) > 0 && nm && b.date) bills.push(obTyped({ id: 'ob' + n, name: nm, amount: obNum(b.amount), freq: 'monthly', start: b.date, status: b.est ? 'estimate' : 'confirmed' }, b)); });
+  o.rare.forEach((b, n) => { const nm = obBillName(o.rare, n); if (obNum(b.amount) > 0 && nm && b.date) bills.push(obTyped({ id: 'obr' + n, name: nm, amount: obNum(b.amount), freq: b.freq, start: b.date, status: b.freq === 'once' ? 'estimate' : 'confirmed' }, b)); });
   return bills;
 }
 /* Payments from setup's bills that already came due: asked, not assumed. */
@@ -3654,13 +3826,18 @@ function obClick(ds) {
       o.plans.push({ kind: name, name: ({ paylater: 'Pay-later purchase', plan: 'Payment plan', advance: 'Paycheck advance', other: '' })[name] || '', each: '', left: name === 'advance' ? '1' : name === 'paylater' ? '3' : '', every: name === 'paylater' ? 'biweekly' : 'monthly', next: iso(addDays(parse(o.today), 14)) });
       return render(true);
     }
+    // Tapping a chip again adds another of the same kind (two student loans, three cards).
+    // Then every card of that kind gets a name box, so each can be told apart.
+    const same = name === 'other' ? [] : o[list].filter(b => b.preset === name);
+    same.forEach(b => { b.custom = true; });
+    const entry = { name: name === 'other' || same.length ? '' : name, preset: name === 'other' ? null : name, amount: '', custom: name === 'other' || same.length > 0 };
     if (list === 'bills') {
       const def = OB_BILLS.find(b => b[0] === name);
-      o.bills.push({ name: name === 'other' ? '' : name, amount: '', date: obNextOnDay(o.today, def ? def[1] : 15), est: !!(def && def[2]), custom: name === 'other' });
+      o.bills.push(Object.assign(entry, { date: obNextOnDay(o.today, def ? def[1] : 15), est: !!(def && def[2]) }));
     } else {
       const def = OB_RARE.find(b => b[0] === name);
       const freq = def ? def[1] : 'yearly';
-      o.rare.push({ name: name === 'other' ? '' : name, amount: '', freq, date: obRareDate(o.today, name, freq), custom: name === 'other' });
+      o.rare.push(Object.assign(entry, { freq, date: obRareDate(o.today, name, freq) }));
     }
     return render(true);
   }
@@ -3784,13 +3961,14 @@ function screenOb() {
   } else if (st === 'bills' || st === 'rare') {
     const list = st === 'bills' ? o.bills : o.rare;
     const defs = st === 'bills' ? OB_BILLS.map(b => [b[0], '']) : OB_RARE.map(b => [b[0], b[2]]);
-    const used = list.map(b => b.name);
+    const used = list.map(b => b.preset);
+    const another = nm => `Another ${obNoun(nm)}`;
     body = (st === 'bills'
       ? q('What other bills come every month?', 'Tap the ones you have, then add amounts. Estimates are fine; you can fix them anytime.')
       : q('Any bills that only come a few times a year?', 'These cause most money surprises, so they’re worth a minute. Skip any you don’t have.')) +
-      `<section class="mt20"><div class="chips">${defs.filter(([nm]) => !used.includes(nm)).map(([nm, lab]) => `<button class="chip" data-obadd="${st}|${nm}">+ ${nm}${lab ? ` <span style="font-weight:500;opacity:.75">· ${lab}</span>` : ''}</button>`).join('')}<button class="chip" data-obadd="${st}|other">+ Something else</button></div></section>
+      `<section class="mt20"><div class="chips">${defs.map(([nm, lab]) => used.includes(nm) ? `<button class="chip" data-obadd="${st}|${nm}">+ ${another(nm)}</button>` : `<button class="chip" data-obadd="${st}|${nm}">+ ${nm}${lab ? ` <span style="font-weight:500;opacity:.75">· ${lab}</span>` : ''}</button>`).join('')}<button class="chip" data-obadd="${st}|other">+ Something else</button></div></section>
       <section class="stack gap10 mt20">${list.map((b, i) => `<div class="card stack gap10">
-        <div class="row">${b.custom ? `<input class="input" style="min-height:44px" data-obf="${st}.${i}.name" value="${esc(b.name)}" placeholder="What is it?" aria-label="Bill name" autocomplete="off">` : `<span style="font-size:16px;font-weight:700">${esc(b.name)}${st === 'rare' ? `<span class="small" style="display:block;font-weight:500">${freqLabel(b.freq)}</span>` : ''}</span>`}<button class="linkish" style="color:var(--muted);font-size:13px" data-obdel="${st}|${i}" aria-label="Remove ${esc(b.name || 'bill')}">Remove</button></div>
+        <div class="row">${b.custom ? `<input class="input" style="min-height:44px" data-obf="${st}.${i}.name" value="${esc(b.name)}" placeholder="${b.preset ? `Which one? e.g. ${obExample(b.preset)}` : 'What is it?'}" aria-label="Bill name" autocomplete="off">` : `<span style="font-size:16px;font-weight:700">${esc(b.name)}${st === 'rare' ? `<span class="small" style="display:block;font-weight:500">${freqLabel(b.freq)}</span>` : ''}</span>`}<button class="linkish" style="color:var(--muted);font-size:13px" data-obdel="${st}|${i}" aria-label="Remove ${esc(b.name || 'bill')}">Remove</button></div>
         <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px">
           <div class="field"><label for="ob-${st}-${i}-a">Amount</label><input class="input" id="ob-${st}-${i}-a" data-obf="${st}.${i}.amount" inputmode="decimal" value="${esc(b.amount)}" placeholder="$0" autocomplete="off"></div>
           <div class="field"><label for="ob-${st}-${i}-d">Next due</label><input class="input" id="ob-${st}-${i}-d" type="date" data-obf="${st}.${i}.date" value="${esc(b.date)}"></div>
@@ -3816,8 +3994,7 @@ function screenOb() {
       ${o.plans.length ? '<p class="small mt8">Plans without an amount are skipped. A split rent goes on the rent question.</p>' : '<p class="small mt14">Splitting your rent? That goes on the rent question.</p>'}`;
     footer = foot(o.plans.length ? '' : `<button class="secondary" data-ob="skip">Nothing right now</button>`);
   } else if (st === 'everyday') {
-    body = q('About how much goes to everyday things each week?', 'Groceries, gas, the small stuff. A rough guess is fine. Without it, every forecast looks better than real life.') +
-      `<section class="stack gap14 mt20"><div class="chips">${[50, 100, 150, 200, 300].map(v => `<button class="chip ${String(o.everyday) === String(v) ? 'on' : ''}" data-obamt="${v}">$${v}</button>`).join('')}</div>${money_('ob-everyday', 'everyday', 'Per week', o.everyday)}</section>`;
+    body = q('About how much goes to everyday things each week?', 'Groceries, gas, the small stuff. A rough guess is fine. Without it, every forecast looks better than real life.') +      `<section class="stack gap14 mt20"><div class="chips">${[50, 100, 150, 200, 300].map(v => `<button class="chip ${String(o.everyday) === String(v) ? 'on' : ''}" data-obamt="${v}">$${v}</button>`).join('')}</div>${money_('ob-everyday', 'everyday', 'Per week', o.everyday)}</section>`;
   } else if (st === 'cushion') {
     const u = o.way === 'gig' ? 'week' : o.way === 'benefit' ? 'month' : 'paycheck';
     const choice = (k, t, d) => `<button class="tap option ${o.fund === k ? 'on' : ''}" aria-pressed="${o.fund === k}" data-obfund="${k}"><span class="radio"></span><span><span class="t">${t}</span><span class="d">${d}</span></span></button>`;
@@ -4150,7 +4327,7 @@ function sheetHtml() {
 }
 
 /* ---------- render + events ---------- */
-const screens = { ob: screenOb, welcome: screenWelcome, about: screenAbout, year: screenYear, arrival: screenArrival, now: screenNow, detail: screenDetail, waves: screenWaves, why: screenWhy, check: screenCheck, add: screenAdd, payday: screenPayday, bills: screenBills, income: screenIncome, 'income-edit': screenIncomeEdit, goals: screenGoals, 'goal-edit': screenGoalEdit, surprise: screenSurprise, options: screenOptions, plan: screenPlan, feedback: screenFeedback, pool: screenPool, data: screenData };
+const screens = { ob: screenOb, welcome: screenWelcome, about: screenAbout, year: screenYear, arrival: screenArrival, now: screenNow, detail: screenDetail, waves: screenWaves, why: screenWhy, check: screenCheck, add: screenAdd, payday: screenPayday, bills: screenBills, income: screenIncome, 'income-edit': screenIncomeEdit, goals: screenGoals, 'goal-edit': screenGoalEdit, surprise: screenSurprise, options: screenOptions, plan: screenPlan, feedback: screenFeedback, pool: screenPool, data: screenData, outcome: screenOutcome };
 const app = document.getElementById('app');
 
 function syncToday() {
@@ -4174,6 +4351,7 @@ function render(keepFocus, resetScroll) {
   if (state.screen === 'now' && state.persona) paper = computeWindows()[0].roomLow < 0 ? 'paper-short' : 'paper-clear';
   app.innerHTML = `<div class="scroller ${paper}" id="scroller">${screens[state.screen]()}</div><div id="rail-wrap">${rail}</div>` + sheetHtml();
   const sc = document.getElementById('scroller'); if (sc) sc.scrollTop = scrollTop;
+  waveEdges();
   if (id) { const el = document.getElementById(id); if (el) { el.focus(); try { el.setSelectionRange(pos, pos); } catch (e) {} } }
   save();
 }
@@ -4264,7 +4442,7 @@ app.addEventListener('click', e => {
     const ws = computeWindows(null, carouselCount());
     const from = ds.poolfrom || iso((ws.find(w => w.roomLow >= 5 && !poolState().adds.some(a => a.from === iso(w.start) && a.done !== false)) || ws[0]).start);
     const w = ws.find(x => iso(x.start) === from) || ws[0];
-    state.sheet = { kind: 'pooladd', from, title: `Carry forward from ${w.i === 0 ? 'this ' + unitWord() : short(w.start)}`, body: `It has ${money(extraOf(w))} extra. Only what you choose goes to the tide pool; the rest stays yours to spend.`, amount: floor5(extraOf(w) * .25) || '', save: 'Add to tide pool' };
+    state.sheet = { kind: 'pooladd', from, title: `Carry forward from ${w.i === 0 ? 'this ' + unitWord() : short(w.start)}`, body: `It has ${money(extraOf(w))} left. Only what you choose goes to the tide pool; the rest stays yours to spend.`, amount: floor5(extraOf(w) * .25) || '', save: 'Add to tide pool' };
     return render();
   }
   if (ds.action === 'pool-balance') { state.sheet = { kind: 'poolbal', title: 'What’s in your tide pool now?', body: 'The money you’ve already set aside for it. A rough number is fine.', amount: poolState().balance || '', save: 'Save' }; return render(); }
@@ -4294,12 +4472,11 @@ app.addEventListener('click', e => {
   if (ds.action === 'save-surprise') return saveSurprise();
   if (ds.action === 'start-fund') { state.goalForm = fundForm(); return go('goal-edit'); }
   if (ds.gtarget) { state.goalForm.target = ds.gtarget; return render(); }
-  if (ds.pcstep) {
-    const t = document.getElementById('pc-track'); if (!t) return;
-    const i = Math.max(0, Math.min(t.children.length - 1, pcIndex() + Number(ds.pcstep)));
-    const x = t.children[i].offsetLeft - t.offsetLeft;
-    if (t.scrollTo) t.scrollTo({ left: x, behavior: reduceMotion() ? 'auto' : 'smooth' }); else t.scrollLeft = x;
-    setTimeout(pcUpdateCount, 350); return;
+  if (ds.wavestep) {
+    const t = document.getElementById('wave-scroll'); if (!t) return;
+    const x = Math.max(0, t.scrollLeft + Number(ds.wavestep) * t.clientWidth);
+    if (t.scrollTo) t.scrollTo({ left: x, behavior: reduceMotion() ? 'auto' : 'smooth' }); else { t.scrollLeft = x; waveEdges(); }
+    return;
   }
   if (ds.ow) { state.ow.open = state.ow.open === ds.ow ? null : ds.ow; return render(true); }
   if (ds.owset) { const [k, v] = ds.owset.split('|'); state.ow[k] = Number(v); return render(true); }
@@ -4376,21 +4553,19 @@ app.addEventListener('click', e => {
     const sm = smoothing(ws);
     const o = sm && sm.opts.find(x => x.id === state.picked);
     if (!o && sm && state.prepAmt > 0) {
-      const pv = prepPreview(ws, sm.k, state.prepAmt);
+      const pv = prepPreview(ws, sm.k, state.prepAmt), before = snapWindows();
       state.reserves = pv.reserves.map((r, n) => r.id.startsWith('pv') ? Object.assign({}, r, { id: 'r' + Date.now() + n }) : r);
-      const covered = pv.prepared >= round5(-ws[sm.k].roomLow);
       state.prepAmt = 0;
-      toast(covered ? `Planned. ${windowShortName(ws[sm.k])} is covered.` : `Planned ${money(pv.prepared)} toward ${windowShortName(ws[sm.k])}.`);
-      return go('now');
+      return showOutcome(before, `Planned ${money(pv.prepared)} for ${windowShortName(ws[sm.k])}`, 'Setting money aside doesn’t move it. Alon asks on each payday whether you did.');
     }
     if (!o) return;
     if (o.id === 'none') { toast('Nothing changed. The gap stays visible.'); return go('now'); }
-    const stamp = Date.now();
+    const stamp = Date.now(), before = snapWindows();
     state.reserves = state.reserves.filter(r => r.done === true).concat(
       o.allocs.map((a, n) => ({ id: 'r' + stamp + n, from: iso(ws[a.from].start), to: iso(ws[a.to].start), amount: a.amount, done: null })));
-    toast('Planned. Your forecast is updated.');
-    return go('now');
+    return showOutcome(before, `Planned for ${windowShortName(ws[sm.k])}`, 'Setting money aside doesn’t move it. Alon asks on each payday whether you did.');
   }
+  if (ds.action === 'outcome-done') { state.outcome = null; return go('now'); }
   if (ds.action === 'undo') { state.reserves = []; toast('Plan removed.'); return go('why'); }
 
   if (ds.cushion !== undefined) { state.cushion = Number(ds.cushion); return render(); }
@@ -4643,7 +4818,7 @@ document.addEventListener('keydown', e => {
 load();
 render();
 fbFlush();
-document.addEventListener('scroll', e => { if (e.target && e.target.id === 'pc-track') pcUpdateCount(); }, true);
+document.addEventListener('scroll', e => { if (e.target && e.target.id === 'wave-scroll') waveEdges(); }, true);
 </script>
 </body>
 </html>
