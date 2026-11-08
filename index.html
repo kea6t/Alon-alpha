@@ -4793,3 +4793,32 @@ function ask() {
 /* Forms never submit (some previews block form submission); buttons and Enter call the same functions. */
 app.addEventListener('submit', e => {
   e.preventDefault();
+  if (e.target.dataset.form === 'ask') ask();
+  if (e.target.dataset.form === 'bill') saveBill();
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && (state.sheet || state.menuOpen)) { state.sheet = null; state.menuOpen = false; render(); return; }
+  if (e.key !== 'Enter' || !e.target.closest) return;
+  const form = e.target.closest('form');
+  if (e.target.id === 'sheet-amt') { e.preventDefault(); document.querySelector('[data-action="sheet-save"]').click(); return; }
+  if (!form || e.target.tagName !== 'INPUT') return;
+  e.preventDefault();
+  if (form.dataset.form === 'ask') ask();
+  if (form.dataset.form === 'bill') saveBill();
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && e.target && e.target.dataset && e.target.dataset.ifield) { e.preventDefault(); saveIncome(); }
+  if (e.key === 'Enter' && e.target && e.target.dataset && e.target.dataset.obf && obValid()) { e.preventDefault(); obClick({ ob: 'next' }); }
+  if (e.key === 'Enter' && e.target && e.target.dataset && e.target.dataset.gfield) { e.preventDefault(); saveGoal(); }
+  if (e.key === 'Enter' && e.target && e.target.dataset && e.target.dataset.sfield) { e.preventDefault(); saveSurprise(); }
+  if (e.key === 'Enter' && e.target && e.target.dataset && e.target.dataset.pfield && state.screen === 'plan') { e.preventDefault(); savePlan(); }
+});
+
+load();
+render();
+fbFlush();
+document.addEventListener('scroll', e => { if (e.target && e.target.id === 'wave-scroll') waveEdges(); }, true);
+</script>
+</body>
+</html>
