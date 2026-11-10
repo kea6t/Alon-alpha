@@ -5,13 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Fathm">
+<meta name="apple-mobile-web-app-title" content="aLoN">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="theme-color" content="#FAF7F0">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="manifest" href="manifest.webmanifest">
-<title>Fathm</title>
+<title>aLoN</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -360,13 +360,13 @@
 </style>
 </head>
 <body>
-<p class="demo-tag">Fathm alpha preview</p>
+<p class="demo-tag">aLoN alpha preview</p>
 <div class="phone" id="app"></div>
 <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
 <script>
 /* =========================================================
-   Fathm prototype v2
+   aLoN prototype v2
    One engine for every kind of income:
    income sources (schedule + certainty + range + active dates)
    → income events → obligation events → windows ahead
@@ -698,7 +698,7 @@ function splitProblem(freq, p) {
   const n = Number(p.parts) || 1;
   if (p.every === 'paydays') {
     const rule = paydayRuleOf(p);
-    if (!rule || rule.freq === 'once') return 'Fathm needs a regular payday for this. Choose set days instead.';
+    if (!rule || rule.freq === 'once') return 'aLoN needs a regular payday for this. Choose set days instead.';
     const cyc = { monthly: 1, quarterly: 3, semiannual: 6, yearly: 12 }[freq];
     if (cyc) {
       const max = paydaysPerMonth(rule) * cyc;
@@ -718,7 +718,7 @@ function splitProblem(freq, p) {
 const payKey = (d, part) => `${iso(d)}#${part || 0}`;
 /* ---------- how sure a bill's date is ----------
    Unknown stays unknown: a person who doesn't know the due date picks a part of the month, or
-   "I'm not sure". Fathm never turns that into an exact-looking day. The money still counts (leaving
+   "I'm not sure". aLoN never turns that into an exact-looking day. The money still counts (leaving
    it out would make every paycheck look better than it is): a range inside one paycheck goes there;
    a range that crosses a payday is shared by days, to the cent. Rent always has an exact date. */
 const WHEN = { early: [1, 7], mid: [8, 21], late: [22, 31], unsure: [1, 31] };
@@ -727,7 +727,7 @@ const WHEN_CHOICES = [['exact', 'I know the date'], ['early', 'Early (1–7)'], 
 const isRentLike = b => /\b(rent|mortgage|housing)\b/i.test(b.name || '') || b.id === 'rent';
 /* Home: what a mortgage payment includes (escrow). Something included is never counted again as its own bill. */
 const ESCROW_ITEMS = [['tax', 'Property taxes'], ['ins', 'Homeowners insurance'], ['pmi', 'Mortgage insurance'], ['hoa', 'HOA']];
-const ESCROW_NOT_SURE = 'Some mortgage payments include taxes or insurance through escrow. You can check your mortgage statement later. Fathm won’t count anything twice while this is unclear.';
+const ESCROW_NOT_SURE = 'Some mortgage payments include taxes or insurance through escrow. You can check your mortgage statement later. aLoN won’t count anything twice while this is unclear.';
 function escrowKey(name) {
   const n = String(name || '');
   if (/mortgage insurance|\bpmi\b/i.test(n)) return 'pmi';
@@ -764,7 +764,7 @@ function whenRange(when, t) {
   return [Date.UTC(y, m, Math.min(r[0], last)), Date.UTC(y, m, Math.min(r[1], last))];
 }
 /* Where a ranged bill starts: this month if its range hasn't begun yet; otherwise next month,
-   and this month's is asked about (Paid / Not yet), because Fathm can't know if it came out. */
+   and this month's is asked about (Paid / Not yet), because aLoN can't know if it came out. */
 function whenStart(when, todayT) {
   const [y, m] = parts(todayT), first = Date.UTC(y, m, 1);
   return whenRange(when, first)[0] >= todayT ? iso(first) : iso(addMonths(first, 1, 1));
@@ -837,7 +837,7 @@ function recentItemsFor(b, todayT) {
     if (b.freq !== 'monthly') return out;
     [-2, -1].forEach(k => {
       const t = addMonths(start, k, 1), [rs, re] = whenRange(b.when, t);
-      // over (within the last 14 days), or under way right now: either way Fathm asks, never assumes
+      // over (within the last 14 days), or under way right now: either way aLoN asks, never assumes
       if (rs < todayT && re >= from) out.push({ bill: b, key: `${b.id}|${payKey(t, 0)}`, orig: t, part: 0, amount: b.amount, range: true, going: re >= todayT });
     });
     return out;
@@ -913,7 +913,7 @@ function recentHtml(items, answers) {
 const recentAnswers = () => state.screen === 'ob' ? (state.ob.recent = state.ob.recent || {}) : state.form ? (state.form.recent = state.form.recent || {}) : {};
 
 /* ---------- Choosing a split schedule ----------
-   On paydays there are two common ways to line payments up with a due date. Fathm shows both
+   On paydays there are two common ways to line payments up with a due date. aLoN shows both
    with real dates so a person can recognize theirs, plus set days for anything else. */
 function paydayChoices(t, rule, n) {
   if (!rule || rule.freq === 'once' || n > paydaysPerMonth(rule)) return null;
@@ -955,8 +955,8 @@ function primarySource() {
 }
 
 /* ---------- savings goals: set aside a little from each paycheck until a target ----------
-   Two ways to set one: by a date (Fathm works out the amount per paycheck) or an amount per
-   paycheck (Fathm works out the date). Skipped paychecks spread over the rest. Amounts are
+   Two ways to set one: by a date (aLoN works out the amount per paycheck) or an amount per
+   paycheck (aLoN works out the date). Skipped paychecks spread over the rest. Amounts are
    rounded up to $5 so the target is always reached. */
 function windowStarts(limitT, maxCount) {
   const out = [currentStart()], prim = primarySource(), cap = maxCount || 520;
@@ -1015,8 +1015,8 @@ const ordinal = n => n + ((n % 100 >= 11 && n % 100 <= 13) ? 'th' : ({ 1: 'st', 
 /* ---------- window boundaries: from today to each of the main income's next dates ---------- */
 /* Where "this paycheck" starts. Money doesn't disappear because today isn't payday: between paydays
    this paycheck runs from the last payday, so the paycheck that already landed is in it. If the person
-   told Fathm what's in their account today, that's the starting point instead. With no regular payday
-   to project from, it starts today and Fathm asks (it never assumes $0). */
+   told aLoN what's in their account today, that's the starting point instead. With no regular payday
+   to project from, it starts today and aLoN asks (it never assumes $0). */
 function projectedRule(prim) {
   if (!prim) return prim;
   if (prim.freq === 'weekly' || prim.freq === 'biweekly') {
@@ -1136,7 +1136,7 @@ function computeWindows(reserves, count) {
     w.poolAfter = running;
     w.status = statusOf(w.roomLow);
   });
-  /* Between paydays, before the person says what's in their account, Fathm doesn't know what's left
+  /* Between paydays, before the person says what's in their account, aLoN doesn't know what's left
      of the last paycheck. Unknown stays unknown: this stretch is never called short or covered. */
   const w0 = list[0];
   if (w0 && !w0.income.length && !w0.onHand && !w0.drawn && !(state.onHand != null && state.onHandDate === iso(TODAY)) && persona().unit !== 'week') {
@@ -1170,7 +1170,7 @@ function statusOf(room) {
      F4 findings                  gap / timing / missing / none
      F5 hero                      the lowest spendable before the next paycheck, and its status
    Pure: reads state, changes nothing. Whole cents inside, dollars out, dates as YYYY-MM-DD.
-   The paycheck screen and Ask Fathm read the same forecastFacts(); the AI never computes.
+   The paycheck screen and Ask aLoN read the same forecastFacts(); the AI never computes.
    ====================================================================== */
 const toC = a => Math.round(Number(a || 0) * 100), toD = c => c / 100;
 const centsSum = (xs, f) => xs.reduce((n, x) => n + toC(f(x)), 0);
@@ -1333,7 +1333,7 @@ function projectedShortfall(pb) {
 
 /* F5. The big number: the lowest spendable balance from now until the next paycheck lands (other
    deposits count, but only the main paycheck ends the stretch), and a status from it (R4).
-   Without a known balance: this paycheck's remainder, marked as an estimate, and Fathm asks. */
+   Without a known balance: this paycheck's remainder, marked as an estimate, and aLoN asks. */
 function heroFacts(rems, pb) {
   const next = paycheckDates(1).find(t => t > TODAY);
   if (pb.complete && next != null) {
@@ -1353,9 +1353,9 @@ function heroFacts(rems, pb) {
     likelyBelowZero: cur.likely != null && cur.remainder >= 0 && cur.likely < 0, buffer: toD(bufferC()), estimate: true, asks: pb.missing.map(m => m.ask) };
 }
 
-/* F4. What the numbers show, for the paycheck screen and Ask Fathm alike. Several can be true at once.
+/* F4. What the numbers show, for the paycheck screen and Ask aLoN alike. Several can be true at once.
    gap: a paycheck's own bills are more than the paycheck, or spendable never recovers · timing: spendable
-   dips below zero and a later deposit brings it back · missing: something Fathm needs wasn't given ·
+   dips below zero and a later deposit brings it back · missing: something aLoN needs wasn't given ·
    none: nothing to flag. */
 function forecastFacts(count) {
   const remainders = paycheckRemainders(count), balance = projectedBalance(count), shortfall = projectedShortfall(balance);
@@ -1438,7 +1438,7 @@ function smoothing(ws) {
   // drop exact duplicates (two strategies can land on the same split)
   const seen = new Set();
   const unique = opts.filter(o => { const key = o.allocs.map(a => a.from + ':' + a.amount).join(','); if (seen.has(key)) return false; seen.add(key); return true; });
-  unique.push({ id: 'none', title: 'Leave it as is', detail: totalRoom < gap ? `The ${unit}s before it have ${money(totalRoom)} of room in total, less than the ${money(gap)} gap, so no plan covers all of it. Fathm keeps showing it so it isn't a surprise.` : 'Nothing changes. Fathm keeps showing the gap so it isn’t a surprise.', allocs: [] });
+  unique.push({ id: 'none', title: 'Leave it as is', detail: totalRoom < gap ? `The ${unit}s before it have ${money(totalRoom)} of room in total, less than the ${money(gap)} gap, so no plan covers all of it. aLoN keeps showing it so it isn't a surprise.` : 'Nothing changes. aLoN keeps showing the gap so it isn’t a surprise.', allocs: [] });
   return { k, target, gap, prep, opts: unique, totalRoom };
 }
 
@@ -1514,7 +1514,7 @@ function usualLeft(ws) {
   const list = full.length ? full : ws;
   return Math.round(sum(list, regularLeft) / Math.max(1, list.length));
 }
-/* "December's 2nd paycheck": the bridge between how people think (months) and how Fathm counts. */
+/* "December's 2nd paycheck": the bridge between how people think (months) and how aLoN counts. */
 function monthPaycheck(w) {
   if (persona().unit !== 'paycheck') return '';
   const prim = primarySource();
@@ -1539,7 +1539,7 @@ const namesWithAmt = list => capFirst(listJoin(list.map(billWithAmt)));
 const capFirst = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
 function windowReasons(ws, i) {
   const w = ws[i], unit = unitWord2();
-  if (w.cashUnknown) return { type: 'cash', drivers: [], headline: `Fathm doesn’t know what’s left from ${w.lastPay ? `your ${short(w.lastPay)} paycheck` : 'your last paycheck'} yet.`, normal: 'Add what’s in your account now and this stretch shows what’s really left.', usual: usualLeft(ws), regular: 0, without: null, confidence: { level: 'early', label: 'Not known yet', text: 'What’s in your account now hasn’t been entered.', reasons: [], dates: [], amts: [] }, dateNote: '' };
+  if (w.cashUnknown) return { type: 'cash', drivers: [], headline: `aLoN doesn’t know what’s left from ${w.lastPay ? `your ${short(w.lastPay)} paycheck` : 'your last paycheck'} yet.`, normal: 'Add what’s in your account now and this stretch shows what’s really left.', usual: usualLeft(ws), regular: 0, without: null, confidence: { level: 'early', label: 'Not known yet', text: 'What’s in your account now hasn’t been entered.', reasons: [], dates: [], amts: [] }, dateNote: '' };
   const usual = usualLeft(ws), reg = regularLeft(w);
   const surprises = w.items.filter(x => x.bill.surprise);
   const purchases = w.items.filter(x => x.bill.purchase);
@@ -1577,7 +1577,7 @@ function windowReasons(ws, i) {
     headline = `Your own plans take ${money(plans)} from this ${unit}: ${listJoin(bits)}.`;
   } else if (w.roomTyp >= 0 && w.incomeLow < w.incomeTyp) {
     type = 'lowerpay'; drivers = [];
-    headline = `Fathm counts your lighter pay to be safe (${money(w.incomeLow)}). On a typical ${unit} (${money(w.incomeTyp)}) it leaves ${money(w.roomTyp)}.`;
+    headline = `aLoN counts your lighter pay to be safe (${money(w.incomeLow)}). On a typical ${unit} (${money(w.incomeTyp)}) it leaves ${money(w.roomTyp)}.`;
   } else {
     type = 'timing'; drivers = bigRegular.slice(0, 2);
     const both = drivers.length === 2 ? 'both ' : '';
@@ -1589,7 +1589,7 @@ function windowReasons(ws, i) {
   const without = type === 'onetime' || type === 'bigbill' || type === 'choice' ? w.roomLow + total(drivers) + (type === 'choice' && !drivers.length ? plans : 0) : null;
   let normal;
   if (type === 'ongoing') normal = `This isn’t about one ${unit}. On average your regular ${unit} comes up about ${money(-usual)} short, so moving money between ${unit}s can’t fix it on its own.`;
-  else if (type === 'lowerpay') normal = `It depends on ${persona().rangeNote ? persona().rangeNote.replace(/^depending on /, '') : 'your pay'}. Fathm plans on the lighter side, so a good ${unit} is a bonus.`;
+  else if (type === 'lowerpay') normal = `It depends on ${persona().rangeNote ? persona().rangeNote.replace(/^depending on /, '') : 'your pay'}. aLoN plans on the lighter side, so a good ${unit} is a bonus.`;
   else if (type === 'timing') normal = unit === 'week' ? `Your weeks usually leave about ${money(Math.max(0, usual))}. Monthly bills land in one week, so that week is the tight one.`
     : `Your ${unit}s usually leave about ${money(Math.max(0, usual))}. This one carries more of the month’s bills.`;
   else if (without != null && without >= 0) normal = `Your regular bills are covered. Without ${drivers.length === 1 || (!drivers.length) ? 'it' : 'them'}, this ${unit} would leave about ${money(without)}.`;
@@ -1600,7 +1600,7 @@ function windowReasons(ws, i) {
   const unsure = [...new Set(w.items.filter(x => x.range && x.share < 0.995).map(x => x.bill))];
   const cl = sameDayCluster(state.bills, state.clusterOk);
   const clusterHere = cl && w.items.some(x => cl.guessable.includes(x.bill));
-  if (w.roomLow < 250 && unsure.length && type !== 'ongoing') dateNote = `${unsure.length === 1 ? 'One bill’s date isn’t' : unsure.length + ' bill dates aren’t'} set (${listJoin(unsure.map(b => inSentence(b.name)))}), so part of ${unsure.length === 1 ? 'it' : 'each'} is counted here. ${usual >= 0 ? `You have enough for the month overall, but Fathm can’t tell yet which ${unit} will feel ${unsure.length === 1 ? 'it' : 'them'}.` : ''}`;
+  if (w.roomLow < 250 && unsure.length && type !== 'ongoing') dateNote = `${unsure.length === 1 ? 'One bill’s date isn’t' : unsure.length + ' bill dates aren’t'} set (${listJoin(unsure.map(b => inSentence(b.name)))}), so part of ${unsure.length === 1 ? 'it' : 'each'} is counted here. ${usual >= 0 ? `You have enough for the month overall, but aLoN can’t tell yet which ${unit} will feel ${unsure.length === 1 ? 'it' : 'them'}.` : ''}`;
   else if (w.roomLow < 250 && clusterHere && type === 'timing') dateNote = `${capFirst(listJoin(cl.guessable.map(b => inSentence(b.name))))} are all set to the ${ordinal(cl.day)}. If those dates are guesses, check them first: the timing is what makes this ${unit} ${w.roomLow < 0 ? 'short' : 'tight'}.`;
   return { type, drivers, headline, normal, usual, regular: reg, without, confidence: windowConfidence(w), dateNote };
 }
@@ -1619,7 +1619,7 @@ function windowConfidence(w) {
   if (dates.length) reasons.push(`${plural(dates.length, 'bill date')} ${dates.length === 1 ? 'isn’t' : 'aren’t'} set (${listJoin(dates.map(b => inSentence(b.name)))})`);
   if (amts.length) reasons.push(`${amts.length === 1 ? '1 amount is an estimate' : amts.length + ' amounts are estimates'} (${listJoin(amts.map(b => inSentence(b.name)))})`);
   unsureIncome.forEach(x => reasons.push(`${x.source.name} isn’t counted until it arrives`));
-  if (varPay) reasons.push('your pay changes, so Fathm uses the lighter amount');
+  if (varPay) reasons.push('your pay changes, so aLoN uses the lighter amount');
   const firm = !varPay && !unsureIncome.length && w.income.length ? `Your ${unitWord2() === 'week' ? 'income' : 'pay date'} is confirmed.` : '';
   const level = far || (w.backfilled && !w.workingOk) || unsureIncome.length || dates.length >= 3 || dates.length + amts.length >= 4 ? 'early' : reasons.length ? 'some' : 'high';
   const label = { early: 'A rough look', some: 'Some estimates', high: 'Mostly confirmed' }[level];
@@ -1719,12 +1719,12 @@ const icon = {
 function header(backTo, backLabel) {
   const left = backTo
     ? `<button class="back" data-go="${backTo}">${icon.back}${backLabel}</button>`
-    : `<div class="brand">${icon.wave}<span>fathm</span></div>`;
+    : `<div class="brand">${icon.wave}<span>aLoN</span></div>`;
   const menu = state.menuOpen ? `
     <nav class="menu" aria-label="Go to">
       <button data-go="now">Now</button>
       <button data-go="waves">Upcoming</button>
-      <button data-action="tour-start">How Fathm works</button>
+      <button data-action="tour-start">How aLoN works</button>
       <button data-go="income">Your income</button>
       <button data-go="bills">Your bills</button>
       <button data-go="goals">Your goals</button>
@@ -1888,8 +1888,8 @@ function dock() {
   return `<div class="dock">
     ${sug.length ? `<div class="ask-chips" aria-label="Questions you could ask">${sug.map(q => `<button type="button" class="ask-chip" data-askq="${esc(q)}">${esc(q)}</button>`).join('')}</div>` : ''}
     <form class="ask" data-form="ask">
-      <label for="ask" class="sr">Ask Fathm</label>
-      <input id="ask" name="q" placeholder="${DOCK_HINT[state.screen] || 'Ask Fathm anything'}" autocomplete="off">
+      <label for="ask" class="sr">Ask aLoN</label>
+      <input id="ask" name="q" placeholder="${DOCK_HINT[state.screen] || 'Ask aLoN anything'}" autocomplete="off">
       <span class="context-tag" aria-hidden="true">${CONTEXT[state.screen] || ''}</span>
       <button type="button" class="send" aria-label="Send" data-action="ask">${icon.send}</button>
     </form>
@@ -1910,7 +1910,7 @@ function learn(id, question, bodyHtml, sourceHtml) {
 /* ---------- the wave rail ----------
    Where = four dots. Do = this rail. Ask = the bar at the bottom. Now = the screen.
    Three actions per screen; the main one sits in the knob. Tap a label, or slide the
-   knob to it. The rail's edge is Fathm's wave, and the swell follows the knob. */
+   knob to it. The rail's edge is aLoN's wave, and the swell follows the knob. */
 const RAIL_W = 64;
 let RAIL = { h: 760, slots: [298, 410, 522] };
 function railGeom() {
@@ -2110,11 +2110,11 @@ document.addEventListener('pointercancel', endDrag);
 
 /* ---------- screens ---------- */
 function screenArrival() {
-  return `<header class="top"><div class="brand">${icon.wave}<span>fathm</span></div></header>
+  return `<header class="top"><div class="brand">${icon.wave}<span>aLoN</span></div></header>
   <main class="pad">
     <section class="stack gap10 mt24">
       <h1 class="h1" style="font-size:32px">Try an example person</h1>
-      <p class="body">Each one shows how Fathm adapts to a different way of being paid. You can edit any of their numbers.</p>
+      <p class="body">Each one shows how aLoN adapts to a different way of being paid. You can edit any of their numbers.</p>
       <button class="linkish" style="text-align:left" data-action="ob-start">Or set it up with your own numbers</button>
     </section>
     <section class="stack gap10 mt24">
@@ -2171,13 +2171,13 @@ function extraLine(extras, tail) {
   const head = nowMonth ? `${monthName(extras[0].month)} has ${extras[0].count} paychecks. ` : '';
   return `<p class="small" style="margin:0">${head}${e ? `Next ${e.count}-paycheck month: <strong style="color:var(--navy)">${monthName(e.month)} ${parts(e.month)[0]}</strong>.` : ''}${tail || ''}</p>`;
 }
-/* Between paydays, before Fathm knows what's in the account: ask, right where the number would be. */
+/* Between paydays, before aLoN knows what's in the account: ask, right where the number would be. */
 function cashUnknownHero(w0) {
   const lp = w0.lastPay, due = w0.billsTotal + w0.everyday;
   return `<span class="hero-q">What’s left from ${lp ? `your ${short(lp)} paycheck` : 'your last paycheck'}?</span>
-    <span class="hero-sub" style="font-weight:500;color:var(--muted-2);line-height:1.45">Fathm needs one number to see this stretch: what’s in your account now. Until ${long(w0.end)}, ${money(w0.billsTotal)} in bills and about ${money(w0.everyday)} of everyday spending are still to come.</span>
+    <span class="hero-sub" style="font-weight:500;color:var(--muted-2);line-height:1.45">aLoN needs one number to see this stretch: what’s in your account now. Until ${long(w0.end)}, ${money(w0.billsTotal)} in bills and about ${money(w0.everyday)} of everyday spending are still to come.</span>
     <button class="primary mt8" data-action="onhand">Add what’s in your account</button>
-    <span class="small">A rough number from your bank app is fine. Fathm asks again each time you’re between paydays.</span>`;
+    <span class="small">A rough number from your bank app is fine. aLoN asks again each time you’re between paydays.</span>`;
 }
 function screenNow() {
   const p = persona();
@@ -2188,8 +2188,8 @@ function screenNow() {
   const pay = paydayEvent(ws);
   const eb = earnBy();
 
-  /* Calm Now: every question Fathm has goes into one slot, most useful first, one at a time.
-     It reads like Fathm asking the next thing, not an inbox. "Ask me later" moves on for today. */
+  /* Calm Now: every question aLoN has goes into one slot, most useful first, one at a time.
+     It reads like aLoN asking the next thing, not an inbox. "Ask me later" moves on for today. */
   const checks = [];
   const ask_ = (id, html) => { if (html && html.trim()) checks.push({ id, html }); };
   if (pay && pay.actual == null) {
@@ -2203,7 +2203,7 @@ function screenNow() {
     ask_('working:' + iso(w0.start), `<div class="card stack gap10">
       <span class="eyebrow">This paycheck</span>
       <span style="font-size:17px;font-weight:700;line-height:1.35">Your ${short(w0.start)} paycheck was ${pc ? money(pc.typ) : 'in'}. Is that still roughly what you’re working from?</span>
-      <span class="small">Fathm counts it from ${short(w0.start)}, minus the bills since then${state.everydayUnknown ? '' : ' and your everyday estimate'}: about ${range(w0.roomLow, w0.roomTyp)} left until ${long(w0.end)}.</span>
+      <span class="small">aLoN counts it from ${short(w0.start)}, minus the bills since then${state.everydayUnknown ? '' : ' and your everyday estimate'}: about ${range(w0.roomLow, w0.roomTyp)} left until ${long(w0.end)}.</span>
       <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">
         <button class="primary" style="min-height:46px;font-size:15px" data-working="${iso(w0.start)}|yes">Yes, roughly</button>
         <button class="secondary" style="min-height:46px" data-working="${iso(w0.start)}|different">Different amount</button>
@@ -2222,7 +2222,7 @@ function screenNow() {
     ask_('setaside:' + r.id, `<div class="card stack gap10">
       <span class="eyebrow">Your plan for ${short(parse(r.to))}</span>
       <span style="font-size:17px;font-weight:700;line-height:1.35">Did you set aside ${money(r.amount)} from this ${p.unit}?</span>
-      <span class="small">Move it to savings or a separate account so it's there when ${short(parse(r.to))} comes. Fathm doesn't hold or move money.</span>
+      <span class="small">Move it to savings or a separate account so it's there when ${short(parse(r.to))} comes. aLoN doesn't hold or move money.</span>
       <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">
         <button class="primary" style="min-height:46px;font-size:15px" data-setaside="${r.id}|yes">Yes, it's aside</button>
         <button class="secondary" style="min-height:46px" data-setaside="${r.id}|no">Not this time</button>
@@ -2234,7 +2234,7 @@ function screenNow() {
   if (escrowUnsure()) ask_('escrow', `<div class="card stack gap10">
       <span class="eyebrow">Your mortgage</span>
       <span style="font-size:17px;font-weight:700;line-height:1.35">Does your mortgage payment include property taxes or homeowners insurance?</span>
-      <span class="small">Your mortgage statement shows it, often as “escrow.” Until you know, Fathm won’t count anything twice.</span>
+      <span class="small">Your mortgage statement shows it, often as “escrow.” Until you know, aLoN won’t count anything twice.</span>
       <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">
         ${[['both', 'Both are in it'], ['neither', 'Neither, I pay them'], ['tax', 'Just taxes'], ['ins', 'Just insurance']].map(([v, l]) => `<button class="secondary" style="min-height:46px;font-size:15px" data-escrow="${v}">${l}</button>`).join('')}
       </div></div>`);
@@ -2254,7 +2254,7 @@ function screenNow() {
   ask_('pooloffer', poolOffer(w0));
   const later = state.askLater || {};
   const open = checks.filter(c => later[c.id] !== iso(TODAY));
-  const slot = open.length ? `<section class="checkin mt20" aria-label="A quick question from Fathm">
+  const slot = open.length ? `<section class="checkin mt20" aria-label="A quick question from aLoN">
       <div class="checkin-head"><span>${open.length > 1 ? `A quick question · 1 of ${open.length}` : 'A quick question'}</span><button class="linkish" data-later="${esc(open[0].id)}">Ask me later</button></div>
       ${open[0].html}
     </section>` : '';
@@ -2300,7 +2300,7 @@ function screenNow() {
     notice = `<button class="tint tap stack gap6 mt14" style="border:0" data-go="why">
       <span style="font-size:16px;font-weight:700">${short(parse(g.to))} is covered by your plan</span>
       <div class="bar thin" style="background:#fff"><div style="width:${pct}%"></div></div>
-      <span style="font-size:14px;color:var(--muted-2);line-height:1.45">${money(g.ready)} of ${money(g.planned)} set aside so far. Fathm asks on each payday.</span></button>`;
+      <span style="font-size:14px;color:var(--muted-2);line-height:1.45">${money(g.ready)} of ${money(g.planned)} set aside so far. aLoN asks on each payday.</span></button>`;
   } else if (ackI >= 0) {
     const t = wsC[ackI], d = decisionFor(t);
     notice = `<button class="tint tap stack gap4 mt14" style="border:0" data-whysheet="${ackI}">
@@ -2675,7 +2675,7 @@ function screenWhy() {
       <section class="pad stack gap8 mt8">
         <span class="eyebrow">Your plan</span>
         <h1 class="h1">${short(parse(g.to))} is covered</h1>
-        <p class="body">${target ? `With the plan, ${windowShortName(target).toLowerCase() === 'today' ? 'this paycheck' : short(target.start)} shows ${range(target.roomLow, target.roomTyp)}.` : ''} Fathm asks on each payday whether you set the money aside.</p>
+        <p class="body">${target ? `With the plan, ${windowShortName(target).toLowerCase() === 'today' ? 'this paycheck' : short(target.start)} shows ${range(target.roomLow, target.roomTyp)}.` : ''} aLoN asks on each payday whether you set the money aside.</p>
       </section>
       <section class="pad mt20"><div class="card stack gap10">
         <div class="row"><span style="font-weight:700">${money(g.ready)} of ${money(g.planned)} set aside</span><span class="small">${pct}%</span></div>
@@ -2717,7 +2717,7 @@ function screenWhy() {
     </div></section>
     <section class="pad mt14"><div class="tint stack gap8">
       ${(() => { const r = windowReasons(whyWindows(), sm.k); return `<p style="margin:0;font-size:15px;line-height:1.55"><strong>Main reason:</strong> ${r.headline} ${r.normal}</p>`; })()}
-      <span style="font-size:12px;font-weight:600;color:var(--muted-2)">Numbers from your entries · explained by Fathm</span>
+      <span style="font-size:12px;font-weight:600;color:var(--muted-2)">Numbers from your entries · explained by aLoN</span>
     </div></section>
     <section class="pad stack gap10 mt28">
       <h2 class="h2">Or pick a ready-made plan</h2>
@@ -2732,7 +2732,7 @@ function screenWhy() {
     <section class="pad stack gap12 mt20">
       <span class="decision">Your decision.</span>
       <p class="decision-note">${picked ? (picked.id === 'none' ? 'Press Plan on the wave to keep things as they are.' : 'Press Plan on the wave to mark it on your forecast.') : 'Choose an option, then Plan on the wave.'}</p>
-      <p class="small">Fathm doesn't move money; you set it aside yourself. Education, not financial advice.</p>
+      <p class="small">aLoN doesn't move money; you set it aside yourself. Education, not financial advice.</p>
     </section>
   </main>
   ${dock()}`;
@@ -2751,7 +2751,7 @@ function screenCheck() {
   let headline, detail;
   if (w0.cashUnknown) {
     headline = 'Add what’s in your account first';
-    detail = `You’re between paydays, so Fathm needs to know what’s left before it can say what’s free. <button class="linkish" style="padding:0" data-action="onhand">Add it now</button>`;
+    detail = `You’re between paydays, so aLoN needs to know what’s left before it can say what’s free. <button class="linkish" style="padding:0" data-action="onhand">Add it now</button>`;
   } else if (w0.roomLow < 0) {
     headline = 'Nothing is free to spend right now';
     detail = `This ${u} could already come up ${money(-w0.roomLow)} short${w0.roomTyp >= 0 ? ` on a lighter ${u}` : ''}.` + (r.freeTyp > 0 ? ` On a typical one, up to ${money(r.freeTyp)} would be free.` : '');
@@ -2855,7 +2855,7 @@ function purchaseDecision(ws, amt) {
   }
   return `<section class="pad stack gap10 mt24">
     <span class="decision">Your decision.</span>
-    <p class="decision-note">${state.purchaseLater ? `Pick a ${p.unit === 'month' ? 'window' : p.unit}, then Plan on the wave.` : 'Buy, Later, or Not now, on the wave.'} Fathm only updates the forecast; you can remove it under Your bills.</p>
+    <p class="decision-note">${state.purchaseLater ? `Pick a ${p.unit === 'month' ? 'window' : p.unit}, then Plan on the wave.` : 'Buy, Later, or Not now, on the wave.'} aLoN only updates the forecast; you can remove it under Your bills.</p>
     ${amt > 0 ? `<button class="secondary" data-action="save-up">Save up for it instead</button>` : ''}
     <p class="small">Based on what you've entered. Education, not financial advice.</p>
     ${later}
@@ -2885,11 +2885,11 @@ function screenPayday() {
     ${showEntry ? `<section class="pad mt14"><div class="card stack gap10">
       <label for="landed" class="legend">How much landed?</label>
       <div class="money" style="padding:4px 14px;border-radius:14px"><span style="font-size:28px">$</span><input id="landed" inputmode="decimal" value="${esc(draftVal)}" data-input="draft" style="font-size:28px" autocomplete="off"></div>
-      <p class="body" style="color:var(--navy)">That makes this paycheck's room <span id="draft-room">${money(roomWith)}</span>.${fixed ? '' : ' Each amount you confirm helps Fathm learn your lighter and typical checks.'}</p>
+      <p class="body" style="color:var(--navy)">That makes this paycheck's room <span id="draft-room">${money(roomWith)}</span>.${fixed ? '' : ' Each amount you confirm helps aLoN learn your lighter and typical checks.'}</p>
       <p class="decision-note">Then press Confirm on the wave.</p>
     </div></section>` : ''}
-    ${state.payAnswer === 'notyet' ? `<p role="status" class="tint" style="margin:14px 24px 0;font-size:15px;line-height:1.55">No problem. Some deposits arrive later in the day. Fathm will check in again tomorrow morning.</p>` : ''}
-    <p class="small pad mt28">Fathm only asks on payday. Your answers make the next forecasts more accurate.</p>
+    ${state.payAnswer === 'notyet' ? `<p role="status" class="tint" style="margin:14px 24px 0;font-size:15px;line-height:1.55">No problem. Some deposits arrive later in the day. aLoN will check in again tomorrow morning.</p>` : ''}
+    <p class="small pad mt28">aLoN only asks on payday. Your answers make the next forecasts more accurate.</p>
   </main>
   ${dock()}`;
 }
@@ -2981,10 +2981,10 @@ function screenIncomeEdit() {
          <div class="field"><label for="i-low">On a lighter ${f.perWeek ? 'week' : 'payday'}</label><input class="input" id="i-low" data-ifield="low" inputmode="decimal" value="${esc(f.low)}" placeholder="$0" autocomplete="off"></div>
          <div class="field"><label for="i-typ">On a typical one</label><input class="input" id="i-typ" data-ifield="typical" inputmode="decimal" value="${esc(f.typical)}" placeholder="$0" autocomplete="off"></div>
        </div>
-       <p class="small">Fathm plans on the lighter amount, so a typical one is a bonus.</p>`
+       <p class="small">aLoN plans on the lighter amount, so a typical one is a bonus.</p>`
     : `<div class="field"><label for="i-amt">${f.kind === 'uncertain' ? 'Usual amount when it comes' : 'Amount each time'}</label><input class="input" id="i-amt" data-ifield="amount" inputmode="decimal" value="${esc(f.amount)}" placeholder="$0" autocomplete="off"></div>
-       ${f.kind === 'uncertain' ? '<p class="small">Fathm won’t count it until you confirm it arrived, so bills never depend on it.</p>' : ''}`;
-  const schedule = f.perWeek ? `<p class="small">Earned as you go. Fathm counts it per week and adds what you log.</p>` : `
+       ${f.kind === 'uncertain' ? '<p class="small">aLoN won’t count it until you confirm it arrived, so bills never depend on it.</p>' : ''}`;
+  const schedule = f.perWeek ? `<p class="small">Earned as you go. aLoN counts it per week and adds what you log.</p>` : `
       <fieldset style="border:0;padding:0;margin:0" class="stack gap8"><legend class="legend" style="margin-bottom:8px">How often?</legend>
         <div class="chips">${INCOME_FREQS.map(id => `<button type="button" class="chip ${f.freq === id ? 'on' : ''}" aria-pressed="${f.freq === id}" data-ifreq="${id}">${freqLabel(id)}</button>`).join('')}</div>
       </fieldset>
@@ -2992,7 +2992,7 @@ function screenIncomeEdit() {
         <div class="field"><label for="i-date">A date it comes</label><input class="input" id="i-date" type="date" data-ifield="start" value="${esc(f.start)}"></div>
         ${f.freq === 'semimonthly' ? `<div class="field"><label for="i-day2">Other day of the month</label><input class="input" id="i-day2" data-ifield="day2" inputmode="numeric" value="${esc(f.day2)}" placeholder="e.g. 15" autocomplete="off"></div>` : ''}
       </div>
-      <p class="small">Any payday works. Fathm repeats it from there; a 31st moves to the last day in shorter months.</p>`;
+      <p class="small">Any payday works. aLoN repeats it from there; a 31st moves to the last day in shorter months.</p>`;
   return `${header('income', 'Income')}
   <main>
     <section class="pad stack gap14 mt8">
@@ -3004,7 +3004,7 @@ function screenIncomeEdit() {
       ${amountFields}
       ${schedule}
       <div class="card stack gap6">
-        <span class="small" style="font-weight:600">${f.perWeek ? 'How Fathm counts it' : 'Fathm will expect it on'}</span>
+        <span class="small" style="font-weight:600">${f.perWeek ? 'How aLoN counts it' : 'aLoN will expect it on'}</span>
         <span id="i-dates" style="font-size:16px;font-weight:700;line-height:1.45">${pv.dates || '—'}</span>
         <span class="small" style="font-weight:600;margin-top:6px">What it changes</span>
         <span id="i-impact" class="body" style="color:var(--navy)">${pv.impact}</span>
@@ -3078,7 +3078,7 @@ function whenFieldHtml(f) {
     <div class="chips">${choices.map(([k, l]) => `<button type="button" class="chip ${cur === k ? 'on' : ''}" aria-pressed="${cur === k}" data-fwhen="${k}">${l}</button>`).join('')}</div>
     ${cur === 'exact' ? dateField(f.id ? 'A date it’s due' : 'Next due') : ''}
     ${!monthly && cur === 'unsure' ? `<div class="field"><label for="f-month">Which month?</label><input class="input" id="f-month" type="month" data-field="month" value="${f.month || (f.due ? f.due.slice(0, 7) : '')}"></div>` : ''}
-    ${monthly && cur !== 'exact' ? `<p class="small" style="margin:0">${cur && cur !== 'unsure' ? `Fathm counts it ${WHEN_LABEL[cur]} (${rangeText({ when: cur }, TODAY).replace(/^[A-Za-z]+ /, '')}), shared by days if a payday falls in between.` : 'Not sure is fine. Fathm spreads it over the month’s paychecks until you know, and asks when it comes out.'}</p>` : ''}
+    ${monthly && cur !== 'exact' ? `<p class="small" style="margin:0">${cur && cur !== 'unsure' ? `aLoN counts it ${WHEN_LABEL[cur]} (${rangeText({ when: cur }, TODAY).replace(/^[A-Za-z]+ /, '')}), shared by days if a payday falls in between.` : 'Not sure is fine. aLoN spreads it over the month’s paychecks until you know, and asks when it comes out.'}</p>` : ''}
   </fieldset>`;
 }
 function billPreview(f) {
@@ -3250,7 +3250,7 @@ function saveBill() {
     if (f.escrowAns === 'included') {
       state.home.escrow = Object.assign({}, state.home.escrow, { [ek]: true });
       const back = state.returnTo || 'now'; state.form = blankBillForm(); state.returnTo = null;
-      toast('Got it. It’s part of your mortgage payment, so Fathm won’t add it again.');
+      toast('Got it. It’s part of your mortgage payment, so aLoN won’t add it again.');
       return go(back);
     }
     if (escrowConflict(f)) { render(true); toast('One question first: is it part of your mortgage payment?'); return; }
@@ -3300,7 +3300,7 @@ function escrowFormHtml(f) {
   const what = ESCROW_ITEMS.find(x => x[0] === k)[1].toLowerCase();
   return `<div class="tint stack gap8" id="f-escrow">
     <span style="font-size:15px;font-weight:700">${escrowIncludes(k) ? `You said your mortgage payment includes ${what}.` : `Is ${what} part of your mortgage payment?`}</span>
-    <span class="small">${escrowIncludes(k) ? 'Adding it here would count it twice. Is this one paid on its own?' : 'Some mortgage payments include it through escrow. Your mortgage statement shows it. Fathm won’t count it twice.'}</span>
+    <span class="small">${escrowIncludes(k) ? 'Adding it here would count it twice. Is this one paid on its own?' : 'Some mortgage payments include it through escrow. Your mortgage statement shows it. aLoN won’t count it twice.'}</span>
     <div class="chips">${[['separate', 'I pay it on its own'], ['included', 'It’s in my mortgage']].map(([v, l]) => `<button type="button" class="chip ${f.escrowAns === v ? 'on' : ''}" aria-pressed="${f.escrowAns === v}" data-fescrow="${v}">${l}</button>`).join('')}</div>
   </div>`;
 }
@@ -3312,7 +3312,7 @@ function savedFieldHtml(f) {
   return `<div class="field"><label for="f-saved">Already set aside for the next one</label><input class="input" id="f-saved" data-field="saved" inputmode="decimal" value="${esc(f.saved || '')}" placeholder="$0" autocomplete="off">
     <span class="small" id="f-saved-note">${savedNote(amount, saved)}</span></div>`;
 }
-const savedNote = (amount, saved) => saved > 0 && amount > 0 ? (saved >= amount ? 'That covers it. Fathm counts it toward this bill only.' : `Remaining to prepare: ${money(amount - saved)}. Fathm counts what you set aside toward this bill only.`) : 'Money you’ve kept apart for this, like in savings. Don’t count it in what’s in your account too.';
+const savedNote = (amount, saved) => saved > 0 && amount > 0 ? (saved >= amount ? 'That covers it. aLoN counts it toward this bill only.' : `Remaining to prepare: ${money(amount - saved)}. aLoN counts what you set aside toward this bill only.`) : 'Money you’ve kept apart for this, like in savings. Don’t count it in what’s in your account too.';
 function addMarkup(f, preview, note, valid, quick) {
   const back = state.returnTo || 'now';
   const backLabel = { now: 'Now', detail: 'Back', waves: 'Upcoming', bills: 'Bills', why: 'Back' }[back] || 'Back';
@@ -3349,7 +3349,7 @@ function addMarkup(f, preview, note, valid, quick) {
       </fieldset>
       <div id="bill-recent-wrap" data-keys="${esc(billRecentItems(f).map(x => x.key).join(','))}">${billRecentBlock(f)}</div>
       <div class="card stack gap6 preview-card">
-        <span class="small" style="font-weight:600">${f.plan ? 'Fathm will expect' : 'Fathm will expect it on'}</span>
+        <span class="small" style="font-weight:600">${f.plan ? 'aLoN will expect' : 'aLoN will expect it on'}</span>
         <span id="bill-preview" style="font-size:16px;font-weight:700;line-height:1.45">${preview || (f.freq === 'monthly' ? 'Pick a date' : 'Pick the date or the month')}</span>
         <span id="bill-note" class="small">${note}</span>
       </div>
@@ -3365,7 +3365,7 @@ function planAmountFields(fp, amount) {
   const share = amount > 0 ? resolveAmounts(amount, n, amts.slice(0, n)) : null;
   return `<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px">${Array.from({ length: n }, (_, i) =>
     `<div class="field"><label for="pf-amt${i}">Payment ${i + 1}</label><input class="input" id="pf-amt${i}" data-pfield="amts.${i}" inputmode="decimal" value="${esc(amts[i] || '')}" placeholder="${share && share.ok ? moneyExact(share.amounts[i]) : '$0'}" autocomplete="off"></div>`).join('')}</div>
-    <span class="small">Leave an amount blank and Fathm shares what’s left equally.</span>`;
+    <span class="small">Leave an amount blank and aLoN shares what’s left equally.</span>`;
 }
 /* A monthly bill in parts: the payday schedules with real dates, or set days. */
 function splitScheduleFields(fp, opts) {
@@ -3420,12 +3420,12 @@ function planFields(fp, partsLabel, opts = {}) {
       </div>
       <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px">${field('feeOnce', 'One time, to start', '$0')}${field('membership', 'Monthly membership', '$0')}</div>
     </div>`}
-    <span class="small">Use the amounts from your agreement or the app. Fathm only counts what you enter.</span>
+    <span class="small">Use the amounts from your agreement or the app. aLoN only counts what you enter.</span>
   </div>`;
 }
 /* ---------- A payment plan on its own ----------
    For something already being paid off: a pay-later purchase, a payment plan with a hospital
-   or utility, a paycheck advance or loan. The person enters what's left; Fathm expects each
+   or utility, a paycheck advance or loan. The person enters what's left; aLoN expects each
    payment on its date, with any fee and membership, and shows when it ends. */
 const PLAN_KINDS = [['paylater', 'Pay later'], ['plan', 'Payment plan'], ['advance', 'Advance or loan'], ['other', 'Other']];
 /* When a split's payments fall, in words: "on paydays, starting on or before the due date", "on the 1st and 15th". */
@@ -3512,7 +3512,7 @@ function screenPlan() {
         <span class="legend">Fees and details <span style="font-weight:500">(optional)</span></span>
         <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px">${input('fee', 'Fee still to pay', '$0')}${input('membership', 'Monthly membership', '$0')}</div>
         ${!advance ? input('paidBefore', 'Payments already made', 'e.g. 1', 'inputmode="numeric"') : ''}
-        <span class="small">Use the amounts from your agreement or the app. Fathm only counts what you enter.</span>
+        <span class="small">Use the amounts from your agreement or the app. aLoN only counts what you enter.</span>
       </div>` : `<button type="button" class="more-toggle" data-pmore>＋ Fees or details <span class="sum">Optional</span></button>`}
       <div class="card stack gap6 preview-card"><span class="small" style="font-weight:600">What this changes</span><span id="pl-preview" class="${pv.valid ? 'body' : 'ph'}">${pv.text}</span><div id="pl-rows">${pv.rows}</div></div>
       <p class="decision-note">Press Save on the wave. You can change or remove it anytime.</p>
@@ -3584,7 +3584,7 @@ function taxLearn(b) {
   return learn('taxes', 'Why set money aside for taxes?',
     `<p>When you're paid as an independent contractor, usually no tax is taken out of your pay. Instead, the IRS says gig workers may have to pay <strong>estimated tax</strong> four times a year.</p>
      <p>For 2026 income, the payments are due Apr 15, Jun 15 and Sep 15, 2026, and Jan 15, 2027. In most cases you have to pay if you expect to owe at least $1,000 for the year after withholding and credits.</p>
-     <p class="you"><strong>For you:</strong> your ~${money(b.amount)} set-aside is next due ${next ? long(next) : 'soon'}. Fathm can't calculate what you'll owe; a tax professional or the IRS can. Fathm helps you have the money ready on those dates.</p>`,
+     <p class="you"><strong>For you:</strong> your ~${money(b.amount)} set-aside is next due ${next ? long(next) : 'soon'}. aLoN can't calculate what you'll owe; a tax professional or the IRS can. aLoN helps you have the money ready on those dates.</p>`,
     `Source: IRS, <a href="https://www.irs.gov/businesses/small-businesses-self-employed/manage-taxes-for-your-gig-work" target="_blank" rel="noopener">Manage taxes for your gig work</a> and <a href="https://www.irs.gov/pub/irs-pdf/f1040es.pdf" target="_blank" rel="noopener">Form 1040-ES (2026)</a> · checked Oct 30, 2026. U.S. rules; they can change.`);
 }
 
@@ -3669,7 +3669,7 @@ function fundLearn() {
     `<p>Money kept aside for the things you can’t put on a calendar: a car repair, a doctor’s bill, a furnace that quits. It’s different from saving for a car or a trip. You don’t spend it on a date; you use it when something comes up, then it refills.</p>
      <p>There’s no single right size. A fund that covers the next surprise is already doing its job, and you can raise the target later.</p>
      <p class="you"><strong>For you:</strong> about one month of your bills and everyday spending is ${money(monthOfBills())}, from the numbers you’ve entered.</p>`,
-    'Fathm’s explanation, from your own numbers. How much to keep is your call.');
+    'aLoN’s explanation, from your own numbers. How much to keep is your call.');
 }
 function goalValid(f) {
   if (!f || !f.name.trim() || !(parseMoney(f.target) > 0)) return false;
@@ -3738,9 +3738,9 @@ function screenGoals() {
   return `${header('now', 'Now')}
   <main>
     <section class="pad stack gap8 mt8"><h1 class="h1">Your goals</h1>
-      <p class="body">Something you’re saving for. Fathm sets aside a little from each ${persona().unit === 'month' ? 'window' : persona().unit} and shows it in your forecast, so you can see what it changes.</p></section>
+      <p class="body">Something you’re saving for. aLoN sets aside a little from each ${persona().unit === 'month' ? 'window' : persona().unit} and shows it in your forecast, so you can see what it changes.</p></section>
     <section class="pad stack gap12 mt20">${goals.length ? goals.map(goalCard).join('') : `<div class="tint stack gap6"><span style="font-size:16px;font-weight:700">No goals yet</span><span class="small">A car, a trip, a gift. Add one with Add on the wave.</span></div>`}</section>
-    ${goals.length && per ? `<p class="small pad mt14">This ${persona().unit === 'month' ? 'window' : persona().unit}: ${money(per)} set aside for goals. Fathm doesn’t move money; you move it to savings yourself.</p>` : ''}
+    ${goals.length && per ? `<p class="small pad mt14">This ${persona().unit === 'month' ? 'window' : persona().unit}: ${money(per)} set aside for goals. aLoN doesn’t move money; you move it to savings yourself.</p>` : ''}
     ${goals.some(g => g.fund) ? '' : `<section class="pad mt20"><div class="tint stack gap8">
       <span style="font-size:16px;font-weight:700">For what you can’t plan</span>
       <span class="small">A car repair, a doctor’s bill, a broken AC. A surprise fund is a goal you use when something comes up, then refill.</span>
@@ -3778,7 +3778,7 @@ function screenGoalEdit() {
         <div id="g-suggest">${goalSuggestHtml(pv)}</div>
       </div>
       ${f.id ? `<label class="row card" style="cursor:pointer"><span class="stack gap4"><span style="font-weight:700">Pause this goal</span><span class="small">For a tight stretch. Nothing is set aside until you turn it back on.</span></span><input type="checkbox" data-gpause ${f.paused ? 'checked' : ''} style="width:22px;height:22px"></label>` : ''}
-      <p class="decision-note">Press Save on the wave. Fathm only plans it; you move the money to savings yourself.</p>
+      <p class="decision-note">Press Save on the wave. aLoN only plans it; you move the money to savings yourself.</p>
       ${f.fund ? fundLearn() : ''}
     </section>
   </main>
@@ -3807,11 +3807,11 @@ function saveGoal() {
 }
 
 /* ===================== Something came up =====================
-   An unexpected bill: a car repair, a doctor's bill, a furnace, a burst pipe. Fathm adds it
+   An unexpected bill: a car repair, a doctor's bill, a furnace, a burst pipe. aLoN adds it
    like any bill, shows what it does to the next paychecks, and lays out ways to cover it:
    the surprise fund, money saved for goals, skipping goal set-asides while it's paid.
    Money taken from savings lands on the day of the payment, because nothing carries over
-   between paychecks. Fathm never lends; when nothing covers it, it says so and keeps showing it. */
+   between paychecks. aLoN never lends; when nothing covers it, it says so and keeps showing it. */
 const SURPRISE_KINDS = [['car', 'Car repair'], ['medical', 'Medical bill'], ['home', 'Home repair'], ['other', 'Something else']];
 const PART_CHOICES = [2, 3, 4, 6, 12];
 const unitWord = () => persona().unit === 'month' ? 'window' : persona().unit;
@@ -3961,7 +3961,7 @@ function surpriseView(f) {
   const anyCover = f.cover.fund || f.cover.goals || f.cover.skip;
   const payShort = after.some(w => w.roomLow < 0 && b.payments.some(p => p.t >= w.start && p.t < w.end) && w.roomLow < base[w.i].roomLow);
   const summary = stillShort.length
-    ? `${worseText(a, 'It would leave ')} ${!anyCover ? (fundSaved || otherSaved || activeGoals ? 'Nothing picked to cover it yet.' : '') : payShort ? 'What you picked doesn’t cover all of it.' : `That’s your goal needing a little more each ${u} to stay on its date.`} Fathm keeps showing it so it isn’t a surprise twice.`
+    ? `${worseText(a, 'It would leave ')} ${!anyCover ? (fundSaved || otherSaved || activeGoals ? 'Nothing picked to cover it yet.' : '') : payShort ? 'What you picked doesn’t cover all of it.' : `That’s your goal needing a little more each ${u} to stay on its date.`} aLoN keeps showing it so it isn’t a surprise twice.`
     : base.some(w => w.roomLow < 0) ? `Nothing gets shorter than it already was.` : `Every ${u} in the next six stays out of the red.`;
   return { valid: true, b, impact, impactRows: changedRows(mid), resultRows: changedRows(after), effects, summary, stillShort, fundSaved, otherSaved, activeGoals };
 }
@@ -3995,7 +3995,7 @@ function surpriseTips(kind) {
   if (kind === 'home') return learn('tips-home', 'Before you pay for a home repair', '<p>Ask your homeowners or renters insurance whether it’s covered before the repair starts. Get more than one quote if you can. If a contractor offers to split it, ask whether there’s interest or a fee.</p>', 'General tips, not advice for your situation.');
   if (kind === 'medical') return learn('medical', 'Can I get help with a hospital bill?',
     `<p>In the U.S., a nonprofit hospital must have a written <strong>financial assistance policy</strong> for emergency and other medically necessary care. It says who can get free or discounted care and how to apply, and the hospital has to tell patients about it, including on billing statements.</p>
-     <p class="you"><strong>For you:</strong> before paying, ask the billing office for that policy, an itemized bill, and whether you can pay in parts. If you can, set “Pay it” to in parts above and Fathm spreads it out.</p>`,
+     <p class="you"><strong>For you:</strong> before paying, ask the billing office for that policy, an itemized bill, and whether you can pay in parts. If you can, set “Pay it” to in parts above and aLoN spreads it out.</p>`,
     `Source: IRS, <a href="https://www.irs.gov/charities-non-profits/financial-assistance-policies-faps" target="_blank" rel="noopener">Financial assistance policies (FAPs)</a> · checked Nov 2, 2026. Applies to tax-exempt hospitals; other providers may differ.`);
   return '';
 }
@@ -4028,7 +4028,7 @@ function screenSurprise() {
         <div class="seg"><button type="button" class="${Number(f.parts) > 1 ? '' : 'on'}" aria-pressed="${!(Number(f.parts) > 1)}" data-sparts="1">All at once</button><button type="button" class="${Number(f.parts) > 1 ? 'on' : ''}" aria-pressed="${Number(f.parts) > 1}" data-sparts="${Number(f.parts) > 1 ? f.parts : 3}">In parts</button></div>
         ${Number(f.parts) > 1 ? `<div class="chips">${PART_CHOICES.map(n => `<button type="button" class="chip ${Number(f.parts) === n ? 'on' : ''}" data-sparts="${n}">${n} months</button>`).join('')}</div>
           <div class="field"><label for="s-partFee">Fee for paying in parts (if any)</label><input class="input" id="s-partFee" data-sfield="partFee" inputmode="decimal" value="${esc(f.partFee || '')}" placeholder="$0" autocomplete="off"></div>
-          <span class="small">Only if they’ve agreed to it. Fathm counts only the amounts you enter.</span>` : ''}
+          <span class="small">Only if they’ve agreed to it. aLoN counts only the amounts you enter.</span>` : ''}
       </fieldset>
       <div class="card stack gap6 preview-card"><span class="small" style="font-weight:600">What this changes</span><span id="s-impact" class="${v.valid ? 'body' : 'ph'}">${v.valid ? v.impact : 'Fill in what it is and how much to see what it does to your paychecks.'}</span><div id="s-impact-rows">${v.valid ? rowsHtml(v.impactRows) : ''}</div></div>
     </section>
@@ -4042,7 +4042,7 @@ function screenSurprise() {
         : `<p id="s-result" class="small" style="margin:0;line-height:1.5">There’s no surprise fund or goal savings to draw from yet. You can still change the date, or pay it in parts above if they agree to it.</p>`}
       ${fundGoals().length ? '' : `<button type="button" class="more-toggle" data-action="start-fund">For next time: start a surprise fund <span class="sum">›</span></button>`}
       ${surpriseTips(f.kind)}
-      <p class="decision-note">Press Save on the wave. Fathm doesn’t lend or move money; it shows you the numbers.</p>
+      <p class="decision-note">Press Save on the wave. aLoN doesn’t lend or move money; it shows you the numbers.</p>
     </section>
   </main>
   ${dock()}`;
@@ -4102,10 +4102,10 @@ function undoSurprise(sid) {
 }
 
 /* ===================== Other ways people cover it =====================
-   When a bill is bigger than what's coming in, these are what people use. Fathm lists them
+   When a bill is bigger than what's coming in, these are what people use. aLoN lists them
    plainly, with no warnings and no ranking by "good" or "bad": what each is, what it would
    cost for this amount, and what it does to the next paychecks. The cost comes from numbers
-   the person enters (a quoted fee, their card's APR), worked out by the engine. Fathm isn't
+   the person enters (a quoted fee, their card's APR), worked out by the engine. aLoN isn't
    paid by any of them and never names a company. */
 const OW_KEYS = ['ask', 'help', 'family', 'split', 'card', 'payday'];
 function freshOw() { return { open: null, amount: null, familyBack: 0, splitN: 2, splitFee: '', cardApr: '', cardMonths: 6, paydayPer100: '15' }; }
@@ -4118,7 +4118,7 @@ function owContext(ws, k, patch, due) {
   const t = Math.max(due != null ? due : (big ? big.date : w.start), TODAY);
   return { k, w, ws, patch: patch || {}, due: t, gap: round5(-w.roomLow) };
 }
-/* For an answer in Ask Fathm: the first paycheck that comes up short, or this one if none does. */
+/* For an answer in Ask aLoN: the first paycheck that comes up short, or this one if none does. */
 function owAskContext(amount) {
   const ws = computeWindows();
   const k = ws.findIndex(w => w.roomLow < 0);
@@ -4126,7 +4126,7 @@ function owAskContext(amount) {
   if (amount > 0) ctx.gap = amount;
   return ctx;
 }
-/* Ask Fathm's answer to "I can't pay this, what can I do?". Only shown when someone asks.
+/* Ask aLoN's answer to "I can't pay this, what can I do?". Only shown when someone asks.
    In the real app an AI writes the words from this same sourced content; the numbers
    always come from the engine. */
 function screenOptions() {
@@ -4138,7 +4138,7 @@ function screenOptions() {
     <section class="pad stack gap8 mt8">
       <span class="eyebrow">You asked</span>
       <h1 class="h1" style="font-size:24px">“${esc(a.q)}”</h1>
-      <p class="body">When a bill is bigger than what’s coming in, these are what people use. Fathm doesn’t pick one for you; it shows what each would cost. Fathm isn’t paid by any of them.</p>
+      <p class="body">When a bill is bigger than what’s coming in, these are what people use. aLoN doesn’t pick one for you; it shows what each would cost. aLoN isn’t paid by any of them.</p>
       ${quoteNote}
     </section>
     ${owSection(ctx)}
@@ -4170,7 +4170,7 @@ function owCalc(key, ctx) {
     const dates = [ctx.due].concat(later.slice(0, n - 1).map(w => w.start));
     const outs = dates.map((t, i) => ({ t, amount: i === n - 1 ? X - part * (n - 1) : part, name: `Split payment ${i + 1} of ${n}` }));
     outs.push({ t: ctx.due, amount: fee, name: 'Split fee' });
-    return { X, cost: fee, costText: money(fee) + ' in fees', ins: [{ t: ctx.due, amount: X, name: 'Split service' }], outs, note: `Fathm lines the payments up with your ${u}s; check the dates they give you.` };
+    return { X, cost: fee, costText: money(fee) + ' in fees', ins: [{ t: ctx.due, amount: X, name: 'Split service' }], outs, note: `aLoN lines the payments up with your ${u}s; check the dates they give you.` };
   }
   if (key === 'card') {
     const apr = parseFloat(String(o.cardApr).replace(/[^0-9.]/g, '')), m = Number(o.cardMonths) || 6;
@@ -4296,7 +4296,7 @@ function poolOffer(w0) {
   </div>`;
 }
 /* Payday check-ins: did the planned move happen; did the pool get used. */
-/* After a payment's date passes, Fathm asks rather than assumes: split and plan payments, and
+/* After a payment's date passes, aLoN asks rather than assumes: split and plan payments, and
    anything moved to a later date. Only for bills added with this (b.added), within 14 days. */
 function payCheckItems() {
   const from = addDays(TODAY, -RECENT_DAYS), out = [];
@@ -4344,7 +4344,7 @@ function poolCheckins(w0, asItems) {
   if (add) items.push({ id: 'pooladd:' + add.id, html: `<div class="card stack gap10">
       <span class="eyebrow">Tide pool</span>
       <span style="font-size:17px;font-weight:700;line-height:1.35">Did you move ${money(add.amount)} to your tide pool?</span>
-      <span class="small">Move it to savings or a separate account. Fathm doesn’t hold or move money.</span>
+      <span class="small">Move it to savings or a separate account. aLoN doesn’t hold or move money.</span>
       <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">
         <button class="primary" style="min-height:46px;font-size:15px" data-poolans="${add.id}|yes">Yes, it’s there</button>
         <button class="secondary" style="min-height:46px" data-poolans="${add.id}|no">Not this time</button>
@@ -4379,15 +4379,15 @@ function screenPool() {
       <button class="linkish" style="text-align:left" data-action="pool-balance">Change the amount in it</button>
     </div></section>
     ${going.length ? `<section class="pad stack mt24"><h2 class="h2" style="font-size:16px;margin-bottom:4px">Going in</h2>
-      ${going.map(a => `<div class="line-item"><span><span class="name">From ${short(parse(a.from))}</span><span class="meta"><span class="dot" style="background:var(--royal)"></span>Planned · Fathm asks on that payday</span></span><span class="row" style="gap:12px"><span class="amt">${money(a.amount)}</span><button class="linkish" style="font-size:13px;color:var(--muted)" data-poolremove="${a.id}" aria-label="Remove ${money(a.amount)} from ${short(parse(a.from))}">Remove</button></span></div>`).join('')}
+      ${going.map(a => `<div class="line-item"><span><span class="name">From ${short(parse(a.from))}</span><span class="meta"><span class="dot" style="background:var(--royal)"></span>Planned · aLoN asks on that payday</span></span><span class="row" style="gap:12px"><span class="amt">${money(a.amount)}</span><button class="linkish" style="font-size:13px;color:var(--muted)" data-poolremove="${a.id}" aria-label="Remove ${money(a.amount)} from ${short(parse(a.from))}">Remove</button></span></div>`).join('')}
     </section>` : ''}
     ${extras.length ? `<section class="pad stack mt24"><h2 class="h2" style="font-size:16px;margin-bottom:4px">${u === 'week' ? 'Weeks' : 'Paychecks'} with room to spare</h2>
       ${extras.map(w => `<button class="line-item tap" data-poolfrom="${iso(w.start)}"><span><span class="name">${windowShortName(w)}</span><span class="meta">${money(extraOf(w))} left · ${extraPct(w)}% of what comes in · Tap to carry some forward</span></span><span class="amt" style="color:var(--royal)">＋</span></button>`).join('')}
     </section>` : ''}
     <section class="pad mt20">${learn('pool', 'How is this different from the surprise fund?',
-      `<p>The tide pool smooths ordinary ups and downs: a light ${u}, a month with a big bill. Fathm uses it automatically when a ${u} would come up short.</p>
-       <p>The surprise fund is for what nobody can plan, like a car repair. Fathm never uses it on its own; only when you choose to on “Something came up.” Keeping them apart means a short ${u} can’t quietly drain your emergency money.</p>`,
-      'Fathm’s explanation. You move the money yourself; Fathm only plans it.')}</section>
+      `<p>The tide pool smooths ordinary ups and downs: a light ${u}, a month with a big bill. aLoN uses it automatically when a ${u} would come up short.</p>
+       <p>The surprise fund is for what nobody can plan, like a car repair. aLoN never uses it on its own; only when you choose to on “Something came up.” Keeping them apart means a short ${u} can’t quietly drain your emergency money.</p>`,
+      'aLoN’s explanation. You move the money yourself; aLoN only plans it.')}</section>
   </main>
   ${dock()}`;
 }
@@ -4401,7 +4401,7 @@ const OB_ESSENTIAL = ['way', 'income', 'onhand', 'home', 'homecosts', 'bills', '
 const OB_EXTRAS = [
   ['rare', 'Bills that come a few times a year', 'Car insurance, registration, taxes'],
   ['plans', 'Anything you’re paying in parts', 'Pay later, payment plans, advances'],
-  ['cushion', 'Money set aside for surprises', 'Even a little helps Fathm show options'],
+  ['cushion', 'Money set aside for surprises', 'Even a little helps aLoN show options'],
   ['onhand', 'What’s in your account now', 'Counts toward the days until payday']
 ];
 const obSteps = () => OB_ESSENTIAL.filter(k => (k !== 'onhand' || (state.ob && state.ob.way && !obPaydayToday())) && (k !== 'recent' || (state.ob && obRecent(state.ob).length > 0))
@@ -4420,7 +4420,7 @@ const OB_STYLES = [
   ['ahead', 'I prepare ahead', 'I set money aside before they come'],
   ['arrive', 'Usually when they arrive', 'From the paycheck they land in'],
   ['depends', 'It depends on the bill', 'Some I plan for, some I don’t'],
-  ['unsure', 'I’m not sure yet', 'That’s fine. Fathm will learn with you']
+  ['unsure', 'I’m not sure yet', 'That’s fine. aLoN will learn with you']
 ];
 /* What setup's mortgage answer means: true is in the payment, false is paid separately, null is not known. */
 function obEscrow(o) {
@@ -4536,14 +4536,14 @@ function obSplitOpts(o) {
   }
   return scheduleChoicesHtml('obmode', t, rule, n, amts, o.rentMode, daysDates, 'rent');
 }
-/* Rent's grace period: the days after the due date before a late fee starts. Fathm never counts
+/* Rent's grace period: the days after the due date before a late fee starts. aLoN never counts
    rent after it, and a payment inside it carries no late fee. */
 function obGraceHtml(o) {
   const g = o.rentGrace == null ? null : Number(o.rentGrace);
   return `<fieldset style="border:0;padding:0;margin:0" class="stack gap8"><legend class="legend" style="margin-bottom:8px">Is there a grace period before a late fee?</legend>
     <div class="chips when-chips">${(o.housing === 'mortgage' ? [0, 10, 15] : [0, 3, 5, 10]).map(n => `<button type="button" class="chip ${g === n ? 'on' : ''}" aria-pressed="${g === n}" data-obgrace="${n}">${n ? n + ' days' : 'No grace period'}</button>`).join('')}</div>
     ${g ? `<div class="field"><label for="ob-rent-late">Late fee after that, if you know it</label><input class="input" id="ob-rent-late" data-obf="rentLateFee" inputmode="decimal" value="${esc(o.rentLateFee || '')}" placeholder="$0" autocomplete="off"></div>
-    <span class="small">Paying any time through day ${g} after it’s due costs nothing extra, so Fathm can use a payday inside it.</span>` : ''}
+    <span class="small">Paying any time through day ${g} after it’s due costs nothing extra, so aLoN can use a payday inside it.</span>` : ''}
   </fieldset>`;
 }
 function obRentBill(o) {
@@ -4819,16 +4819,16 @@ function screenOb() {
   const payLabel = o.way === 'benefit' ? 'When does it arrive next?' : 'When is your next payday?';
 
   if (st === 'way') {
-    body = q('How does your money usually come in?', 'Pick the closest. Fathm works with any kind of income, and you can change it later.') +
+    body = q('How does your money usually come in?', 'Pick the closest. aLoN works with any kind of income, and you can change it later.') +
       `<section class="stack gap10 mt20">${OB_WAYS.map(([k, t, d]) => `<button class="tap option ${o.way === k ? 'on' : ''}" aria-pressed="${o.way === k}" data-obway="${k}"><span class="radio"></span><span><span class="t">${t}</span><span class="d">${d}</span></span></button>`).join('')}</section>
       ${ALPHA ? '' : '<button class="linkish mt14" style="text-align:left" data-go="arrival">Or try an example person first</button>'}`;
   } else if (st === 'income') {
     const freqChips = `<fieldset style="border:0;padding:0;margin:0" class="stack gap8"><legend class="legend" style="margin-bottom:8px">How often?</legend><div class="chips">${['weekly', 'biweekly', 'semimonthly', 'monthly'].map(f => `<button type="button" class="chip ${o.freq === f ? 'on' : ''}" aria-pressed="${o.freq === f}" data-obfreq="${f}">${freqLabel(f)}</button>`).join('')}</div></fieldset>`;
     if (o.way === 'gig') {
-      body = q('What do you make in a week?', 'Tips, gig payouts and cash. Fathm plans on the slow week, so a good week is a bonus.') +
+      body = q('What do you make in a week?', 'Tips, gig payouts and cash. aLoN plans on the slow week, so a good week is a bonus.') +
         `<section class="stack gap14 mt20"><div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px">${money_('ob-low', 'low', 'A slow week', o.low)}${money_('ob-typ', 'typical', 'A normal week', o.typical)}</div></section>`;
     } else if (o.way === 'changes') {
-      body = q('What does a paycheck usually look like?', 'Think of a lighter one and a normal one. Fathm plans on the lighter one.') +
+      body = q('What does a paycheck usually look like?', 'Think of a lighter one and a normal one. aLoN plans on the lighter one.') +
         `<section class="stack gap14 mt20"><div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px">${money_('ob-low', 'low', 'A lighter paycheck', o.low)}${money_('ob-typ', 'typical', 'A normal one', o.typical)}</div>${freqChips}${date_('ob-next-date', 'next', payLabel, o.next)}</section>`;
     } else if (o.way === 'benefit') {
       body = q('How much comes in each month?', 'If you get more than one, start with the biggest. You can add the others after setup.') +
@@ -4840,8 +4840,8 @@ function screenOb() {
   } else if (st === 'onhand') {
     const until = o.way === 'gig' ? 'this week' : `until ${long(parse(o.next))}`;
     body = q('What’s in your account right now?', obPaydayToday()
-      ? 'Your paycheck lands today, so this is optional. If you add it, Fathm counts it along with today’s pay.'
-      : `Fathm uses this to cover the days ${until}. A rough number is fine.`) +
+      ? 'Your paycheck lands today, so this is optional. If you add it, aLoN counts it along with today’s pay.'
+      : `aLoN uses this to cover the days ${until}. A rough number is fine.`) +
       `<section class="stack gap14 mt20">${money_('ob-onhand', 'onHand', 'In your account now', o.onHand)}</section>`;
     footer = foot(`<button class="secondary" data-ob="skip">${obPaydayToday() ? 'Skip' : 'Skip for now'}</button>`);
   } else if (st === 'home') {
@@ -4863,7 +4863,7 @@ function screenOb() {
         ${date_('ob-rent-date', 'rentDate', 'Next due', o.rentDate) + obGraceHtml(o)}
         <fieldset style="border:0;padding:0;margin:0" class="stack gap8"><legend class="legend" style="margin-bottom:8px">Does your mortgage payment include any of these?</legend>
           <div class="chips">${ESCROW_ITEMS.concat([['none', 'None of these'], ['unsure', 'I’m not sure']]).map(([k, l]) => `<button type="button" class="chip ${e.includes(k) ? 'on' : ''}" aria-pressed="${e.includes(k)}" data-obescrow="${k}">${l}</button>`).join('')}</div>
-          ${e.includes('unsure') ? `<p class="small" style="margin:0">${ESCROW_NOT_SURE}</p>` : e.length && !e.includes('none') ? `<p class="small" style="margin:0">Fathm counts ${listJoin(ESCROW_ITEMS.filter(x => e.includes(x[0])).map(x => x[1].toLowerCase()))} as part of this payment, so ${e.filter(k => k !== 'none').length === 1 ? 'it’s' : 'they’re'} never added twice.</p>` : '<p class="small" style="margin:0">Pick any that apply. Not sure? That’s fine.</p>'}
+          ${e.includes('unsure') ? `<p class="small" style="margin:0">${ESCROW_NOT_SURE}</p>` : e.length && !e.includes('none') ? `<p class="small" style="margin:0">aLoN counts ${listJoin(ESCROW_ITEMS.filter(x => e.includes(x[0])).map(x => x[1].toLowerCase()))} as part of this payment, so ${e.filter(k => k !== 'none').length === 1 ? 'it’s' : 'they’re'} never added twice.</p>` : '<p class="small" style="margin:0">Pick any that apply. Not sure? That’s fine.</p>'}
         </fieldset></section>`;
     }
     if (hk === 'rent') body +=
@@ -4876,7 +4876,7 @@ function screenOb() {
         <div class="stack gap8" id="ob-split-opts">${obSplitOpts(o)}</div>
         ${o.rentMode === 'days' ? grid(Array.from({ length: n }, (_, i) => day_(`ob-rent-day${i}`, `rentDays.${i}`, `Payment ${i + 1} on day`, o.rentDays[i] || ''))) : ''}
         ${grid(Array.from({ length: n }, (_, i) => money_(`ob-rent-amt${i}`, `rentAmts.${i}`, `Payment ${i + 1}`, o.rentAmts[i] || '', amtPh(i))))}
-        <span class="small">Leave an amount blank and Fathm shares what’s left equally.</span>
+        <span class="small">Leave an amount blank and aLoN shares what’s left equally.</span>
         <div id="ob-split-sum">${obSplitSummary(o)}</div>
         ${fees ? `<div class="stack gap8"><span class="legend">Fees <span style="font-weight:500">(leave blank if there aren’t any)</span></span>
           <div style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center">
@@ -4893,7 +4893,7 @@ function screenOb() {
     const offer = OB_HOMECOSTS.filter(([, , k]) => !k || (!obEscrowIn(o, k) && !(unsure && (k === 'tax' || k === 'ins'))));
     const list = o.homecosts;
     body = q('Any other costs that come with your home?', 'Skip any you don’t have. Most come only a few times a year, so they’re easy to forget.') +
-      (inc.length ? `<div class="tint mt14"><span style="font-size:14px;line-height:1.5;color:var(--muted-2)">Your mortgage payment already includes ${listJoin(inc.map(x => x[1].toLowerCase()))}. Fathm won’t count ${inc.length === 1 ? 'it' : 'them'} again.</span></div>` : '') +
+      (inc.length ? `<div class="tint mt14"><span style="font-size:14px;line-height:1.5;color:var(--muted-2)">Your mortgage payment already includes ${listJoin(inc.map(x => x[1].toLowerCase()))}. aLoN won’t count ${inc.length === 1 ? 'it' : 'them'} again.</span></div>` : '') +
       (unsure ? `<div class="tint mt14"><span style="font-size:14px;line-height:1.5;color:var(--muted-2)">${ESCROW_NOT_SURE}</span></div>` : '') +
       `<section class="mt20"><div class="chips">${offer.map(([nm, fr]) => `<button class="chip" data-obadd="homecosts|${nm}">+ ${nm}${fr !== 'monthly' ? ` <span style="font-weight:500;opacity:.75">· ${nm === 'Special assessment' ? 'One time' : freqLabel(fr)}</span>` : ''}</button>`).join('')}</div></section>
       <section class="stack gap10 mt20">${list.map((b, i) => {
@@ -4906,18 +4906,18 @@ function screenOb() {
             <div class="field"><label for="ob-hc-${i}-a">Each installment</label><input class="input" id="ob-hc-${i}-a" data-obf="homecosts.${i}.amount" inputmode="decimal" value="${esc(b.amount)}" placeholder="$0" autocomplete="off"></div>
             <div class="field"><label for="ob-hc-${i}-l">How many left?</label><input class="input" id="ob-hc-${i}-l" data-obf="homecosts.${i}.left" inputmode="numeric" value="${esc(b.left || '')}" placeholder="e.g. 6" autocomplete="off"></div></div>
           <div class="field"><label for="ob-hc-${i}-d">Next one due</label><input class="input" id="ob-hc-${i}-d" type="date" data-obf="homecosts.${i}.date" value="${esc(b.date)}"></div>
-          <span class="small">Fathm counts one each month until they’re done.</span>`
+          <span class="small">aLoN counts one each month until they’re done.</span>`
           : `<div class="field"><label for="ob-homecosts-${i}-a">${b.freq === 'monthly' ? 'Each month' : special ? 'Amount' : 'Each time'}</label><input class="input" id="ob-homecosts-${i}-a" data-obf="homecosts.${i}.amount" inputmode="decimal" value="${esc(b.amount)}" placeholder="$0" autocomplete="off"></div>
           ${obWhenHtml('homecosts', i, b)}${b.freq !== 'monthly' ? obSavedHtml('homecosts', i, b) : ''}`}
       </div>`; }).join('')}</section>
       ${list.length ? `<p class="small mt8">Costs without an amount are skipped. Ones a few times a year need a date or a month.</p>` : ''}`;
     footer = foot(list.length ? '' : `<button class="secondary" data-ob="skip">None of these</button>`);
   } else if (st === 'style') {
-    body = q('How do you usually handle larger bills?', 'Like insurance, registration or taxes. There’s no wrong answer: it only changes how Fathm talks with you about them, never the math.') +
+    body = q('How do you usually handle larger bills?', 'Like insurance, registration or taxes. There’s no wrong answer: it only changes how aLoN talks with you about them, never the math.') +
       `<section class="stack gap10 mt20">${OB_STYLES.map(([k, t, d]) => `<button class="tap option ${o.style === k ? 'on' : ''}" aria-pressed="${o.style === k}" data-obstyle="${k}"><span class="radio"></span><span><span class="t">${t}</span><span class="d">${d}</span></span></button>`).join('')}</section>`;
   } else if (st === 'recent') {
     const items = obRecent(o);
-    body = q(items.length === 1 ? 'Did this payment go through?' : 'Did these payments go through?', (items.length === 1 ? 'Its date already passed.' : 'Their dates already passed.') + ' Tell Fathm what happened so nothing is counted twice or missed.') +
+    body = q(items.length === 1 ? 'Did this payment go through?' : 'Did these payments go through?', (items.length === 1 ? 'Its date already passed.' : 'Their dates already passed.') + ' Tell aLoN what happened so nothing is counted twice or missed.') +
       `<section class="stack gap12 mt20">${recentHtml(items, o.recent)}</section>`;
   } else if (st === 'bills' || st === 'rare') {
     const list = st === 'bills' ? o.bills : o.rare;
@@ -4933,7 +4933,7 @@ function screenOb() {
         ${st === 'rare' ? obSavedHtml(st, i, b) : ''}
         ${st === 'rare' && b.custom ? `<div class="field"><label for="ob-r-${i}-f">How often?</label><select class="input" id="ob-r-${i}-f" data-obf="rare.${i}.freq">${['quarterly', 'semiannual', 'yearly', 'once'].map(f => `<option value="${f}" ${b.freq === f ? 'selected' : ''}>${freqLabel(f)}</option>`).join('')}</select></div>` : ''}
       </div>`).join('')}</section>
-      ${list.length ? `<p class="small mt8">Bills without an amount are skipped.${st === 'rare' ? ' Ones without a date or a month are too.' : ' Not sure of a date? That’s fine: Fathm spreads it over the month until you know.'}</p>` : ''}`;
+      ${list.length ? `<p class="small mt8">Bills without an amount are skipped.${st === 'rare' ? ' Ones without a date or a month are too.' : ' Not sure of a date? That’s fine: aLoN spreads it over the month until you know.'}</p>` : ''}`;
     footer = foot(list.length ? '' : `<button class="secondary" data-ob="skip">${st === 'bills' ? 'No other monthly bills' : 'None of these'}</button>`);
   } else if (st === 'plans') {
     body = q('Are you paying anything off in parts right now?', 'Like a pay-in-4 purchase, a payment plan with a hospital, or a paycheck advance. Each payment changes what’s free, so it’s worth adding.') +
@@ -4955,17 +4955,17 @@ function screenOb() {
     body = q('About how much goes to everyday things each week?', 'Groceries, gas, the small stuff. A rough guess is fine. Without it, every forecast looks better than real life.') +
       `<section class="stack gap14 mt20"><div class="chips">${[50, 100, 150, 200, 300].map(v => `<button class="chip ${String(o.everyday) === String(v) ? 'on' : ''}" data-obamt="${v}">$${v}</button>`).join('')}</div>${o.everyday === 'unsure' || o.everyday === 'none' ? '' : money_('ob-everyday', 'everyday', 'Per week', o.everyday)}
         <div class="chips"><button class="chip ${o.everyday === 'none' ? 'on' : ''}" data-obamt="none">None, it’s covered</button><button class="chip ${o.everyday === 'unsure' ? 'on' : ''}" data-obamt="unsure">I’m not sure</button></div>
-        ${o.everyday === 'unsure' ? '<p class="small" style="margin:0">That’s fine. Fathm won’t guess: every amount will say “before everyday spending” until you add it, and Fathm learns it from your paydays.</p>' : o.everyday === 'none' ? '<p class="small" style="margin:0">Fathm counts nothing for everyday things. You can change it anytime.</p>' : ''}</section>`;
+        ${o.everyday === 'unsure' ? '<p class="small" style="margin:0">That’s fine. aLoN won’t guess: every amount will say “before everyday spending” until you add it, and aLoN learns it from your paydays.</p>' : o.everyday === 'none' ? '<p class="small" style="margin:0">aLoN counts nothing for everyday things. You can change it anytime.</p>' : ''}</section>`;
   } else if (st === 'cushion') {
     const u = o.way === 'gig' ? 'week' : o.way === 'benefit' ? 'month' : 'paycheck';
     const choice = (k, t, d) => `<button class="tap option ${o.fund === k ? 'on' : ''}" aria-pressed="${o.fund === k}" data-obfund="${k}"><span class="radio"></span><span><span class="t">${t}</span><span class="d">${d}</span></span></button>`;
-    body = q('Is any money set aside for surprises?', 'Like a car repair or a doctor’s bill. Any amount counts, and none is fine too. Fathm uses it to show your options when something comes up.') +
+    body = q('Is any money set aside for surprises?', 'Like a car repair or a doctor’s bill. Any amount counts, and none is fine too. aLoN uses it to show your options when something comes up.') +
       `<section class="stack gap10 mt20">${choice('some', 'Yes, some', 'In savings, or cash you keep for this')}${choice('none', 'Not yet', 'You can start small here, or later')}</section>
       ${o.fund ? `<section class="stack gap14 mt20">
         ${o.fund === 'some' ? money_('ob-fund', 'fundSaved', 'About how much? A rough number is fine.', o.fundSaved) : ''}
         <fieldset style="border:0;padding:0;margin:0" class="stack gap8"><legend class="legend" style="margin-bottom:8px">${o.fund === 'some' ? `Add to it each ${u}?` : `Start one with a little each ${u}?`}</legend>
           <div class="chips">${[0, 10, 25, 50].map(v => `<button type="button" class="chip ${String(o.fundPer) === String(v) ? 'on' : ''}" aria-pressed="${String(o.fundPer) === String(v)}" data-obfundper="${v}">${v ? '$' + v : 'Not right now'}</button>`).join('')}</div></fieldset>
-        <p class="small">${obNum(o.fundPer) > 0 ? `Fathm counts ${money(obNum(o.fundPer))} as spoken for in each ${u}, so your forecast stays honest.` : 'Nothing is taken out of your forecast. You can change this anytime in Your goals.'}</p>
+        <p class="small">${obNum(o.fundPer) > 0 ? `aLoN counts ${money(obNum(o.fundPer))} as spoken for in each ${u}, so your forecast stays honest.` : 'Nothing is taken out of your forecast. You can change this anytime in Your goals.'}</p>
       </section>` : ''}`;
     footer = foot(`<button class="secondary" data-ob="skip">Skip this question</button>`);
   } else {
@@ -4995,19 +4995,19 @@ function screenOb() {
 /* ---------- Before you start: shown once, in plain words ---------- */
 function screenWelcome() {
   const point = (title, text) => `<div class="stack gap4" style="padding:14px 0;border-bottom:1px solid var(--line)"><span style="font-size:16px;font-weight:700">${title}</span><span class="body">${text}</span></div>`;
-  return `<header class="top"><div class="brand">${icon.wave}<span>fathm</span></div></header>
+  return `<header class="top"><div class="brand">${icon.wave}<span>aLoN</span></div></header>
   <main class="pad">
     <section class="stack gap8 mt24">
       <span class="eyebrow">Before you start</span>
       <h1 class="h1" style="font-size:32px">A few things to know</h1>
     </section>
     <section class="stack mt14">
-      ${point('Fathm teaches. It doesn’t advise.', 'Fathm helps you understand your money. It isn’t a bank or a financial advisor, and it doesn’t give financial, tax or legal advice.')}
-      ${point('Fathm never holds or moves your money.', 'When you plan to set money aside, you move it yourself, for example to a savings account.')}
+      ${point('aLoN teaches. It doesn’t advise.', 'aLoN helps you understand your money. It isn’t a bank or a financial advisor, and it doesn’t give financial, tax or legal advice.')}
+      ${point('aLoN never holds or moves your money.', 'When you plan to set money aside, you move it yourself, for example to a savings account.')}
       ${point('Numbers come from what you share.', 'Estimates are marked with ~ and can be wrong. Check important amounts against your bank and your bills.')}
       ${ALPHA ? point('This is an early preview.', 'You type your numbers in. They stay on this ' + deviceWord() + '; nothing is sent anywhere. To keep them safe, save a backup now and then from the menu. Photos, files and bank connections come later, and each will be optional.') + homeScreenTip(true)
-              : point('How you share is up to you.', 'Type it in, take a photo of a bill, upload a file, or connect a bank. Every one is optional. Fathm works fully without a bank connection.')}
-      ${point('Your decisions are yours.', 'Fathm shows what a choice changes. What you do is always up to you.')}
+              : point('How you share is up to you.', 'Type it in, take a photo of a bill, upload a file, or connect a bank. Every one is optional. aLoN works fully without a bank connection.')}
+      ${point('Your decisions are yours.', 'aLoN shows what a choice changes. What you do is always up to you.')}
     </section>
     <div class="stack gap10 mt24">
       <button class="primary" data-action="ack">I understand</button>
@@ -5020,7 +5020,7 @@ function screenWelcome() {
 /* ---------- About & disclaimers ---------- */
 /* ---------- Your data: saved on this phone, backups, start over ----------
    The alpha keeps everything on the device. A backup file is how a person keeps it safe,
-   moves it to another phone or browser, or into Fathm's Home Screen app (which on iPhone has
+   moves it to another phone or browser, or into aLoN's Home Screen app (which on iPhone has
    its own storage, separate from Safari). Nothing here is sent anywhere. */
 let pendingRestore = null;   // a backup picked but not yet applied; kept out of saved state
 const isStandalone = () => { try { return !!(navigator.standalone || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)); } catch (e) { return false; } };
@@ -5038,10 +5038,10 @@ function backupDue() {
 function homeScreenTip(first) {
   if (isStandalone()) return '';
   const steps = isIOS()
-    ? 'In Safari, tap the Share button, then “Add to Home Screen”. Open Fathm from the new icon.'
-    : 'In your browser’s menu, tap “Add to Home screen” or “Install app”. Open Fathm from the new icon.';
+    ? 'In Safari, tap the Share button, then “Add to Home Screen”. Open aLoN from the new icon.'
+    : 'In your browser’s menu, tap “Add to Home screen” or “Install app”. Open aLoN from the new icon.';
   return first
-    ? `<div class="card stack gap6 mt14" style="background:var(--tint);border-color:transparent"><span style="font-size:16px;font-weight:700">Best: put Fathm on your Home Screen first</span><span class="body">${steps}${isIOS() ? ' On iPhone, the Home Screen app keeps its own copy, so start your setup there.' : ''}</span></div>`
+    ? `<div class="card stack gap6 mt14" style="background:var(--tint);border-color:transparent"><span style="font-size:16px;font-weight:700">Best: put aLoN on your Home Screen first</span><span class="body">${steps}${isIOS() ? ' On iPhone, the Home Screen app keeps its own copy, so start your setup there.' : ''}</span></div>`
     : `<span class="body">${steps}</span>`;
 }
 /* Cards on Now: move to the Home Screen (iPhone Safari), and a backup now and then. */
@@ -5049,8 +5049,8 @@ function dataNudges() {
   let out = '';
   if (!isStandalone() && !state.hsDismissed && state.persona) out += `<div class="card stack gap10">
       <span class="eyebrow">Keep your numbers</span>
-      <span style="font-size:17px;font-weight:700;line-height:1.35">Put Fathm on your Home Screen</span>
-      <span class="small">${isIOS() ? 'Safari can clear a website’s saved data if it isn’t opened for about a week. From your Home Screen, Fathm keeps it. The Home Screen app starts empty on iPhone, so save a backup here first, then restore it there.' : 'Your numbers are saved in this browser. From your Home Screen, Fathm opens like an app and keeps them.'}</span>
+      <span style="font-size:17px;font-weight:700;line-height:1.35">Put aLoN on your Home Screen</span>
+      <span class="small">${isIOS() ? 'Safari can clear a website’s saved data if it isn’t opened for about a week. From your Home Screen, aLoN keeps it. The Home Screen app starts empty on iPhone, so save a backup here first, then restore it there.' : 'Your numbers are saved in this browser. From your Home Screen, aLoN opens like an app and keeps them.'}</span>
       <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">
         <button class="primary" style="min-height:46px;font-size:15px" data-go="data">Show me how</button>
         <button class="secondary" style="min-height:46px" data-action="hs-dismiss">Not now</button>
@@ -5074,7 +5074,7 @@ async function saveBackup() {
   let file = null; try { file = new File([text], name, { type: 'application/json' }); } catch (e) {}
   let done = false;
   try {
-    if (file && navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: 'Fathm backup' }); done = true; }
+    if (file && navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: 'aLoN backup' }); done = true; }
   } catch (e) { if (e && e.name === 'AbortError') return; }   // they closed the share sheet: nothing saved, nothing claimed
   if (!done) {
     const a = document.createElement('a');
@@ -5118,7 +5118,7 @@ function screenData() {
   let body;
   if (v === 'erase') body = `
     <h1 class="h1">Start over?</h1>
-    <p class="body" style="margin:0">This erases everything Fathm has on this ${dw}: your income, bills, payment plans, goals, tide pool and answers. You’ll set up again from the start.</p>
+    <p class="body" style="margin:0">This erases everything aLoN has on this ${dw}: your income, bills, payment plans, goals, tide pool and answers. You’ll set up again from the start.</p>
     <div class="card stack gap6"><span class="small" style="font-weight:700">What gets erased</span><span class="body">${counts}${state.lastBackup ? `. Your last backup was ${short(parse(state.lastBackup))}.` : '. You have no backup.'}</span></div>
     <button class="secondary" data-action="backup">Save a backup first</button>
     <button class="primary" style="background:var(--amber-text);border-color:var(--amber-text)" data-action="erase-confirm">Erase and start over</button>
@@ -5127,14 +5127,14 @@ function screenData() {
     const R = pendingRestore;
     body = !R || R.error ? `
     <h1 class="h1">That file can’t be used</h1>
-    <p class="body" style="margin:0">${R ? `“${esc(R.name)}” isn’t an Fathm backup.` : 'No file was picked.'} Pick the file whose name starts with “alon-backup”.</p>
+    <p class="body" style="margin:0">${R ? `“${esc(R.name)}” isn’t an aLoN backup.` : 'No file was picked.'} Pick the file whose name starts with “alon-backup”.</p>
     <label class="primary" style="display:grid;place-items:center;cursor:pointer">Pick another file<input type="file" accept=".json,application/json" data-restore-file hidden></label>
     <button class="linkish" style="text-align:center" data-action="data-cancel">Cancel</button>`
     : (() => {
       const b = R.data.state, when = R.data.savedAt ? new Date(R.data.savedAt) : null;
       return `
     <h1 class="h1">Restore this backup?</h1>
-    <p class="body" style="margin:0">It replaces what Fathm has on this ${dw} with the backup${when ? ` saved ${when.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}` : ''}.</p>
+    <p class="body" style="margin:0">It replaces what aLoN has on this ${dw} with the backup${when ? ` saved ${when.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}` : ''}.</p>
     <div class="card stack gap6"><span class="small" style="font-weight:700">In the backup</span><span class="body">${b.sources.length} income ${b.sources.length === 1 ? 'source' : 'sources'}, ${b.bills.length} ${b.bills.length === 1 ? 'bill' : 'bills'}${b.goals && b.goals.length ? `, ${b.goals.length} ${b.goals.length === 1 ? 'goal' : 'goals'}` : ''}</span></div>
     <button class="primary" data-action="restore-confirm">Restore it</button>
     <button class="linkish" style="text-align:center" data-action="data-cancel">Cancel</button>`;
@@ -5142,16 +5142,16 @@ function screenData() {
   } else body = `
     <h1 class="h1">Your data</h1>
     <div class="card stack gap6"><span style="font-size:16px;font-weight:700">Saved on this ${dw} only</span>
-      <span class="body">Fathm saves every change here as you go. Nothing is sent anywhere, so nobody else can see your numbers, and clearing this browser’s data would erase them.</span>
+      <span class="body">aLoN saves every change here as you go. Nothing is sent anywhere, so nobody else can see your numbers, and clearing this browser’s data would erase them.</span>
       <span class="small">${state.lastBackup ? `Last backup: ${long(parse(state.lastBackup))}` : 'No backup yet'}</span></div>
     <section class="stack gap8 mt8"><span class="legend">Backup</span>
       <span class="body">A small file with everything you’ve entered. Keep it in Files, Notes or your email. Use it to restore on another phone, another browser, or the Home Screen app.</span>
       <button class="primary" data-action="backup">Save a backup</button>
       <label class="secondary" style="display:grid;place-items:center;cursor:pointer">Restore from a backup<input type="file" accept=".json,application/json" data-restore-file hidden></label>
     </section>
-    ${isStandalone() ? `<section class="stack gap8 mt8"><span class="legend">Home Screen</span><span class="body">You’re using Fathm from your Home Screen. Your numbers are kept here.</span></section>`
-      : `<section class="stack gap8 mt8"><span class="legend">Put Fathm on your Home Screen</span>${homeScreenTip(false)}
-      ${isIOS() ? '<span class="body">On iPhone the Home Screen app starts empty. Save a backup above, open Fathm from the new icon, then choose Restore from a backup.</span>' : ''}</section>`}
+    ${isStandalone() ? `<section class="stack gap8 mt8"><span class="legend">Home Screen</span><span class="body">You’re using aLoN from your Home Screen. Your numbers are kept here.</span></section>`
+      : `<section class="stack gap8 mt8"><span class="legend">Put aLoN on your Home Screen</span>${homeScreenTip(false)}
+      ${isIOS() ? '<span class="body">On iPhone the Home Screen app starts empty. Save a backup above, open aLoN from the new icon, then choose Restore from a backup.</span>' : ''}</section>`}
     <section class="stack gap8 mt8"><span class="legend">Start over</span>
       <span class="body">Erase everything on this ${dw} and set up again.</span>
       <button class="secondary" data-action="start-over">Start over</button></section>`;
@@ -5175,7 +5175,7 @@ function screenFeedback() {
       <p class="body" style="margin:0">Tell us what worked and what didn’t. A sentence is plenty.</p>
       <div class="chips">${FB_KINDS.map(([k, l]) => `<button type="button" class="chip ${f.kind === k ? 'on' : ''}" aria-pressed="${f.kind === k}" data-fbkind="${k}">${l}</button>`).join('')}</div>
       <div class="field"><label for="fb-text">What happened?</label>
-        <textarea class="input" id="fb-text" data-fbtext rows="5" style="padding:14px 16px;min-height:140px;resize:vertical;line-height:1.45" placeholder="${f.kind === 'wrong' ? 'Which number, and what did you expect?' : f.kind === 'idea' ? 'What would make Fathm more useful?' : 'What were you trying to do?'}">${esc(f.text)}</textarea></div>
+        <textarea class="input" id="fb-text" data-fbtext rows="5" style="padding:14px 16px;min-height:140px;resize:vertical;line-height:1.45" placeholder="${f.kind === 'wrong' ? 'Which number, and what did you expect?' : f.kind === 'idea' ? 'What would make aLoN more useful?' : 'What were you trying to do?'}">${esc(f.text)}</textarea></div>
       <div class="card stack gap6 preview-card"><span class="small" style="font-weight:600">What we’ll receive</span>
         <span class="ph">Your note, that you were on ${esc(where)}, and the app version. Not your income, bills or goals; those stay on this device.</span></div>
       <p class="decision-note">Press Send on the wave.</p>
@@ -5215,13 +5215,13 @@ function screenAbout() {
   const part = (title, text) => `<section class="stack gap6 mt20"><h2 class="h2">${title}</h2><p class="body">${text}</p></section>`;
   return `${state.persona ? header('now', 'Now') : `<header class="top"><button class="back" data-go="${state.ackTerms ? (state.ob ? 'ob' : 'arrival') : 'welcome'}">${icon.back}Back</button></header>`}
   <main class="pad">
-    <section class="stack gap8 mt8"><span class="eyebrow">About &amp; disclaimers</span><h1 class="h1">What Fathm is, and isn't</h1></section>
-    ${part('An education tool', 'Fathm helps you understand your own money: what’s coming in, what’s due, which period could be short, and what a choice changes.')}
-    ${part('Not a bank, lender or advisor', 'Fathm doesn’t give financial, tax, investment or legal advice. It never holds, moves, lends or invests your money, and it doesn’t recommend financial products.')}
-    ${part('Your numbers are only as good as what you share', 'Everything Fathm shows is calculated from the information you provide. Estimates are marked with ~ and ranges show uncertainty. Amounts, dates and forecasts can be wrong, so check important ones against your bank, your bills and your pay statements before you rely on them.')}
-    ${part('Every way of sharing is optional', 'You can type information in, take a photo of a bill or pay stub, upload a file, or connect a bank account. None of them is required, and Fathm works fully without a bank connection. Information read from a photo or file isn’t used until you confirm it. You can change or remove anything you’ve shared.')}
+    <section class="stack gap8 mt8"><span class="eyebrow">About &amp; disclaimers</span><h1 class="h1">What aLoN is, and isn't</h1></section>
+    ${part('An education tool', 'aLoN helps you understand your own money: what’s coming in, what’s due, which period could be short, and what a choice changes.')}
+    ${part('Not a bank, lender or advisor', 'aLoN doesn’t give financial, tax, investment or legal advice. It never holds, moves, lends or invests your money, and it doesn’t recommend financial products.')}
+    ${part('Your numbers are only as good as what you share', 'Everything aLoN shows is calculated from the information you provide. Estimates are marked with ~ and ranges show uncertainty. Amounts, dates and forecasts can be wrong, so check important ones against your bank, your bills and your pay statements before you rely on them.')}
+    ${part('Every way of sharing is optional', 'You can type information in, take a photo of a bill or pay stub, upload a file, or connect a bank account. None of them is required, and aLoN works fully without a bank connection. Information read from a photo or file isn’t used until you confirm it. You can change or remove anything you’ve shared.')}
     ${part('Education and sources', 'General explanations describe common money concepts. Rules that can change, like taxes or benefits, show their official source and the date it was checked. They aren’t a substitute for a professional who knows your situation.')}
-    ${part('Your decisions', 'Fathm shows options and trade-offs. Whether and how you act is always your decision.')}
+    ${part('Your decisions', 'aLoN shows options and trade-offs. Whether and how you act is always your decision.')}
     ${part('In this prototype', 'The people and numbers are examples. Anything you enter stays in this browser on this device.')}
     <p class="small mt24">Draft wording for the prototype. Final terms and privacy policy to be reviewed by a lawyer before launch.</p>
   </main>`;
@@ -5242,7 +5242,7 @@ function screenYear() {
     <section class="pad stack gap8 mt8">
       <span class="eyebrow">Preview · sample year</span>
       <h1 class="h1">Your year in waves</h1>
-      <p class="body">This is what your year could look like once Fathm has your history. These numbers are examples.</p>
+      <p class="body">This is what your year could look like once aLoN has your history. These numbers are examples.</p>
     </section>
     <section class="pad mt20"><div class="card stack gap8">
       <svg width="100%" viewBox="0 0 ${W} ${H + 18}" role="img" aria-label="A sample year: calm from March to May, a dip in December that was prepared for">
@@ -5269,7 +5269,7 @@ function screenYear() {
       <div style="background:var(--navy);color:#fff;border-radius:20px;padding:20px;display:flex;flex-direction:column;gap:10px">
         <svg width="56" height="22" viewBox="0 0 56 22" aria-hidden="true"><path d="M2 14 C9 14 9 5 16 5 C23 5 23 17 30 17 C37 17 37 8 44 8 C49 8 50 12 54 12" fill="none" stroke="#8FB0EA" stroke-width="3" stroke-linecap="round"/></svg>
         <span style="font-size:22px;font-weight:800;line-height:1.25">I saw 9 money waves coming this year.</span>
-        <span style="font-size:13px;color:#BFCDE3">Made with Fathm</span>
+        <span style="font-size:13px;color:#BFCDE3">Made with aLoN</span>
       </div>
       <span class="small">No dollar amounts on the shareable card. Share it with Share on the wave.</span>
     </section>
@@ -5296,7 +5296,7 @@ function sheetHtml() {
    thumb instead of on a new screen, so the person never loses their place. */
 const whyWindows = () => computeWindows(null, carouselCount());
 /* A decision the person made about a paycheck ("I've got it covered"). It stays until the gap
-   grows by more than $25, then Fathm asks again, because what they agreed to has changed. */
+   grows by more than $25, then aLoN asks again, because what they agreed to has changed. */
 const DECISION_HOW = [['savings', 'My savings'], ['work', 'Extra work'], ['help', 'Help from family or friends'], ['other', 'Something else']];
 function decisionFor(w) {
   const d = (state.decisions || []).find(x => x.win === iso(w.start));
@@ -5318,7 +5318,7 @@ function receiptHtml(w, r) {
   const other = w.items.filter(x => !isRegularItem(x) && !drivers.includes(x));
   const names = list => listJoin([...new Set(list.map(x => inSentence(x.bill.name)))].slice(0, 4)) + (new Set(list.map(x => x.bill.name)).size > 4 ? ' and more' : '');
   const paidHere = w.items.filter(x => x.paidAlready);
-  let html = w.cashUnknown ? row('In your account now', '?', { sub: 'Not entered yet' }) : row(w.onHand && !w.income.length ? 'On hand' : 'Coming in', `+${range(w.incomeLow, w.incomeTyp)}`, { sub: w.incomeLow !== w.incomeTyp ? 'Fathm counts the lighter amount' : w.income.map(x => x.source.name).join(', ') });
+  let html = w.cashUnknown ? row('In your account now', '?', { sub: 'Not entered yet' }) : row(w.onHand && !w.income.length ? 'On hand' : 'Coming in', `+${range(w.incomeLow, w.incomeTyp)}`, { sub: w.incomeLow !== w.incomeTyp ? 'aLoN counts the lighter amount' : w.income.map(x => x.source.name).join(', ') });
   if (regular.length) html += row('Regular bills', `−${money(sum(regular, x => x.amount))}`, { sub: capFirst(names(regular)) });
   drivers.concat(other).forEach(x => html += row(esc(x.bill.name), `−${money(x.amount)}`, { cls: 'rc-driver', sub: (x.bill.surprise ? 'Came up' : x.bill.purchase ? 'You planned it' : x.bill.freq === 'once' ? 'One time' : freqLabel(x.bill.freq)) + (x.bill.status === 'estimate' ? ' · estimate' : '') }));
   if (w.backfilled && w.income.length) html = html.replace('<span>Coming in', `<span>Your ${short(w.start)} paycheck`);
@@ -5348,7 +5348,7 @@ function whySheetHtml() {
     <span class="grab" aria-hidden="true"></span>
     <span class="eyebrow" style="font-size:13px">${short(w.start)} – ${short(w.last)}</span>
     <h2 id="why-title" class="h2" style="font-size:21px;line-height:1.25">What’s left from ${w.lastPay ? `your ${short(w.lastPay)} paycheck` : 'your last paycheck'}?</h2>
-    <p class="body" style="margin:0">You’re between paydays, so nothing new comes in until ${long(w.end)}. Fathm can’t know how much of your last paycheck is still in your account, so it doesn’t guess, and doesn’t call this stretch short.</p>
+    <p class="body" style="margin:0">You’re between paydays, so nothing new comes in until ${long(w.end)}. aLoN can’t know how much of your last paycheck is still in your account, so it doesn’t guess, and doesn’t call this stretch short.</p>
     ${receiptHtml(w, windowReasons(ws, s.i))}
     <button class="primary" data-action="onhand">Add what’s in your account</button>
     <button class="linkish" style="text-align:center" data-action="close-why">Not now</button>
@@ -5367,7 +5367,7 @@ function whySheetHtml() {
     else {
       const pa = prepAllocs(ws, s.i, round5(gap));
       const from = listJoin(pa.allocs.map(a => short(ws[a.from].start)));
-      parts_.push(`<div class="tint why-note"><span class="k">How Fathm counts</span><p>Fathm counts each ${u} on its own. Money left from an earlier ${u} isn’t carried forward unless you keep it. ${term(`Why ${u}s, not months?`, 'paycheck')}</p>${pa.prepared >= round5(gap) && pa.allocs.length ? `<p><strong>If you keep ${money(round5(gap))} of what’s left from ${from}, ${name} is covered.</strong></p>` : pa.most > 0 ? `<p>The ${u}s before it have ${money(pa.most)} to spare in total, so keeping that covers part of it.</p>` : ''}</div>`);
+      parts_.push(`<div class="tint why-note"><span class="k">How aLoN counts</span><p>aLoN counts each ${u} on its own. Money left from an earlier ${u} isn’t carried forward unless you keep it. ${term(`Why ${u}s, not months?`, 'paycheck')}</p>${pa.prepared >= round5(gap) && pa.allocs.length ? `<p><strong>If you keep ${money(round5(gap))} of what’s left from ${from}, ${name} is covered.</strong></p>` : pa.most > 0 ? `<p>The ${u}s before it have ${money(pa.most)} to spare in total, so keeping that covers part of it.</p>` : ''}</div>`);
     }
   }
   // teach: spread a big bill
@@ -5382,7 +5382,7 @@ function whySheetHtml() {
     parts_.push(`<div class="why-teach"><span class="k">A way to think about it</span>
       <p>${esc(capFirst(inSentence(x.bill.name)))} is ${money(x.bill.amount)} ${freqLabel(x.bill.freq).toLowerCase()}. Spread over the whole time, that’s about <strong>${money(per)} a ${u}</strong>, so it never lands all at once.</p>
       ${soon && !already ? (() => { const n = Math.max(1, plan.k - 1), skipped = ws.slice(1, plan.k).filter(v => !plan.allocs.some(al => al.from === v.i)); return `<p>This time there ${n === 1 ? 'is only 1 ' + u : 'are only ' + n + ' ' + u + 's'} before it${skipped.length ? `, and ${listJoin(skipped.map(v => short(v.start)))} ${skipped.length === 1 ? 'is' : 'are'} already tight` : ''}, so it’s more each time. After this one, the ${money(per)} a ${u} pace works.</p>`; })() : ''}
-      ${already ? `<p class="small" style="margin:0;color:var(--royal);font-weight:700">You’re spreading it. Fathm asks on each payday.</p>`
+      ${already ? `<p class="small" style="margin:0;color:var(--royal);font-weight:700">You’re spreading it. aLoN asks on each payday.</p>`
         : plan && plan.allocs.length ? `<button class="secondary why-btn" data-spread="${x.bill.id}">Spread it out: ${plan.allocs.length > 1 && plan.allocs.every(a => a.amount === plan.allocs[0].amount) ? `${money(plan.allocs[0].amount)} from each of the next ${plan.allocs.length} ${u}s` : listJoin(plan.allocs.map(a => `${money(a.amount)} from ${short(ws[a.from].start)}`))}</button>` : ''}
     </div>`);
   });
@@ -5390,14 +5390,14 @@ function whySheetHtml() {
   const c = r.confidence, unc = uncertainItems();
   parts_.push(`<div class="why-conf ${c.level}"><span class="dotc" aria-hidden="true"></span><span><strong>${c.label}.</strong> ${c.text}${unc.dates.length || unc.amounts.length || unc.cluster ? ` <button class="linkish" style="padding:0;font-size:13.5px" data-action="review">Review uncertain items</button>` : ''}</span></div>`);
   // remembered decision
-  if (d && !d.stale) parts_.push(`<div class="tint why-note"><p>${decisionLine(d)} Fathm still shows the number, without the warning.</p><button class="linkish" data-undecide="${d.win}">Undo</button></div>`);
-  if (d && d.stale) parts_.push(`<div class="warn why-note"><p style="color:var(--amber-body)">You said you had this covered when it was ${money(d.gap)} short. It’s now ${money(gap)} short, so Fathm is showing it again.</p></div>`);
+  if (d && !d.stale) parts_.push(`<div class="tint why-note"><p>${decisionLine(d)} aLoN still shows the number, without the warning.</p><button class="linkish" data-undecide="${d.win}">Undo</button></div>`);
+  if (d && d.stale) parts_.push(`<div class="warn why-note"><p style="color:var(--amber-body)">You said you had this covered when it was ${money(d.gap)} short. It’s now ${money(gap)} short, so aLoN is showing it again.</p></div>`);
   // options
   let opts = '';
   if (s.ack) {
     opts = `<div class="stack gap10"><span class="k" style="font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)">How will you cover it? (optional)</span>
       <div class="chips">${DECISION_HOW.map(([k, l]) => `<button class="chip ${s.how === k ? 'on' : ''}" data-dechow="${k}">${l}</button>`).join('')}</div>
-      <p class="small" style="margin:0">Fathm keeps showing the number on the wave, but stops warning you about it. It asks again if the gap grows.</p>
+      <p class="small" style="margin:0">aLoN keeps showing the number on the wave, but stops warning you about it. It asks again if the gap grows.</p>
       <button class="primary" data-action="why-covered-save">Save my decision</button>
       <button class="secondary" data-action="why-covered-cancel">Back</button></div>`;
   } else if (w.roomLow < 0) {
@@ -5418,11 +5418,11 @@ function whySheetHtml() {
     const rentX = w.items.find(x => isRentLike(x.bill) && !x.bill.plan && !x.part && x.orig && !(x.bill.moved || {})[payKey(x.orig, 0)] && graceEnd(x.bill, x.orig) && w.end <= graceEnd(x.bill, x.orig));
     const nextW = ws[s.i + 1];
     if (rentX && nextW) items.unshift([`data-graceday="${rentX.bill.id}|${iso(rentX.orig)}|${iso(w.end)}"`, `Pay rent on ${short(w.end)}, inside your grace period`, `No late fee. What this changes: ${short(w.start)} ${money(w.roomLow)} → ${money(w.roomLow + rentX.amount)} · ${short(nextW.start)} ${money(nextW.roomLow)} → ${money(nextW.roomLow - rentX.amount)}`]);
-    if (!d || d.stale) items.push(['data-action="why-covered"', 'I’ve got it covered', 'You have savings or another plan. Fathm stops warning you.']);
+    if (!d || d.stale) items.push(['data-action="why-covered"', 'I’ve got it covered', 'You have savings or another plan. aLoN stops warning you.']);
     opts = `<div class="stack gap8"><span class="k" style="font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)">Ways to make it easier</span>
       ${items.map(([a, t, sub]) => `<button class="why-opt tap" ${a}><span class="tx"><span class="t">${t}</span><span class="d">${sub}</span></span>${CHEV}</button>`).join('')}
       <button class="linkish" style="text-align:center" data-action="close-why">Leave it as is</button>
-      <span class="decision-note" style="text-align:center">Your decision. Fathm doesn’t move money.</span></div>`;
+      <span class="decision-note" style="text-align:center">Your decision. aLoN doesn’t move money.</span></div>`;
   } else {
     opts = `<button class="primary" data-action="close-why">Got it</button>`;
   }
@@ -5441,10 +5441,10 @@ function openWhy(i) { state.why = { i }; state.menuOpen = false; render(true); }
 const TERMS = {
   left: ['What “left” means', () => { const w0 = computeWindows()[0]; return `<p>What a ${unitWord2()} has after the bills due before your next payday and your everyday spending estimate. It’s yours to spend, save or keep for later.</p><p class="you"><strong>Right now:</strong> ${range(w0.incomeLow, w0.incomeTyp)} coming in − ${money(w0.spoken)} spoken for = <strong>${range(w0.roomLow, w0.roomTyp)} left</strong>.</p>`; }],
   spoken: ['What “spoken for” means', () => { const w0 = computeWindows()[0]; return `<p>Money that’s already promised: the bills due before your next payday, plus your everyday spending estimate${w0.goalTotal || w0.out ? ', plus what you’re setting aside' : ''}.</p><p class="you"><strong>Right now:</strong> bills ${money(w0.billsTotal)} + everyday ~${money(w0.everyday)}${w0.goalTotal ? ` + goals ${money(w0.goalTotal)}` : ''}${w0.out ? ` + set aside ${money(w0.out)}` : ''} = ${money(w0.spoken)}.</p>`; }],
-  status: ['Covered, tight and short', () => `<p><strong>Covered:</strong> $250 or more left after that ${unitWord2()}’s bills.</p><p><strong>Tight:</strong> $0 to $249 left. Fine, but there’s not much room.</p><p><strong>Short:</strong> more going out than coming in. It’s usually timing, not overspending, and seeing it early is the point.</p><p>${state.sources.some(s => s.certainty !== 'fixed') ? 'Fathm decides using your lighter pay, to be safe.' : 'Fathm decides using your confirmed pay.'}</p>`],
-  estimate: ['Estimates (~)', () => `<p>A number you told Fathm is roughly right. A <strong>~</strong> marks it. Confirm it when the real bill comes and the forecast gets more accurate.</p><p>Everyday spending is always an estimate: about ${money(state.everydayPerWeek)} a week.</p>`],
+  status: ['Covered, tight and short', () => `<p><strong>Covered:</strong> $250 or more left after that ${unitWord2()}’s bills.</p><p><strong>Tight:</strong> $0 to $249 left. Fine, but there’s not much room.</p><p><strong>Short:</strong> more going out than coming in. It’s usually timing, not overspending, and seeing it early is the point.</p><p>${state.sources.some(s => s.certainty !== 'fixed') ? 'aLoN decides using your lighter pay, to be safe.' : 'aLoN decides using your confirmed pay.'}</p>`],
+  estimate: ['Estimates (~)', () => `<p>A number you told aLoN is roughly right. A <strong>~</strong> marks it. Confirm it when the real bill comes and the forecast gets more accurate.</p><p>Everyday spending is always an estimate: about ${money(state.everydayPerWeek)} a week.</p>`],
   rough: ['Grey dates', () => `<p>Paychecks more than about 3 months out. Bills and pay can change by then, so treat them as a rough look, not a promise.</p>`],
-  paycheck: ['Why paychecks, not months', () => `<p>Bills come by the month, but money comes by the ${unitWord2()}. A month can look fine while the ${unitWord2()} that has to pay rent can’t.</p><p>So Fathm shows each ${unitWord2()} on its own. Money left from one isn’t carried into the next unless you keep it, which is what <strong>Prepare</strong> and the <strong>tide pool</strong> do.</p>`]
+  paycheck: ['Why paychecks, not months', () => `<p>Bills come by the month, but money comes by the ${unitWord2()}. A month can look fine while the ${unitWord2()} that has to pay rent can’t.</p><p>So aLoN shows each ${unitWord2()} on its own. Money left from one isn’t carried into the next unless you keep it, which is what <strong>Prepare</strong> and the <strong>tide pool</strong> do.</p>`]
 };
 const term = (text, key) => `<button type="button" class="term" data-term="${key}">${text}</button>`;
 function termSheetHtml() {
@@ -5462,7 +5462,7 @@ function askSuggestions() {
   if (!ws) return [];
   const sh = ws.find(knownShort), tight = ws.find(w => w.status === 'Tight');
   const whyQ = sh ? `Why is ${sh.i === 0 ? 'this ' + unitWord2() : short(sh.start)} short?` : tight ? `Why is ${tight.i === 0 ? 'this ' + unitWord2() : short(tight.start)} tight?` : null;
-  if (state.screen === 'now') return [whyQ, 'What does “left” mean?', 'How does Fathm work?'].filter(Boolean);
+  if (state.screen === 'now') return [whyQ, 'What does “left” mean?', 'How does aLoN work?'].filter(Boolean);
   if (state.screen === 'waves') return [whyQ, 'Why paychecks, not months?', 'What do the colors mean?'].filter(Boolean);
   if (state.screen === 'detail') return ['What does “spoken for” mean?', 'What can I spend?'];
   return ['Why paychecks, not months?'];
@@ -5472,12 +5472,12 @@ function tourSteps() {
   const ws = whyWindows(), w0 = ws[0], u = unitWord2();
   const sh = ws.findIndex(w => w.i > 0 && w.roomLow < 0);
   const steps = [
-    w0.cashUnknown ? { sel: '.hero-q', title: 'First, one number', text: `You’re between paydays. Tell Fathm what’s in your account and it shows what’s really left until ${long(w0.end)}.` } : { sel: '.hero.big', title: `${range(w0.roomLow, w0.roomTyp)} is what’s left`, text: `${w0.roomLow < 0 ? 'This is how short this ' + u + ' could be' : 'This is what this ' + u + ' has'} after the bills due before ${long(w0.end)} and your everyday spending.` },
+    w0.cashUnknown ? { sel: '.hero-q', title: 'First, one number', text: `You’re between paydays. Tell aLoN what’s in your account and it shows what’s really left until ${long(w0.end)}.` } : { sel: '.hero.big', title: `${range(w0.roomLow, w0.roomTyp)} is what’s left`, text: `${w0.roomLow < 0 ? 'This is how short this ' + u + ' could be' : 'This is what this ' + u + ' has'} after the bills due before ${long(w0.end)} and your everyday spending.` },
     { sel: '#wave-scroll', title: `Each wave is a ${u}`, text: `Small waves are covered. The number under each date is what that ${u} will have left. Swipe for about half a year.` }
   ];
-  if (sh >= 0 && document.querySelector('.why-card')) steps.push({ sel: '.why-card', title: `${short(ws[sh].start)} could come up ${money(-ws[sh].roomLow)} short`, text: `Fathm counts each ${u} on its own, so one big bill can make a ${u} short even when others have room. Tap it anytime to see why and what you can do.` });
-  else steps.push({ sel: '.status-pill', title: sh >= 0 ? 'A wave is coming' : 'Nothing short ahead', text: `If a ${u} starts to come up short, Fathm tells you why and what you can do, weeks ahead.` });
-  steps.push({ sel: '#rail-knob', title: 'Actions live on the wave', text: 'Tap or slide the wave on the side. Ask Fathm anything at the bottom.' });
+  if (sh >= 0 && document.querySelector('.why-card')) steps.push({ sel: '.why-card', title: `${short(ws[sh].start)} could come up ${money(-ws[sh].roomLow)} short`, text: `aLoN counts each ${u} on its own, so one big bill can make a ${u} short even when others have room. Tap it anytime to see why and what you can do.` });
+  else steps.push({ sel: '.status-pill', title: sh >= 0 ? 'A wave is coming' : 'Nothing short ahead', text: `If a ${u} starts to come up short, aLoN tells you why and what you can do, weeks ahead.` });
+  steps.push({ sel: '#rail-knob', title: 'Actions live on the wave', text: 'Tap or slide the wave on the side. Ask aLoN anything at the bottom.' });
   return steps;
 }
 function tourHtml() {
@@ -5509,7 +5509,7 @@ function placeTour() {
 }
 
 /* ---------- uncertain dates: catch clusters, show the reasons, make fixing easy ---------- */
-/* Learning the real date: around when a bill without a set date should come out, Fathm asks once.
+/* Learning the real date: around when a bill without a set date should come out, aLoN asks once.
    One answer pins the day, and every later month lands in the right paycheck. */
 function datePinCheckins() {
   const [y, m] = parts(TODAY), first = Date.UTC(y, m, 1), ym = iso(first).slice(0, 7);
@@ -5523,7 +5523,7 @@ function datePinCheckins() {
   return `<div class="card stack gap10">
     <span class="eyebrow">Learning your dates</span>
     <span style="font-size:17px;font-weight:700;line-height:1.35">Did ${esc(inSentence(due.name))} come out yet this month?</span>
-    <span class="small">It’s set to ${due.when === 'unsure' ? 'not sure' : WHEN_LABEL[due.when]}. Telling Fathm the day puts it in the right ${unitWord2()} from now on.</span>
+    <span class="small">It’s set to ${due.when === 'unsure' ? 'not sure' : WHEN_LABEL[due.when]}. Telling aLoN the day puts it in the right ${unitWord2()} from now on.</span>
     <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">
       <button class="primary" style="min-height:46px;font-size:15px" data-pin="${due.id}|today">Yes, today</button>
       <button class="secondary" style="min-height:46px" data-pin="${due.id}|not">Not yet</button>
@@ -5574,7 +5574,7 @@ function reviewSheetHtml() {
   return `<div class="scrim" data-action="close-review"><div class="sheet why-sheet" role="dialog" aria-modal="true" aria-labelledby="rv-title" data-stop>
     <span class="grab" aria-hidden="true"></span>
     <h2 id="rv-title" class="h2" style="font-size:21px">Make your forecast more accurate</h2>
-    <p class="body" style="margin:0">${none ? 'Everything is set. Only everyday spending is an estimate, and that’s normal.' : 'Confirming these helps Fathm put each bill in the right paycheck. Tap one to fix it; a rough answer is fine.'}</p>
+    <p class="body" style="margin:0">${none ? 'Everything is set. Only everyday spending is an estimate, and that’s normal.' : 'Confirming these helps aLoN put each bill in the right paycheck. Tap one to fix it; a rough answer is fine.'}</p>
     ${u.cluster ? clusterCard(u.cluster, 'review') : ''}
     ${u.dates.length ? `<span class="k" style="font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)">Dates not set (${u.dates.length})</span><div class="row-card">${u.dates.map(b => row(b, capFirst(b.when === 'unsure' ? 'not sure when · spread over the month' : WHEN_LABEL[b.when]))).join('')}</div>` : ''}
     ${u.amounts.length ? `<span class="k" style="font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)">Amounts not confirmed (${u.amounts.length})</span><div class="row-card">${u.amounts.map(b => row(b, b.status === 'unconfirmed' ? 'Amount not confirmed' : 'Estimate')).join('')}</div>` : ''}
@@ -5593,7 +5593,7 @@ function syncToday() {
 function render(keepFocus, resetScroll) {
   syncToday();
   const tag = document.querySelector('.demo-tag');
-  if (tag) tag.textContent = ALPHA ? `Fathm alpha preview · ${long(TODAY)}, ${parts(TODAY)[0]} · your numbers stay in this browser` : `Fathm prototype v4 · ${state.persona === 'custom' ? 'your own numbers' : 'example people'} · today is ${long(TODAY)}, ${parts(TODAY)[0]}`;
+  if (tag) tag.textContent = ALPHA ? `aLoN alpha preview · ${long(TODAY)}, ${parts(TODAY)[0]} · your numbers stay in this browser` : `aLoN prototype v4 · ${state.persona === 'custom' ? 'your own numbers' : 'example people'} · today is ${long(TODAY)}, ${parts(TODAY)[0]}`;
   const active = keepFocus ? document.activeElement : null;
   const id = active && active.id, pos = active && active.selectionStart;
   const prev = document.getElementById('scroller');
@@ -5672,13 +5672,13 @@ app.addEventListener('click', e => {
     if (!missing.length) { toast('Thanks. Your mortgage covers them, so nothing is counted twice.'); return render(); }
     state.form = Object.assign(blankBillForm(), { name: missing[0][0], freq: missing[0][1], preset: missing[0][0], escrowAns: 'separate' });
     state.returnTo = 'now';
-    toast(missing.length > 1 ? 'Add your property taxes so Fathm can plan for them. Homeowners insurance is under “A few times a year” next.' : `Add your ${missing[0][0].toLowerCase()} so Fathm can plan for ${missing[0][0] === 'Property taxes' ? 'them' : 'it'}.`);
+    toast(missing.length > 1 ? 'Add your property taxes so aLoN can plan for them. Homeowners insurance is under “A few times a year” next.' : `Add your ${missing[0][0].toLowerCase()} so aLoN can plan for ${missing[0][0] === 'Property taxes' ? 'them' : 'it'}.`);
     return go('add');
   }
   if (ds.working) {
     const [d, ans] = ds.working.split('|');
-    if (ans === 'yes') { state.workingOk = Object.assign({}, state.workingOk, { [d]: iso(TODAY) }); toast('Thanks. Fathm will ask again on your next payday.'); return render(true); }
-    state.sheet = { kind: 'onhand', title: 'About how much is in your account now?', body: `Fathm starts from this number until your next payday on ${long(computeWindows()[0].end)}. A rough number from your bank app is fine.`, amount: '', save: 'Use this amount' };
+    if (ans === 'yes') { state.workingOk = Object.assign({}, state.workingOk, { [d]: iso(TODAY) }); toast('Thanks. aLoN will ask again on your next payday.'); return render(true); }
+    state.sheet = { kind: 'onhand', title: 'About how much is in your account now?', body: `aLoN starts from this number until your next payday on ${long(computeWindows()[0].end)}. A rough number from your bank app is fine.`, amount: '', save: 'Use this amount' };
     return render();
   }
   if (ds.later) { state.askLater = Object.assign({}, state.askLater, { [ds.later]: iso(TODAY) }); return render(true); }
@@ -5687,7 +5687,7 @@ app.addEventListener('click', e => {
   if (ds.pin) {
     const [id, how] = ds.pin.split('|'), b = state.bills.find(x => x.id === id);
     if (!b) return;
-    if (how === 'not') { b.pinSnooze = iso(addDays(TODAY, 3)); toast('Okay. Fathm asks again in a few days.'); return render(true); }
+    if (how === 'not') { b.pinSnooze = iso(addDays(TODAY, 3)); toast('Okay. aLoN asks again in a few days.'); return render(true); }
     const el = document.getElementById('pin-date'), t = how === 'today' ? TODAY : (el && /^\d{4}-\d{2}-\d{2}$/.test(el.value) ? Math.min(parse(el.value), TODAY) : null);
     if (t == null) return toast('Pick the day it came out.');
     pinBill(b, t); state.pinOpen = null;
@@ -5722,9 +5722,9 @@ app.addEventListener('click', e => {
   if (ds.action === 'close-term') { state.termOpen = null; return render(true); }
   if (ds.askq) { const inp = document.getElementById('ask'); if (inp) inp.value = ds.askq; return ask(); }
   if (ds.action === 'tour-start') { state.railHint = false; state.menuOpen = false; if (state.screen !== 'now') go('now'); state.tour = 0; return render(false, true); }
-  if (ds.action === 'tour-next') { const n = tourSteps().length; state.tour = state.tour + 1 >= n ? null : state.tour + 1; if (state.tour == null) toast('Replay it anytime from the menu: How Fathm works.'); return render(); }
+  if (ds.action === 'tour-next') { const n = tourSteps().length; state.tour = state.tour + 1 >= n ? null : state.tour + 1; if (state.tour == null) toast('Replay it anytime from the menu: How aLoN works.'); return render(); }
   if (ds.action === 'tour-back') { state.tour = Math.max(0, state.tour - 1); return render(); }
-  if (ds.action === 'tour-skip') { state.tour = null; toast('Replay it anytime from the menu: How Fathm works.'); return render(); }
+  if (ds.action === 'tour-skip') { state.tour = null; toast('Replay it anytime from the menu: How aLoN works.'); return render(); }
   /* the Why sheet */
   if (ds.whysheet !== undefined) return openWhy(Number(ds.whysheet));
   if (ds.action === 'close-why') { state.why = null; return render(true); }
@@ -5743,14 +5743,14 @@ app.addEventListener('click', e => {
     toast(`Saved. ${w.i === 0 ? 'This ' + unitWord2() : short(w.start)} stays on the wave, without the warning.`);
     return render();
   }
-  if (ds.undecide) { state.decisions = (state.decisions || []).filter(d => d.win !== ds.undecide); toast('Undone. Fathm will point it out again.'); return render(true); }
+  if (ds.undecide) { state.decisions = (state.decisions || []).filter(d => d.win !== ds.undecide); toast('Undone. aLoN will point it out again.'); return render(true); }
   if (ds.spread) {
     const b = state.bills.find(x => x.id === ds.spread), ws = whyWindows(), plan = b && spreadPlan(b, ws);
     if (!plan || !plan.allocs.length) { toast('There’s no paycheck before it to spread it over.'); return; }
     const before = snapWindows(), u = unitWord2();
     plan.allocs.forEach((a, n) => state.reserves.push({ id: 'sp' + Date.now() + n, from: iso(ws[a.from].start), to: iso(ws[plan.k].start), amount: a.amount, done: null, bill: b.id }));
     const even = plan.allocs.every(a => a.amount === plan.allocs[0].amount);
-    return showOutcome(before, `Spreading ${b.name}`, `${even && plan.allocs.length > 1 ? `${money(plan.allocs[0].amount)} from each of the ${plan.allocs.length} ${u}s` : listJoin(plan.allocs.map(a => `${money(a.amount)} from ${short(ws[a.from].start)}`))} before it’s due on ${short(ws[plan.k].items.find(x => x.bill.id === b.id).date)}. Fathm asks on each payday whether you set it aside.`);
+    return showOutcome(before, `Spreading ${b.name}`, `${even && plan.allocs.length > 1 ? `${money(plan.allocs[0].amount)} from each of the ${plan.allocs.length} ${u}s` : listJoin(plan.allocs.map(a => `${money(a.amount)} from ${short(ws[a.from].start)}`))} before it’s due on ${short(ws[plan.k].items.find(x => x.bill.id === b.id).date)}. aLoN asks on each payday whether you set it aside.`);
   }
   if (ds.spreadno) { state.spreadDismissed = Object.assign({}, state.spreadDismissed, { [ds.spreadno]: true }); return render(true); }
   if (ds.action === 'ob-start') { state.ob = freshOb(); state.menuOpen = false; return go('ob'); }
@@ -5781,7 +5781,7 @@ app.addEventListener('click', e => {
   if (ds.action === 'erase-confirm') return eraseAll();
   if (ds.action === 'restore-confirm') return applyRestore();
   if (ds.action === 'data-cancel') { state.dataView = null; pendingRestore = null; return state.persona ? render() : go(state.ob ? 'ob' : 'welcome'); }
-  if (ds.pooladd) { const P = poolState(); P.adds.push({ id: 'pa' + Date.now(), from: iso(TODAY), amount: Number(ds.pooladd), done: null }); toast(`${money(Number(ds.pooladd))} planned for your tide pool. Fathm will ask if you moved it.`); return render(); }
+  if (ds.pooladd) { const P = poolState(); P.adds.push({ id: 'pa' + Date.now(), from: iso(TODAY), amount: Number(ds.pooladd), done: null }); toast(`${money(Number(ds.pooladd))} planned for your tide pool. aLoN will ask if you moved it.`); return render(); }
   if (ds.action === 'pool-dismiss') { const P = poolState(); P.dismissed = Object.assign({}, P.dismissed, { [iso(TODAY)]: true }); return render(); }
   if (ds.action === 'pool-other' || ds.poolfrom) {
     const ws = computeWindows(null, carouselCount());
@@ -5895,14 +5895,14 @@ app.addEventListener('click', e => {
       const pv = prepPreview(ws, sm.k, state.prepAmt), before = snapWindows();
       state.reserves = pv.reserves.map((r, n) => r.id.startsWith('pv') ? Object.assign({}, r, { id: 'r' + Date.now() + n }) : r);
       state.prepAmt = 0;
-      return showOutcome(before, `Planned ${money(pv.prepared)} for ${windowShortName(ws[sm.k])}`, 'Setting money aside doesn’t move it. Fathm asks on each payday whether you did.');
+      return showOutcome(before, `Planned ${money(pv.prepared)} for ${windowShortName(ws[sm.k])}`, 'Setting money aside doesn’t move it. aLoN asks on each payday whether you did.');
     }
     if (!o) return;
     if (o.id === 'none') { toast('Nothing changed. The gap stays visible.'); return go('now'); }
     const stamp = Date.now(), before = snapWindows();
     state.reserves = state.reserves.filter(r => r.done === true).concat(
       o.allocs.map((a, n) => ({ id: 'r' + stamp + n, from: iso(ws[a.from].start), to: iso(ws[a.to].start), amount: a.amount, done: null })));
-    return showOutcome(before, `Planned for ${windowShortName(ws[sm.k])}`, 'Setting money aside doesn’t move it. Fathm asks on each payday whether you did.');
+    return showOutcome(before, `Planned for ${windowShortName(ws[sm.k])}`, 'Setting money aside doesn’t move it. aLoN asks on each payday whether you did.');
   }
   if (ds.action === 'outcome-done') { state.outcome = null; return go('now'); }
   if (ds.action === 'undo') { state.reserves = []; toast('Plan removed.'); return go('why'); }
@@ -5989,7 +5989,7 @@ app.addEventListener('click', e => {
     toast(`${f.name || 'Income'} removed. Forecast updated.`); return go('income');
   }
   if (ds.action === 'onhand') { state.why = null;
-    state.sheet = { kind: 'onhand', title: 'What’s in your account now?', body: 'A rough number is fine. Fathm counts it for the current stretch only, and asks again later.', amount: state.onHand != null && state.onHandDate === iso(TODAY) ? state.onHand : '', save: 'Save' };
+    state.sheet = { kind: 'onhand', title: 'What’s in your account now?', body: 'A rough number is fine. aLoN counts it for the current stretch only, and asks again later.', amount: state.onHand != null && state.onHandDate === iso(TODAY) ? state.onHand : '', save: 'Save' };
     return render();
   }
 
@@ -6004,18 +6004,18 @@ app.addEventListener('click', e => {
   }
   if (ds.confirm) {
     const b = state.bills.find(x => x.id === ds.confirm);
-    state.sheet = { kind: 'bill', id: b.id, title: `Is ${money(b.amount)} still right for ${esc(b.name)}?`, body: 'Check your latest bill. Fathm uses this amount for every future window.', amount: b.amount, save: 'Confirm amount' };
+    state.sheet = { kind: 'bill', id: b.id, title: `Is ${money(b.amount)} still right for ${esc(b.name)}?`, body: 'Check your latest bill. aLoN uses this amount for every future window.', amount: b.amount, save: 'Confirm amount' };
     return render();
   }
   if (ds.action === 'everyday-none') { state.everydayPerWeek = 0; state.everydayUnknown = false; state.sheet = null; toast('Nothing counted for everyday things.'); return render(); }
   if (ds.action === 'everyday-unsure') { state.everydayPerWeek = 0; state.everydayUnknown = true; state.sheet = null; toast('Amounts now say “before everyday spending.”'); return render(); }
   if (ds.action === 'everyday') {
     const w0 = computeWindows()[0];
-    state.sheet = { kind: 'everyday', title: 'Everyday spending, per week', body: `Groceries, gas and other everyday things. A rough number is fine. Fathm multiplies it by the days in each ${persona().unit === 'month' ? 'window' : persona().unit}: right now that's ${w0.days} days, so $${state.everydayPerWeek} a week becomes ~${money(w0.everyday)}.`, amount: state.everydayPerWeek, save: 'Save estimate' };
+    state.sheet = { kind: 'everyday', title: 'Everyday spending, per week', body: `Groceries, gas and other everyday things. A rough number is fine. aLoN multiplies it by the days in each ${persona().unit === 'month' ? 'window' : persona().unit}: right now that's ${w0.days} days, so $${state.everydayPerWeek} a week becomes ~${money(w0.everyday)}.`, amount: state.everydayPerWeek, save: 'Save estimate' };
     return render();
   }
   if (ds.action === 'log') {
-    state.sheet = { kind: 'log', title: 'What did you make today?', body: 'Tips, gig payouts, cash. Fathm adds it to this week and to what you need for upcoming bills.', amount: '', save: 'Add to this week' };
+    state.sheet = { kind: 'log', title: 'What did you make today?', body: 'Tips, gig payouts, cash. aLoN adds it to this week and to what you need for upcoming bills.', amount: '', save: 'Add to this week' };
     return render();
   }
   if (ds.action === 'sheet-save') {
@@ -6146,7 +6146,7 @@ function ask() {
   if (/income|paid|pay|mobiliz|drill/.test(q)) return go('income');
   if (/add|bill|insurance|registration/.test(q)) return go('add');
   if (/upcoming|next|forecast|week|month/.test(q)) return go('waves');
-  toast('Fathm can’t answer that one yet. Try “why is Dec 25 short?”, “what can I spend?” or “my car broke down.”');
+  toast('aLoN can’t answer that one yet. Try “why is Dec 25 short?”, “what can I spend?” or “my car broke down.”');
 }
 
 /* Forms never submit (some previews block form submission); buttons and Enter call the same functions. */
