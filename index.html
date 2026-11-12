@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Alon">
+<meta name="apple-mobile-web-app-title" content="aLoN">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="theme-color" content="#FAF7F0">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -403,7 +403,7 @@ const FEEDBACK_EMAIL = '';      // optional fallback
    form = the .../formResponse address, fields = the entry.NNN id for each question.
    Until it's set, feedback waits on this device and goes out once it is. */
 const FEEDBACK_FORM = { url: '', fields: { screen: '', build: '', feedback: '' } };
-const BUILD = 'v6 · Nov 12';
+const BUILD = 'v7 · Nov 12';
 const STORE = ALPHA ? 'alon-alpha-v1' : 'alon-proto-v4';
 const DEMO_START = Date.UTC(2026, 9, 30);       // Fri, Oct 30, 2026
 let TODAY = DEMO_START;                         // moves forward with the demo's skip-ahead
@@ -1986,6 +1986,7 @@ function header(backTo, backLabel) {
     <nav class="menu" aria-label="Go to">
       <button data-go="now">Now</button>
       <button data-go="waves">What’s ahead</button>
+      <button data-go="check">What if?</button>
       <button data-go="add">Add a bill</button>
       <button data-action="tour-start">How Alon works</button>
       <button data-go="income">Your income</button>
@@ -3434,17 +3435,20 @@ function screenCheck() {
   return `${header('now', 'Now')}
   <main>
     <section class="pad stack gap10 mt8">
+      <h1 class="h1">What if?</h1>
+      <p class="body">What are you thinking about? Try an amount to see what changes. Nothing is saved unless you choose to.</p>
       <span class="eyebrow">${untilText}</span>
       ${answer}
-      <div class="stack gap6 mt8">
+      <button class="linkish mt8" data-action="toggle-buffer" aria-expanded="${!!state.showBuffer}">${state.showBuffer ? "Hide buffer setting" : "Adjust the safety buffer"}</button>
+      ${state.showBuffer ? `<div class="stack gap6 mt8">
         <span class="legend">Keep a buffer of</span>
         <div class="chips">${[0, 100, 250, 500].map(n => `<button class="chip ${r.c === n ? 'on' : ''}" aria-pressed="${r.c === n}" data-cushion="${n}" style="min-height:40px">$${n}</button>`).join('')}</div>
-        <span class="small">One buffer for all of Alon: below it, a ${unitWord2()} shows as tight.</span>
-      </div>
+        <span class="small">One buffer for all of aLoN: below it, a ${unitWord2()} shows as tight.</span>
+      </div>` : ""}
       ${r.ahead ? `<button class="warn tap stack gap4 mt8" data-go="why"><span style="font-size:15px;font-weight:700">${windowShortName(r.ahead)} already looks ${r.ahead.stretch ? `about ${money(-Math.min(r.ahead.stretch.available, r.ahead.stretch.likely != null ? r.ahead.stretch.likely : 0))}` : money(-r.ahead.roomLow)} short</span><span style="font-size:14px;color:var(--amber-body);line-height:1.45">Money you don't spend now could help cover it. See your options.</span></button>` : ''}
     </section>
     <section class="pad stack gap14 mt28">
-      <h2 class="h2">Check something specific</h2>
+      <h2 class="h2">How much would it cost?</h2>
       <label for="amount" class="legend">How much?</label>
       <div class="money"><span>$</span><input id="amount" inputmode="decimal" value="${esc(state.purchaseRaw != null ? state.purchaseRaw : (amt || ''))}" data-input="purchase" autocomplete="off"></div>
       <div class="chips">${[20, 50, 75, 100, 150].map(n => `<button class="chip ${amt === n ? 'on' : ''}" aria-pressed="${amt === n}" data-amount="${n}">$${n}</button>`).join('')}${r.freeLow > 0 && ![20, 50, 75, 100, 150].includes(r.freeLow) ? `<button class="chip ${amt === r.freeLow ? 'on' : ''}" aria-pressed="${amt === r.freeLow}" data-amount="${r.freeLow}">Up to $${r.freeLow.toLocaleString('en-US')}</button>` : ''}</div>
@@ -4067,40 +4071,38 @@ function addMarkup(f, preview, note, valid, quick) {
     <section class="pad stack gap14 mt8">
       <h1 class="h1">${f.id ? 'Edit bill' : 'Add a bill'}</h1>
       ${f.unconfirmed ? '<div class="warn"><span style="font-size:15px;color:var(--amber-body);line-height:1.5">This amount isn’t confirmed yet. Check your latest bill, then save it as Exact.</span></div>' : ''}
-      ${quick.length ? `<button class="card tap row" data-action="surprise" style="text-align:left"><span class="stack gap4"><span style="font-size:15px;font-weight:700">Something came up?</span><span class="small">A repair or a doctor’s bill. See what it does and how to cover it.</span></span><span style="color:var(--royal);font-weight:700">›</span></button>` : ''}
-      ${quick.length ? `<div class="tint stack gap10">
-        <span style="font-size:15px;font-weight:700">Start with a common one</span>
-        <span style="font-size:14px;color:var(--muted-2);line-height:1.45">Tap one, then rename it if you like (“Navient”). Have two? Add it twice.</span>
-        ${[['Every month', quick.filter(x => x[1] === 'monthly')], ['A few times a year · these cause most surprises', quick.filter(x => x[1] !== 'monthly')]].map(([lab, list]) => `<span class="legend" style="margin-top:4px">${lab}</span>
-        <div class="chips">${list.map(([n, fr, pre]) => `<button class="chip ${f.preset === pre && f.freq === fr ? 'on' : ''}" data-quick="${n}|${fr}|${pre}">${n}</button>`).join('')}</div>`).join('')}
-      </div>` : ''}
+
+      ${quick.length ? `<button class="linkish" data-action="toggle-bill-suggestions" aria-expanded="${!!f.showSuggestions}">${f.showSuggestions ? 'Hide common bills' : 'Choose a common bill instead'}</button>
+      ${f.showSuggestions ? `<div class="tint stack gap8"><div class="chips">${quick.map(([n, fr, pre]) => `<button class="chip ${f.preset === pre && f.freq === fr ? 'on' : ''}" data-quick="${n}|${fr}|${pre}">${n}</button>`).join('')}</div></div>` : ''}` : ''}
     </section>
     <form class="pad stack gap14 mt20" data-form="bill">
       <div class="field"><label for="f-name">What is it?</label><input class="input" id="f-name" data-field="name" value="${esc(f.name)}" placeholder="e.g. Vehicle registration" autocomplete="off"></div>
       <div class="stack gap14">
         <div class="field"><label for="f-amt">Amount</label><input class="input" id="f-amt" data-field="amount" inputmode="decimal" value="${esc(f.amount)}" placeholder="$0" autocomplete="off"></div>
       </div>
-      <fieldset style="border:0;padding:0;margin:0" class="stack gap8"><legend class="legend" style="margin-bottom:8px">Is that amount exact?</legend>
+      ${f.showMore ? `<fieldset style="border:0;padding:0;margin:0" class="stack gap8"><legend class="legend" style="margin-bottom:8px">Is that amount exact?</legend>
         <div class="seg">${['exact', 'estimate'].map(k => `<button type="button" class="${f.kind === k ? 'on' : ''}" aria-pressed="${f.kind === k}" data-kind="${k}">${k === 'exact' ? 'Exact' : 'Estimate'}</button>`).join('')}</div>
-      </fieldset>
+      </fieldset>` : ""}
       <fieldset style="border:0;padding:0;margin:0" class="stack gap8"><legend class="legend" style="margin-bottom:8px">How often?</legend>
         <div class="chips">${FREQS.filter(fr => f.allFreq || COMMON_FREQS.includes(fr.id) || f.freq === fr.id).map(fr => `<button type="button" class="chip ${f.freq === fr.id ? 'on' : ''}" aria-pressed="${f.freq === fr.id}" data-freq="${fr.id}">${fr.label}</button>`).join('')}${f.allFreq || FREQS.every(fr => COMMON_FREQS.includes(fr.id) || f.freq === fr.id) ? '' : `<button type="button" class="chip" data-freqmore style="color:var(--muted-2)">More…</button>`}</div>
       </fieldset>
       ${whenFieldHtml(f)}
-      <div id="f-escrow-wrap">${escrowFormHtml(f)}</div>
+      <button type="button" class="linkish" data-action="toggle-bill-more" aria-expanded="${!!f.showMore}">${f.showMore ? "Fewer options" : "More options · estimates, money prepared, payment plans"}</button>
+      ${f.showMore ? `<div id="f-escrow-wrap">${escrowFormHtml(f)}</div>
       ${savedFieldHtml(f)}
       <fieldset style="border:0;padding:0;margin:0" class="stack gap8"><legend class="legend" style="margin-bottom:8px">How do you pay it?</legend>
         <div class="seg"><button type="button" class="${f.plan ? '' : 'on'}" aria-pressed="${!f.plan}" data-paymode="once">All at once</button><button type="button" class="${f.plan ? 'on' : ''}" aria-pressed="${!!f.plan}" data-paymode="parts">In parts</button></div>
         ${f.plan ? planFields(f.plan, f.freq === 'once' ? 'Pay it in' : 'Each time, pay it in', { monthly: splitByPayday(f), due: f.due, amount: parseMoney(f.amount) }) : ''}
       </fieldset>
       ${keepPayHtml(f)}
-      <div id="bill-recent-wrap" data-keys="${esc(billRecentItems(f).map(x => x.key).join(','))}">${billRecentBlock(f)}</div>
-      <div class="card stack gap6 preview-card">
+      <div id="bill-recent-wrap" data-keys="${esc(billRecentItems(f).map(x => x.key).join(','))}">${billRecentBlock(f)}</div>` : ""}
+      <div class="tint stack gap6 preview-card">
         <span class="small" style="font-weight:600">${f.plan ? 'Alon will expect' : 'Alon will expect it on'}</span>
         <span id="bill-preview" style="font-size:16px;font-weight:700;line-height:1.45">${preview || (f.freq === 'monthly' ? 'Pick a date' : 'Pick the date or the month')}</span>
         <span id="bill-note" class="small">${note}</span>
       </div>
-      <p class="decision-note">Press Save on the wave, or Enter.${f.id ? ' Remove is on the wave too.' : ''}</p>
+      <button type="submit" class="primary" style="width:100%">Save bill</button>
+      <p class="small">Your forecast updates after saving. ${f.id ? "To remove this bill, use the side rail." : ""}</p>
     </form>
   </main>
   ${dock()}`;
@@ -6519,6 +6521,7 @@ function go(screen) {
     state.returnTo = state.screen === 'income-edit' ? 'income' : state.screen;
   }
   if (['why', 'surprise', 'detail', 'options'].includes(screen) && state.screen !== screen) state.ow = Object.assign(freshOw(), state.ow || {}, { open: null, amount: null });
+  if (screen === 'add' && state.form && (state.form.id || state.form.plan || state.form.saved || state.form.prepared)) state.form.showMore = true;
   state.screen = screen; state.menuOpen = false; state.why = null; state.termOpen = null; state.review = false; if (screen !== 'now') state.tour = null;
   if (screen === 'why') { state.picked = null; state.prepAmt = 0; prepWasCovered = false; }
   if (screen === 'payday') { state.payAnswer = null; state.draftRaw = null; }
@@ -6556,6 +6559,9 @@ app.addEventListener('click', e => {
   syncToday();
 
   if (ds.action === 'toggle-ahead') { state.showAllAhead = !state.showAllAhead; return render(true); }
+  if (ds.action === 'toggle-buffer') { state.showBuffer = !state.showBuffer; return render(true); }
+  if (ds.action === 'toggle-bill-more') { state.form.showMore = !state.form.showMore; return render(true); }
+  if (ds.action === 'toggle-bill-suggestions') { state.form.showSuggestions = !state.form.showSuggestions; return render(true); }
   if (ds.action === 'ack') { state.ackTerms = true; state.ob = freshOb(); return go('ob'); }
   if (ds.escrow) {
     const inTax = ds.escrow === 'both' || ds.escrow === 'tax', inIns = ds.escrow === 'both' || ds.escrow === 'ins';
