@@ -330,7 +330,7 @@
   .purpose { margin: 0; font-size: 15px; color: var(--muted-2); line-height: 1.5; }
   .opt { border: 1px solid var(--field-line); }
   .opt:has(input:checked) { border-color: var(--royal); box-shadow: inset 0 0 0 1px var(--royal); }
-  .opt input[type=checkbox] { -webkit-appearance: none; appearance: none; width: 24px !important; height: 24px !important; border-radius: 50%; border: 2px solid var(--chip-line); background: var(--white); margin: 0; flex: none; cursor: pointer; }
+  .opt input[type=checkbox] { -webkit-appearance: none; appearance: none; width: 24px !important; height: 24px !important; border-radius: 6px; border: 2px solid var(--chip-line); background: var(--white); margin: 0; flex: none; cursor: pointer; }
   .opt input[type=checkbox]:checked { border-color: var(--royal); background: var(--royal) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14'%3E%3Cpath d='M3 7.2 5.8 10 11 4.2' fill='none' stroke='white' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 14px no-repeat; }
   .opt input[type=checkbox]:disabled { opacity: .5; cursor: default; }
   .outcome-ic { width: 72px; height: 72px; border-radius: 50%; display: grid; place-items: center; margin: 8px auto 0; }
@@ -403,7 +403,7 @@ const FEEDBACK_EMAIL = '';      // optional fallback
    form = the .../formResponse address, fields = the entry.NNN id for each question.
    Until it's set, feedback waits on this device and goes out once it is. */
 const FEEDBACK_FORM = { url: '', fields: { screen: '', build: '', feedback: '' } };
-const BUILD = 'v5 · Nov 12';
+const BUILD = 'v6 · Nov 12';
 const STORE = ALPHA ? 'alon-alpha-v1' : 'alon-proto-v4';
 const DEMO_START = Date.UTC(2026, 9, 30);       // Fri, Oct 30, 2026
 let TODAY = DEMO_START;                         // moves forward with the demo's skip-ahead
@@ -3241,20 +3241,20 @@ function screenWaves() {
         <span class="stack gap4"><span style="font-size:16px;font-weight:700">${windowEyebrow(w)}</span><span style="font-size:13px;color:${isShort ? 'var(--amber-body)' : 'var(--muted)'}">${w.onHand ? `${money(w.incomeLow)} in your account` : `${range(w.incomeLow, w.incomeTyp)} coming in`}${pace}</span></span>
         <span class="stack gap4" style="align-items:flex-end"><span style="font-size:20px;font-weight:800;white-space:nowrap;${isShort ? 'color:var(--amber-text)' : ''}">${st ? money(st.available) : range(w.roomLow, w.roomTyp)}</span><span style="font-size:12px;font-weight:700;color:${isShort ? 'var(--amber-text)' : 'var(--muted-2)'}">${st ? (st.status === 'Covered' ? (st.basis === 'spendable' ? 'Available' : 'Left') : st.status === 'Short' && st.available >= 0 ? 'Short after everyday' : st.status) : w.status + (w.roomTyp !== w.roomLow ? ' on a lighter ' + p.unit : '')}</span></span>
       </button>
-      <div class="bar thin ${isShort ? 'amber' : ''}"><div style="width:${pct}%"></div></div>
-      ${(() => { const bs = windowBadges(w, UP_EXTRAS).badges; return bs.length ? `<span class="pc-badges">${bs.map(([k, t]) => `<span class="pc-badge ${k}">${esc(t)}</span>`).join('')}</span>` : ''; })()}
+      ${open ? `<div class="bar thin ${isShort ? 'amber' : ''}"><div style="width:${pct}%"></div></div>` : ''}
+      ${(() => { const bs = windowBadges(w, UP_EXTRAS).badges; return open && bs.length ? `<span class="pc-badges">${bs.map(([k, t]) => `<span class="pc-badge ${k}">${esc(t)}</span>`).join('')}</span>` : ''; })()}
       <span style="font-size:14px;color:${isShort ? 'var(--amber-body)' : 'var(--muted)'};line-height:1.45">${open ? '' : esc(summary)}</span>
-      ${w.items.filter(x => x.part && x.part === x.parts && (x.bill.freq === 'once' || x.bill.count)).map(x => `<span style="font-size:14px;font-weight:600;color:var(--royal)">Last payment for ${esc(x.bill.name)}. After this, it’s done.</span>`).join('')}
+      ${open ? w.items.filter(x => x.part && x.part === x.parts && (x.bill.freq === 'once' || x.bill.count)).map(x => `<span style="font-size:14px;font-weight:600;color:var(--royal)">Last payment for ${esc(x.bill.name)}. After this, it’s done.</span>`).join('') : ''}
       <div class="items">${items}</div>
-      ${needsLook && !(st && st.basis === 'spendable') ? (() => { const r = windowReasons(ws, w.i); return `<span class="why-line" style="${isShort ? '' : 'color:var(--muted-2)'}"><strong>Main reason:</strong> ${r.headline}</span>`; })() : ''}
-      ${decided(w) ? `<span class="small" style="color:var(--muted-2)">${decisionLine(decisionFor(w))}</span>` : ''}
-      ${needsLook ? `<button class="linkish" style="text-align:left;${isShort ? 'color:#6E4710' : ''}" data-whysheet="${w.i}">${isShort ? 'Why, and what you could do' : 'Why it’s tight'}</button>` : ''}
+      ${open && needsLook && !(st && st.basis === 'spendable') ? (() => { const r = windowReasons(ws, w.i); return `<span class="why-line" style="${isShort ? '' : 'color:var(--muted-2)'}"><strong>Main reason:</strong> ${r.headline}</span>`; })() : ''}
+      ${open && decided(w) ? `<span class="small" style="color:var(--muted-2)">${decisionLine(decisionFor(w))}</span>` : ''}
+      ${open && needsLook ? `<button class="linkish" style="text-align:left;${isShort ? 'color:#6E4710' : ''}" data-whysheet="${w.i}">${isShort ? 'Why, and what you could do' : 'Why it’s tight'}</button>` : ''}
     </div>`;
   }).join('');
   return `${header('now', 'Now')}
   <main class="wide-main">
     <section class="pad stack gap8 mt8">
-      <h1 class="h1" style="font-size:32px">${anySt ? 'What’s ahead' : `Upcoming ${p.unit}s`}</h1>
+      <h1 class="h1" style="font-size:32px">What’s ahead</h1>
       ${basis === 'runway' ? `<p class="body">What you’ll have available in each stretch, counting from what’s in your account and only income that’s certain. Tap one to see how it adds up.</p>`
         : basis === 'spendable' ? `<p class="body">What you’ll have available in each stretch between paydays, counting from what’s in your account. Tap one to see how it adds up.</p>`
         : basis === 'remainder' ? `<p class="body">Counting each paycheck on its own: what it leaves after its bills. <button class="linkish" style="padding:0" data-action="onhand">Add what’s in your account</button> to see it all together.</p>`
@@ -3266,7 +3266,7 @@ function screenWaves() {
         <p class="sea-key">The water rises on payday and dips for bills.${bufferAmt() ? ` The dashed line is your ${money(bufferAmt())} buffer.` : ''}${sea.maybe.length ? ' A dashed rise is income that isn’t certain.' : ''} Tap it to see why.</p></section>`; })()}
     <div class="pad stack gap12 mt20 waves-list">${cards}</div>
     <section class="pad mt14"><button class="secondary" data-action="toggle-ahead">${state.showAllAhead ? "Show less" : "Show more"}</button></section>
-    ${ws.some(w => w.roomLow !== w.roomTyp) ? `<p class="small pad mt20">Status is based on the lighter case, so a good ${p.unit} is a bonus, not a plan.</p>` : ''}
+    ${ws.some(w => w.roomLow !== w.roomTyp) ? `<p class="small pad mt20">Status is based on the lighter case. Higher income is possible, not guaranteed.</p>` : ''}
   </main>
   ${dock()}`;
 }
@@ -4476,7 +4476,7 @@ function screenGoalEdit() {
   const f = state.goalForm || (state.goalForm = goalFormFrom(null));
   const pv = goalPreview(f), u = persona().unit === 'month' ? 'window' : persona().unit;
   const seg = (k, label) => `<button type="button" class="${f.mode === k ? 'on' : ''}" aria-pressed="${f.mode === k}" data-gmode="${k}">${label}</button>`;
-  return `${header('goals', 'Goals')}
+  return `${header('setaside', 'Set aside')}
   <main>
     <section class="pad stack gap14 mt8">
       <h1 class="h1">${f.id ? (f.fund ? 'Your surprise fund' : 'Edit goal') : (f.fund ? 'Start a surprise fund' : 'Add a goal')}</h1>
@@ -4857,9 +4857,9 @@ function screenOptions() {
   return `${header(state.askBack || 'now', 'Back')}
   <main>
     <section class="pad stack gap8 mt8">
-      <span class="eyebrow">You asked</span>
+      <span class="eyebrow">What if?</span>
       <h1 class="h1" style="font-size:24px">“${esc(a.q)}”</h1>
-      <p class="body">When a bill is bigger than what’s coming in, these are what people use. Alon doesn’t pick one for you; it shows what each would cost. Alon isn’t paid by any of them.</p>
+      <p class="body">Explore possible changes and see how they affect your future money. These are illustrations, not recommendations; you decide what works.</p>
       ${quoteNote}
     </section>
     ${owSection(ctx)}
@@ -6435,6 +6435,7 @@ function screenSetAside() {
   const billSaved = sum(prepared, x => x.value.prepared);
   const taxPrepared = prepared.filter(x => /tax/i.test(x.bill.name));
   const taxSaved = sum(taxPrepared, x => x.value.prepared);
+  const pendingPool = poolPending();
   const goalRows = goals.map(g => `<button class="line-item tap" data-editgoal="${g.id}" style="width:100%"><span><span class="name">${esc(g.name)}</span><span class="meta">${g.fund ? 'Surprise fund' : 'Goal'} · ${money(g.target)} target</span></span><span class="amt">${money(g.saved||0)}</span></button>`).join('');
   const billRows = prepared.map(x => `<button class="line-item tap" data-editbill="${x.bill.id}" style="width:100%"><span><span class="name">${esc(x.bill.name)}</span><span class="meta">Prepared for ${short(x.value.date)} · ${money(x.value.left)} still needed</span></span><span class="amt">${money(x.value.prepared)}</span></button>`).join('');
   return `${header('now','Now')}
@@ -6444,7 +6445,7 @@ function screenSetAside() {
       <p class="small">These are separate records, not a single bank balance. Some may be held in the same account. Alon doesn't move money.</p>
     </section>
     <section class="pad stack gap12 mt20">
-      <button class="card tap stack gap8" data-go="pool"><span class="row"><strong>Tide pool</strong><strong>${money(P.balance)}</strong></span><span class="small">Carry money forward to smooth uneven stretches. View or change it.</span></button>
+      <button class="card tap stack gap8" data-go="pool"><span class="row"><strong>Tide pool</strong><strong>${money(P.balance)}</strong></span><span class="small">${pendingPool ? money(pendingPool) + " planned to add · " : ""}Carry money forward to smooth uneven stretches. Tap for details.</span></button>
       <div class="card stack gap8"><div class="row"><strong>Goals and surprise fund</strong><strong>${money(goalSaved)}</strong></div>
         ${goalRows || '<p class="small">No goals or surprise fund yet.</p>'}
         <button class="secondary" data-action="add-goal">Add a goal</button>
@@ -6455,7 +6456,7 @@ function screenSetAside() {
         <button class="secondary" data-go="bills">View bills and prepare</button>
       </div>
       <div class="tint stack gap8"><strong>Money kept for taxes or property</strong>
-        <p class="small">Use bill preparation to record money already reserved for a known obligation. ${taxPrepared.length ? money(taxSaved) + ' currently recorded for tax bills.' : 'No tax-specific prepared bill amount recorded.'} Money withheld from 1099 or rental income is not automatically treated as a separate reserve unless explicitly recorded.</p>
+        <p class="small">Use bill preparation to record money already reserved for a known obligation. ${taxPrepared.length ? money(taxSaved) + ' currently recorded for tax bills.' : 'No tax-specific prepared bill amount recorded.'} Income withholding is reflected in the forecast. If you already have tax savings, record the amount prepared against the matching tax bill; do not record the same dollars twice.</p>
         <button class="secondary" data-go="bills">Manage tax and property bills</button>
       </div>
       <button class="secondary" data-go="goals">More goal details</button>
