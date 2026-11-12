@@ -3212,7 +3212,7 @@ function screenDetail() {
 let UP_EXTRAS = [];
 function screenWaves() {
   const p = persona();
-  const ws = computeWindows(null, carouselCount());
+  const ws = computeWindows(null, state.showAllAhead ? Math.max(12,carouselCount()) : carouselCount());
   UP_EXTRAS = extraPaychecks(400);
   const sts = ws.map(stretchFor), anySt = sts.some(Boolean), basis = anySt ? sts.find(Boolean).basis : null;
   const cards = ws.slice(0, state.showAllAhead ? 12 : 6).map(w => {
@@ -4352,55 +4352,31 @@ function spreadOffer(list) {
   </div>`;
 }
 function screenBills() {
-  const regular = state.bills.filter(b => !b.surprise && !b.plan);
-  const groups = [
-    ['Every month or more', regular.filter(b => !LONG_FREQS.includes(b.freq))],
-    ['A few times a year', regular.filter(b => ['quarterly', 'semiannual', 'yearly'].includes(b.freq))],
-    ['One-time plans', regular.filter(b => b.freq === 'once')]
-  ];
-  groups.push(['Paying in parts', state.bills.filter(b => b.plan && !b.surprise)]);
-  if (state.bills.some(b => b.surprise)) groups.push(['Something came up', state.bills.filter(b => b.surprise)]);
-  return `${header('now', 'Now')}
-  <main>
-    <section class="pad stack gap8 mt8"><h1 class="h1">Your bills</h1><p class="purpose">Everything you pay, and when. Tap one to change it.</p>
-      ${(() => { const u = uncertainItems(); return (u.cluster ? clusterCard(u.cluster, 'bills') : '') + (u.dates.length || u.amounts.length ? `<button class="tint tap row mt8" style="border:0;text-align:left" data-action="review"><span class="stack gap4"><span style="font-size:15px;font-weight:700">${listJoin([u.dates.length ? plural(u.dates.length, 'date') + ' not set' : '', u.amounts.length ? plural(u.amounts.length, 'amount') + ' not confirmed' : ''].filter(Boolean))}</span><span class="small">Confirming them makes your forecast more accurate.</span></span><span style="color:var(--royal);font-weight:700;white-space:nowrap">Review</span></button>` : ''); })()}</section>
-    ${groups.map(([title, list]) => `
-      <section class="pad stack mt24"><h2 class="h2" style="font-size:16px;margin-bottom:8px">${title}</h2>
-      ${list.length ? '<div class="row-card">' + list.map(b => {
-        const nd = nextDue(b);
-        const st = b.status === 'estimate' ? 'Estimate' : b.status === 'unconfirmed' ? 'Not confirmed' : 'Confirmed';
-        const when = !nd ? 'Done' : isRanged(b) ? (b.when === 'unsure' ? `Date not set${LONG_FREQS.includes(b.freq) && b.freq !== 'once' ? ' · ' + freqLabel(b.freq) + ', ' + monthName(nd) : ''}` : `${capFirst(WHEN_LABEL[b.when])}${LONG_FREQS.includes(b.freq) && b.freq !== 'once' ? ' · ' + monthName(nd) : ''}`) : b.freq === 'once' ? short(nd) : (LONG_FREQS.includes(b.freq) ? `${freqLabel(b.freq)} · ${short(nd)}` : `Due ${short(nd)}`);
-        const pl = preparedLeft(b);
-        const meta = b.plan ? planStatus(b) : `${when}${st === 'Confirmed' ? '' : ' · ' + st.toLowerCase()}${pl ? ` · ${money(pl.prepared)} set aside · ${pl.left ? money(pl.left) + ' remaining to prepare' : 'ready'}` : ''}`;
-        return `<button class="line-item tap" data-editbill="${b.id}" style="width:100%"><span class="lead">${tileHtml(b)}<span><span class="name">${esc(b.name)}</span><span class="meta">${meta}</span></span></span><span class="end"><span class="amt">${b.status === 'estimate' ? '~' : ''}${b.plan ? moneyExact(b.amount) : money(b.amount)}</span>${CHEV}</span></button>`;
-      }).join('') + '</div>' : `<p class="small">${title === 'Paying in parts' ? 'Nothing yet. A split rent, a pay-later purchase or a payment plan goes here.' : 'None yet.'}</p>`}
-      ${title === 'A few times a year' ? spreadOffer(list) : ''}
-      ${title === 'A few times a year' && list.some(b => /tax/i.test(b.name)) ? `<div class="mt8">${taxLearn(list.find(b => /tax/i.test(b.name)))}</div>` : ''}
-      </section>`).join('')}
-    <div class="pad stack gap10 mt24"><button class="primary" data-go="add">Add a bill</button><button class="secondary" data-action="add-plan">Add something you’re paying in parts</button></div>
-  </main>
-  ${dock()}`;
+  const sorted = state.bills.map(b => ({ b, due:nextDue(b) })).sort((x,y) =>
+    (x.due == null ? Infinity : x.due) - (y.due == null ? Infinity : y.due) || x.b.name.localeCompare(y.b.name));
+  const rows = sorted.map(({b,due}) => {
+    const prep = preparedLeft(b);
+    const when = due == null ? 'No upcoming date' : isRanged(b) ? 'Date estimated · '+short(due) : short(due);
+    const confidence = b.status === 'estimate' ? ' · amount estimated' : b.status === 'unconfirmed' ? ' · not confirmed' : '';
+    return `<button class="line-item tap" data-editbill="${b.id}" style="width:100%;text-align:left">
+      <span class="stack gap4"><span class="name">${esc(b.name)}</span><span class="meta">${when}${confidence}${prep ? ' · '+money(prep.prepared)+' prepared' : ''}</span></span>
+      <span class="amt">${b.status === 'estimate' ? '~' : ''}${money(b.amount)} ${CHEV}</span></button>`;
+  }).join('');
+  const u=uncertainItems();
+  return `${header('now','Now')}<main>
+    <section class="pad stack gap8 mt8"><h1 class="h1">Coming up</h1>
+      <p class="purpose">Bills and payments in date order. Tap one to see its schedule, edit it or record money already prepared.</p>
+      ${u.dates.length || u.amounts.length ? '<button class="tint tap" data-action="review">Some dates or amounts need confirming · Review</button>' : ''}
+    </section>
+    <section class="pad mt20"><div class="row-card">${rows || '<p class="small">Nothing added yet.</p>'}</div></section>
+    <section class="pad stack gap10 mt20">
+      <button class="primary" data-go="add">Add a bill</button>
+      <button class="secondary" data-action="add-plan">Add a payment plan</button>
+      <button class="linkish" data-go="setaside">See money set aside</button>
+    </section>
+  </main>${dock()}`;
 }
 
-
-
-
-/* ===================== Savings goals ===================== */
-const floor5 = n => Math.max(0, Math.floor(n / 5) * 5);
-const monthYear = t => new Date(t).toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' });
-function goalFormFrom(g) {
-  if (!g) return { id: null, name: '', target: '', saved: '', mode: 'date', by: iso(addMonths(TODAY, 6, parts(TODAY)[2])), per: '', paused: false, fund: false };
-  return { id: g.id, name: g.name, target: String(g.target), saved: String(g.saved || 0), mode: g.mode, by: g.by || iso(addMonths(TODAY, 6, parts(TODAY)[2])), per: String(g.per || ''), paused: !!g.paused, fund: !!g.fund };
-}
-function goalFromForm(f) {
-  const base = f.id ? state.goals.find(x => x.id === f.id) : null;
-  return Object.assign({}, base || { id: 'g' + Date.now(), skips: [], hist: {} }, {
-    name: f.name.trim(), target: parseMoney(f.target), saved: parseMoney(f.saved) || 0, mode: f.mode,
-    by: f.by, per: parseMoney(f.per) || 0, paused: !!f.paused, fund: !!f.fund });
-}
-/* A surprise fund is a goal you don't spend on a date: you use it when something comes up,
-   then it refills. A starting target from the person's own numbers: about one month of
-   bills and everyday spending (rare bills averaged over the year), rounded up to $50. */
 function monthOfBillsFor(bills, everydayPerWeek, fromT) {
   const yearOut = sum(bills.filter(b => !b.surprise && !b.purchase), b => sum(billEvents(b, fromT, addDays(fromT, 365)), x => x.amount));
   return Math.ceil((yearOut / 12 + (everydayPerWeek || 0) * 52 / 12) / 50) * 50;
