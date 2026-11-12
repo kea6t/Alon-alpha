@@ -140,6 +140,9 @@
   .radio { width: 22px; height: 22px; border-radius: 11px; border: 2px solid #8A9BB8; flex-shrink: 0; display: grid; place-items: center; }
   .option.on .radio { border-color: var(--royal); }
   .option.on .radio::after { content: ""; width: 10px; height: 10px; border-radius: 5px; background: var(--royal); }
+  .radio.box { border-radius: 6px; }
+  .option.on .radio.box { background: var(--royal); }
+  .option.on .radio.box::after { width: 11px; height: 6px; border-radius: 0; background: none; border-left: 2.5px solid #fff; border-bottom: 2.5px solid #fff; transform: rotate(-45deg) translate(1px, -1px); }
   .option .t { font-size: 16px; font-weight: 700; display: block; }
   .option .d { font-size: 14px; color: var(--muted); line-height: 1.45; margin-top: 4px; display: block; }
 
@@ -253,7 +256,7 @@
   /* ---------- the wave rail: contextual actions at the thumb edge ---------- */
   /* The wave rail is part of the screen edge: a thin navy band that runs the full height
      and swells into a pocket around the knob. Labels are upright pills read bottom to top. */
-  .has-rail .pad { padding-right: 70px; }
+  .has-rail .pad { padding-right: 78px; }
   .has-rail.left .pad { padding-left: 70px; padding-right: 24px; }
   #rail-wrap { position: absolute; inset: 0; pointer-events: none; z-index: 15; }
   .rail { position: absolute; top: 0; bottom: 0; right: 0; width: 64px; }
@@ -325,6 +328,15 @@
   .next-btns { display: flex; flex-direction: column; gap: 8px; }
   .next-btns button { min-height: 48px; padding: 0 16px; font-size: 16px; }
   .toast-undo { margin-left: 10px; padding: 6px 12px; min-height: 36px; border-radius: 10px; border: 1px solid rgba(255,255,255,.5); background: none; color: #fff; font: inherit; font-weight: 800; cursor: pointer; }
+  .in-main { width: 100%; }
+  .set-line { font-size: 15px; font-weight: 600; color: var(--muted-2); min-height: 44px; }
+  .ahead-row { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 60px; padding: 12px 16px; border-radius: 16px; background: var(--white); border: 1px solid var(--line); text-align: left; cursor: pointer; font: inherit; color: var(--navy); }
+  .ahead-row > .stack { flex: 1; min-width: 0; }
+  .ahead-date { font-size: 17px; font-weight: 700; }
+  .ahead-word { font-size: 15px; font-weight: 700; color: var(--royal); }
+  .ahead-amt { font-size: 19px; font-weight: 800; white-space: nowrap; }
+  .ahead-row.short { background: var(--amber-bg, #FBF1DF); border-color: #E8D2A8; }
+  .ahead-row.short .ahead-word, .ahead-row.short .ahead-amt { color: var(--amber-text); }
   .next-up { display: flex; align-items: center; gap: 12px; width: 100%; padding: 14px; border-radius: 20px; background: var(--white); border: 1px solid var(--line); text-align: left; cursor: pointer; }
   .next-up .stack { flex: 1; min-width: 0; }
   .purpose { margin: 0; font-size: 15px; color: var(--muted-2); line-height: 1.5; }
@@ -1270,6 +1282,14 @@ function reservedEvents(from, until) {
     else if (parse(r.from) < until) add(parse(r.from), r.amount, `Set aside for ${b.name}`, 'reserve', { billId: b.id });
     if (due < until) add(due, r.amount, `Set aside for ${b.name}`, 'release', { billId: b.id });
   });
+  // money planned on Prepare, from an earlier paycheck to a later one: set aside on its payday, let go on the later one
+  (state.reserves || []).filter(r => r.done !== false && !r.bill).forEach(r => {
+    const f = parse(r.from), t = parse(r.to);
+    if (t < from) return;
+    if (f < from) { if (r.done === true) existing.push({ name: 'Set aside for later', amount: r.amount }); }
+    else if (f < until) add(f, r.amount, 'Set aside for later', 'reserve', { plan: true });
+    if (t < until && (f >= from || r.done === true)) add(t, r.amount, 'Set aside earlier', 'release', { plan: true });
+  });
   (state.goals || []).forEach(g => {
     if (g.saved > 0) existing.push({ name: g.name, amount: g.saved });
     const gp = goalPlan(g);
@@ -1283,7 +1303,7 @@ function reservedEvents(from, until) {
       const a = state.actuals[s.id + '|' + t], amt = a != null ? a : (s.certainty === 'uncertain' ? 0 : s.low), kc = keptFrom(s, amt);
       if (kc > 0) (kept[k.label] = kept[k.label] || []).push({ t, amt: kc, src: s }); }); });
   const keepBills = state.bills.filter(b => b.fromKeep);
-  Object.keys(kept).concat(keepBills.map(b => b.fromKeep)).filter((l, i, a) => a.indexOf(l) === i).forEach(label => {
+  Object.keys(kept).concat(keepBills.map(b => b.fromKeep), Object.keys(state.keptSoFar || {})).filter((l, i, a) => a.indexOf(l) === i).forEach(label => {
     const ins = (kept[label] || []).map(x => ({ t: x.t, d: 'in', amt: x.amt, src: x.src }));
     const outs = [].concat(...keepBills.filter(b => b.fromKeep === label).map(b => billEvents(b, from, until).map(x => ({ t: x.date, d: 'out', amt: x.amount, b }))));
     let run = Math.max(0, Number((state.keptSoFar || {})[label]) || 0);
@@ -1319,7 +1339,7 @@ function paycheckRemainders(count) {
       part: x.part || 0, parts: x.parts || 0, paid: x.orig != null && !!(b.paid || {})[payKey(x.orig, x.part)], dateRange: !!x.range })));
     obligations.sort((a, c) => a.date.localeCompare(c.date) || a.name.localeCompare(c.name));
     const rv = reservedEvents(start, end);
-    const coveredEarlier = rv.ev.filter(e => e.dir === 'release' && (e.billId || e.draw)), setAsideHere = rv.ev.filter(e => e.dir === 'reserve' && (parse(e.date) < addDays(start, 1) || e.keep));
+    const coveredEarlier = rv.ev.filter(e => e.dir === 'release' && (e.billId || e.draw || e.plan)), setAsideHere = rv.ev.filter(e => e.dir === 'reserve' && (parse(e.date) < addDays(start, 1) || e.keep));
     const knownC = centsSum(deposits, x => x.amount) - centsSum(obligations, x => x.amount) + centsSum(coveredEarlier, x => x.amount) - centsSum(setAsideHere, x => x.amount);
     const ed = everydayC(Math.round((end - start) / DAY));
     out.push({ payday: iso(start), nextPayday: iso(end), deposits, obligations, coveredEarlier, setAsideHere,
@@ -2266,16 +2286,16 @@ function seaLine(ws, opts) {
   return { svg, low: { v: low.v, t: low.t, short: short_ }, basis: S.basis, maybe: S.maybe };
 }
 
-const CONTEXT = { outcome: 'Done', data: 'Your data', pool: 'Tide pool', plan: 'Bills', options: 'Answer', surprise: 'Came up', goals: 'Goals', 'goal-edit': 'Goals', 'income-edit': 'Income', check: 'What if', year: 'Year', now: '', detail: 'Now', waves: 'Ahead', why: 'Ahead', add: 'Bills', bills: 'Bills', payday: 'Payday', income: 'Income' };
+const CONTEXT = { setaside: '', outcome: 'Done', data: 'Your data', pool: 'Tide pool', plan: 'Bills', options: 'Answer', surprise: 'Came up', goals: 'Goals', 'goal-edit': 'Goals', 'income-edit': 'Income', check: 'What if', year: 'Year', now: '', detail: 'Now', waves: 'Ahead', why: 'Ahead', add: 'Bills', bills: 'Bills', payday: 'Payday', income: 'Income' };
 const DOCK_HINT = { outcome: 'Ask about what changed', data: 'Ask about your data', pool: 'Ask about your tide pool', add: 'Ask about this bill', plan: 'Ask about paying in parts', 'goal-edit': 'Ask about this goal', goals: 'Ask about saving', surprise: 'Ask what you can do', 'income-edit': 'Ask about this income', income: 'Ask about your income', check: 'Ask before you buy', why: 'Ask why it’s short', payday: 'Ask about this paycheck', bills: 'Ask about your bills', options: 'Ask a follow-up', detail: 'Ask about this paycheck' };
 function dock() {
-  const sug = state.screen === 'now' ? [] : askSuggestions();   // Now diet: no suggested questions under Now
+  const sug = state.screen === 'now' ? [] : askSuggestions().slice(0, 1);   // at most one, the one that matters here   // Now diet: no suggested questions under Now
   return `<div class="dock">
     ${sug.length ? `<div class="ask-chips" aria-label="Questions you could ask">${sug.map(q => `<button type="button" class="ask-chip" data-askq="${esc(q)}">${esc(q)}</button>`).join('')}</div>` : ''}
     <form class="ask" data-form="ask">
       <label for="ask" class="sr">Ask Alon</label>
       <input id="ask" name="q" placeholder="${DOCK_HINT[state.screen] || 'Ask Alon anything'}" autocomplete="off">
-      <span class="context-tag" aria-hidden="true">${CONTEXT[state.screen] || ''}</span>
+      <span class="context-tag" aria-hidden="true"></span>
       <button type="button" class="send" aria-label="Send" data-action="ask">${icon.send}</button>
     </form>
   </div>`;
@@ -2337,7 +2357,17 @@ function railEdge(ky) {
 function railPath(ky) { return `M${RAIL_W},0 L${railEdge(ky).join(' L')} L${RAIL_W},${RAIL.h} Z`; }
 function railLine(ky) { return `M${railEdge(ky).join(' L')}`; }
 
+/* Step 4 (Nov 12): the rail is quiet. Every screen's main action is a button in the screen, where people
+   expect it; the screen works without the rail. The rail keeps only that screen's secondary action.
+   railSpec() still knows every action and when it isn't ready yet (the in-screen buttons use its hints). */
+const RAIL_KEEPS = { now: ['What if?', 'Log'], detail: ['What if?'], add: ['Remove'], 'goal-edit': ['Remove'], plan: ['Remove'], 'income-edit': ['Remove'], why: ['Leave'] };
 function railActions() {
+  const all = railSpec();
+  if (!all) return null;
+  const keep = RAIL_KEEPS[state.screen] || [];
+  return all.map(a => a && keep.includes(a.label) ? a : null);
+}
+function railSpec() {
   const p = persona();
   const go = (label, screen) => ({ label, attrs: `data-go="${screen}"` });
   const act = (label, action, extra) => Object.assign({ label, attrs: `data-action="${action}"` }, extra || {});
@@ -2351,7 +2381,7 @@ function railActions() {
     case 'waves': return [go('Now', 'now'), go('Prepare', 'why'), go('Add', 'add')];
     case 'why': {
       if (!smoothing(computeWindows())) return [go('Back', 'waves'), go('Now', 'now'), null];
-      return [go('Back', 'waves'), act('Plan', 'plan', { disabled: !state.picked && !(state.prepAmt > 0), hint: 'Slide to prepare, or pick an option.' }), act('Leave', 'leave', { aria: 'Leave it as is' })];
+      return [null, act('Leave', 'leave', { aria: 'Leave it as is' }), null];   // Plan it is a button in the screen
     }
     case 'check': {
       const amt = Number(state.purchase) || 0;
@@ -2375,12 +2405,12 @@ function railActions() {
       const { valid } = billPreview(state.form);
       const back = state.returnTo || 'now';
       const why = billPreview(state.form);
-      return [go('Back', back), act('Save', 'save-bill', { disabled: !valid, hint: why.needsRecent ? 'Answer Paid or Not yet for the earlier payment first.' : state.form.plan && why.note && why.preview === 'Not set yet' ? why.note : 'Add a name and an amount first.', aria: 'Save bill' }),
+      return [go('Back', back), act('Save', 'save-bill', { disabled: !valid, hint: why.needsRecent ? 'Answer Paid or Not yet for the earlier payment first.' : state.form.plan && why.note && why.preview === 'Not set yet' ? why.note : state.form.freq === 'semimonthly' && state.form.name.trim() && !dayOf(state.form.day2) ? 'Add the other day of the month it’s due.' : 'Add a name and an amount first.', aria: 'Save bill' }),
               state.form.id ? act('Remove', 'remove-bill', { aria: 'Remove this bill' }) : go('Bills', 'bills')];
     }
     case 'bills': return [go('Back', 'now'), go('Add', 'add'), null];
-    case 'setaside': return [go('Now', 'now'), act('Add goal', 'add-goal', { aria: 'Add a goal' }), go('Ahead', 'waves')];
     case 'goals': return [go('Back', 'setaside'), act('Add', 'add-goal', { aria: 'Add a goal' }), go('Ahead', 'waves')];
+    case 'setaside': return [null, null, null];   // the main action is in the screen; nothing secondary here
     case 'goal-edit': return [go('Back', 'goals'), act('Save', 'save-goal', { disabled: !goalValid(state.goalForm), hint: 'Add a name, a target and a date or amount first.', aria: 'Save goal' }), state.goalForm && state.goalForm.id ? act('Remove', 'remove-goal', { aria: 'Remove this goal' }) : null];
     case 'plan': return [go('Back', state.planBack && state.planBack !== 'plan' ? state.planBack : 'bills'), act('Save', 'save-plan', { disabled: !planValid(state.planForm), hint: 'Add what it’s for, the amount, how many are left and the next date.', aria: 'Save payment plan' }), state.planForm && state.planForm.id ? act('Remove', 'remove-plan', { aria: 'Remove this plan' }) : null];
     case 'surprise': return [go('Back', state.surpriseBack || 'now'), act('Save', 'save-surprise', { disabled: !surpriseValid(state.surpriseForm), hint: 'Add what it is and how much first.', aria: 'Save it to your forecast' }), go('Goals', 'goals')];
@@ -2698,7 +2728,7 @@ function screenNow() {
       <span class="eyebrow">${esc(eb.bill.name)} is due ${long(eb.date)}</span>
       <span style="font-size:22px;font-weight:800">${eb.toGo > 0 ? `${money(eb.toGo)} to go` : 'Covered'}</span>
       <div class="bar thin"><div style="width:${covered}%"></div></div>
-      <span class="small">${money(Math.min(eb.have, eb.due))} of ${money(eb.due)} covered. Log what you make on the wave.</span>
+      <span class="small">${money(Math.min(eb.have, eb.due))} of ${money(eb.due)} covered.</span><button class="secondary in-main" style="min-height:44px" data-action="log" data-rail="Log">Log what you made</button>
     </div>`;
   } else if (hm && hm.h.basis === 'spendable' && hm.h.amount < 0) {
     const sf = hm.f.heroShortfall || hm.f.shortfall;
@@ -2777,8 +2807,8 @@ function screenNow() {
         ${w0.cashUnknown ? cashUnknownHero(w0) : `${hm ? heroHtml(hm, w0) : `<button class="hero-tap" data-whysheet="0" aria-label="${range(w0.roomLow, w0.roomTyp)}. Tap to see how it adds up">${w0.backfilled && !w0.workingOk ? '<span class="hero-about">about</span>' : ''}<span class="hero big ${isRange ? 'range' : ''} ${w0.roomLow < 0 ? 'short' : ''}" style="margin-top:4px;white-space:nowrap;font-size:${heroSize(range(w0.roomLow, w0.roomTyp))}px">${range(w0.roomLow, w0.roomTyp)}</span>
         <span class="hero-sub">${leftLine(w0)}${isRange && p.rangeNote ? `<span class="small" style="display:block;font-weight:500;font-size:15px">${p.rangeNote.charAt(0).toUpperCase() + p.rangeNote.slice(1)}</span>` : ''}</span></button>`}
         ${eb ? '' : statusPill(ws, hm)}`}
+        ${(() => { if (notice || !hm || !(hm.h.basis === 'spendable' || hm.h.basis === 'runway')) return ''; const r = (hm.h.now || {}).reserved || 0; return r > 0 ? `<button class="linkish set-line" style="text-align:left;padding:0" data-go="setaside">${money(r)} set aside, not counted</button>` : ''; })()}
         ${notice}
-      ${setupDraftNotice()}
       </section>
       ${w0.cashUnknown || wide ? '' : nowWave()}
       ${nextUpCard(ws)}
@@ -3046,9 +3076,9 @@ function nowMainButton(ws) {
   const ms = persona().unit === 'paycheck' ? nowState(ws[0]) : null;
   const arrow = '<svg width="18" height="18" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   const b = (attrs, label) => `<button class="primary now-main mt20" ${attrs}>${label}${arrow}</button>`;
-  if (ms && ms.state === 'PRESSURE') return b('data-whysheet="0"', 'See why');
+  if (ms && ms.state === 'PRESSURE') return b('data-action="why-now"', 'See why');   // what happened → why → what you can do
   if (ms && ms.state === 'OPPORTUNITY') return b('data-action="explore"', 'Explore what you could do');
-  if (!ms && knownShort(ws[0])) return b('data-whysheet="0"', 'See why');
+  if (!ms && (knownShort(ws[0]) || whyWindows().slice(0, ws.length).some(breaks))) return b('data-action="why-now"', 'See why');
   return b('data-go="waves"', 'See what’s ahead');
 }
 /* The big number, opened: what's in the account, minus what's set aside and the bills before the
@@ -3105,7 +3135,7 @@ function balanceSheetHtml(hm, st0) {
     <div class="receipt" aria-label="How it adds up">${html}</div>
     ${layer ? `<p class="body" style="margin:0">${layer}</p>` : ''}
     ${first && h.estimate ? `<p class="small" style="margin:0">${pb.assumed ? `Alon is counting the ${money(now.reserved)} you set aside as part of your account until you answer on Now.` : `Is ${money(state.onHand)} still about right? A new number from your bank app makes this exact.`}</p>` : ''}
-    ${tight && smoothing(computeWindows()) ? '<button class="primary" data-go="why">Explore options</button>' : '<button class="primary" data-action="close-why">Got it</button>'}
+    ${st.status !== 'Covered' ? `<button class="primary" ${!first && smoothing(computeWindows()) ? 'data-go="why"' : 'data-action="options-now"'}>Explore options</button><button class="linkish" style="text-align:center" data-action="close-why">Leave it as is</button>` : '<button class="primary" data-action="close-why">Got it</button>'}
     ${first ? '<button class="secondary" data-action="onhand">Update what’s in your account</button>' : ''}
     <button class="linkish" style="text-align:center" data-action="why-all">See everything in this paycheck</button>
   </div></div>`;
@@ -3209,7 +3239,6 @@ function screenDetail() {
       ${everydayRow(w0, true)}
       <button class="linkish mt8" style="text-align:left" data-go="add">+ Add a bill</button>
     </section>
-    <section class="pad mt14" style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><button class="secondary" data-go="setaside">Set aside</button><button class="secondary" data-go="check">What if?</button></section>
     <section class="pad stack mt14">
       <button class="linkish" style="text-align:left" data-action="add-income">+ Add income</button>
     </section>
@@ -3221,10 +3250,12 @@ function screenDetail() {
 let UP_EXTRAS = [];
 function screenWaves() {
   const p = persona();
-  const ws = computeWindows(null, state.showAllAhead ? Math.max(12,carouselCount()) : carouselCount());
+  const wsAll = computeWindows(null, carouselCount());
   UP_EXTRAS = extraPaychecks(400);
+  const simple = !!stretchFor(wsAll[0]) || wsAll.slice(1).some(w => stretchFor(w));
+  const ws = simple && !state.aheadAll ? wsAll.slice(0, Math.max(WINDOW_COUNT, 1 + Math.max(0, ...Object.keys(state.openWindows || {}).filter(k => state.openWindows[k]).map(Number)))) : wsAll;
   const sts = ws.map(stretchFor), anySt = sts.some(Boolean), basis = anySt ? sts.find(Boolean).basis : null;
-  const cards = ws.slice(0, state.showAllAhead ? 12 : 6).map(w => {
+  const cards = ws.map(w => {
     const open = !!state.openWindows[w.i];
     const st = sts[w.i] || null;   // one number, one meaning: the same rule as Now's big number
     const isShort = st ? st.status === 'Short' : w.roomLow < 0;
@@ -3242,6 +3273,13 @@ function screenWaves() {
       w.drawsIn.map(d => `<div class="line-item"><span class="name">From ${esc(d.name)}</span><span class="amt">+${money(d.amount)}</span></div>`).join('') +
       w.goalsIn.map(x => `<button class="line-item tap" data-editgoal="${x.goal.id}"><span class="name">For ${esc(x.goal.name)}</span><span class="amt">${money(x.amount)}</span></button>`).join('') +
       everydayRow(w, false);
+    if (st && !open) {   // step 5: date, what's available, and a word only when it isn't covered; the rest is behind the tap
+      const until = short(addDays(w.end, -1)), label = w.i === 0 ? `Today – ${until}` : `${long(w.start)}`;
+      const word = st.status === 'Covered' ? '' : st.status === 'Short' && st.available >= 0 ? 'Short after everyday spending' : st.status;
+      return `<button class="ahead-row tap ${isShort ? 'short' : st.status === 'Tight' ? 'tight' : ''}" data-whysheet="${w.i}" aria-label="${label}: ${st.available < 0 ? money(-st.available) + ' short' : money(st.available) + (st.basis === 'remainder' ? ' left' : ' available')}${word ? ', ' + word : ''}. Tap to see how it adds up">
+        <span class="stack gap2"><span class="ahead-date">${label}</span>${word ? `<span class="ahead-word">${word}</span>` : ''}</span>
+        <span class="ahead-amt">${money(st.available)}</span>${CHEV}</button>`;
+    }
     if (w.cashUnknown) return `<div class="card window-card stack gap10">
       <button class="tap row" style="background:none;border:0;padding:0;align-items:flex-start" data-whysheet="${w.i}"><span class="stack gap4"><span style="font-size:16px;font-weight:700">${windowEyebrow(w)}</span><span style="font-size:13px;color:var(--muted)">Between paydays · ${money(w.billsTotal)} in bills still to come</span></span><span style="font-size:20px;font-weight:800">?</span></button>
       <button class="linkish" style="text-align:left" data-action="onhand">Add what’s in your account</button></div>`;
@@ -3250,20 +3288,20 @@ function screenWaves() {
         <span class="stack gap4"><span style="font-size:16px;font-weight:700">${windowEyebrow(w)}</span><span style="font-size:13px;color:${isShort ? 'var(--amber-body)' : 'var(--muted)'}">${w.onHand ? `${money(w.incomeLow)} in your account` : `${range(w.incomeLow, w.incomeTyp)} coming in`}${pace}</span></span>
         <span class="stack gap4" style="align-items:flex-end"><span style="font-size:20px;font-weight:800;white-space:nowrap;${isShort ? 'color:var(--amber-text)' : ''}">${st ? money(st.available) : range(w.roomLow, w.roomTyp)}</span><span style="font-size:12px;font-weight:700;color:${isShort ? 'var(--amber-text)' : 'var(--muted-2)'}">${st ? (st.status === 'Covered' ? (st.basis === 'spendable' ? 'Available' : 'Left') : st.status === 'Short' && st.available >= 0 ? 'Short after everyday' : st.status) : w.status + (w.roomTyp !== w.roomLow ? ' on a lighter ' + p.unit : '')}</span></span>
       </button>
-      ${open ? `<div class="bar thin ${isShort ? 'amber' : ''}"><div style="width:${pct}%"></div></div>` : ''}
-      ${(() => { const bs = windowBadges(w, UP_EXTRAS).badges; return open && bs.length ? `<span class="pc-badges">${bs.map(([k, t]) => `<span class="pc-badge ${k}">${esc(t)}</span>`).join('')}</span>` : ''; })()}
+      <div class="bar thin ${isShort ? 'amber' : ''}"><div style="width:${pct}%"></div></div>
+      ${(() => { const bs = windowBadges(w, UP_EXTRAS).badges; return bs.length ? `<span class="pc-badges">${bs.map(([k, t]) => `<span class="pc-badge ${k}">${esc(t)}</span>`).join('')}</span>` : ''; })()}
       <span style="font-size:14px;color:${isShort ? 'var(--amber-body)' : 'var(--muted)'};line-height:1.45">${open ? '' : esc(summary)}</span>
-      ${open ? w.items.filter(x => x.part && x.part === x.parts && (x.bill.freq === 'once' || x.bill.count)).map(x => `<span style="font-size:14px;font-weight:600;color:var(--royal)">Last payment for ${esc(x.bill.name)}. After this, it’s done.</span>`).join('') : ''}
+      ${w.items.filter(x => x.part && x.part === x.parts && (x.bill.freq === 'once' || x.bill.count)).map(x => `<span style="font-size:14px;font-weight:600;color:var(--royal)">Last payment for ${esc(x.bill.name)}. After this, it’s done.</span>`).join('')}
       <div class="items">${items}</div>
-      ${open && needsLook && !(st && st.basis === 'spendable') ? (() => { const r = windowReasons(ws, w.i); return `<span class="why-line" style="${isShort ? '' : 'color:var(--muted-2)'}"><strong>Main reason:</strong> ${r.headline}</span>`; })() : ''}
-      ${open && decided(w) ? `<span class="small" style="color:var(--muted-2)">${decisionLine(decisionFor(w))}</span>` : ''}
-      ${open && needsLook ? `<button class="linkish" style="text-align:left;${isShort ? 'color:#6E4710' : ''}" data-whysheet="${w.i}">${isShort ? 'Why, and what you could do' : 'Why it’s tight'}</button>` : ''}
+      ${needsLook && !(st && st.basis === 'spendable') ? (() => { const r = windowReasons(ws, w.i); return `<span class="why-line" style="${isShort ? '' : 'color:var(--muted-2)'}"><strong>Main reason:</strong> ${r.headline}</span>`; })() : ''}
+      ${decided(w) ? `<span class="small" style="color:var(--muted-2)">${decisionLine(decisionFor(w))}</span>` : ''}
+      ${needsLook ? `<button class="linkish" style="text-align:left;${isShort ? 'color:#6E4710' : ''}" data-whysheet="${w.i}">${isShort ? 'Why, and what you could do' : 'Why it’s tight'}</button>` : ''}
     </div>`;
   }).join('');
   return `${header('now', 'Now')}
   <main class="wide-main">
     <section class="pad stack gap8 mt8">
-      <h1 class="h1" style="font-size:32px">What’s ahead</h1>
+      <h1 class="h1" style="font-size:32px">${anySt ? 'What’s ahead' : `Upcoming ${p.unit}s`}</h1>
       ${basis === 'runway' ? `<p class="body">What you’ll have available in each stretch, counting from what’s in your account and only income that’s certain. Tap one to see how it adds up.</p>`
         : basis === 'spendable' ? `<p class="body">What you’ll have available in each stretch between paydays, counting from what’s in your account. Tap one to see how it adds up.</p>`
         : basis === 'remainder' ? `<p class="body">Counting each paycheck on its own: what it leaves after its bills. <button class="linkish" style="padding:0" data-action="onhand">Add what’s in your account</button> to see it all together.</p>`
@@ -3273,8 +3311,14 @@ function screenWaves() {
       return `<section class="pad mt20 now-wave" aria-label="The next ${sw.length} ${p.unit}s">${sea.svg}
         <div class="now-wave-dates" aria-hidden="true"><span>Today</span><span>${short(sw[Math.floor(sw.length / 2)].start)}</span><span>${short(sw[sw.length - 1].last || sw[sw.length - 1].end)}</span></div>
         <p class="sea-key">The water rises on payday and dips for bills.${bufferAmt() ? ` The dashed line is your ${money(bufferAmt())} buffer.` : ''}${sea.maybe.length ? ' A dashed rise is income that isn’t certain.' : ''} Tap it to see why.</p></section>`; })()}
-    <div class="pad stack gap12 mt20 waves-list">${cards}</div>
-    <section class="pad mt14"><button class="secondary" data-action="toggle-ahead">${state.showAllAhead ? "Show less" : "Show more"}</button></section>
+    <div class="pad stack ${anySt ? 'gap8' : 'gap12'} mt20 waves-list">${cards}</div>
+    ${anySt ? (() => {
+      const sm = smoothing(computeWindows()), ex = extraLine(UP_EXTRAS, '');
+      return `<section class="pad stack gap12 mt14">
+        ${wsAll.length > ws.length ? `<button class="secondary" data-action="ahead-more">Show more (about six months)</button>` : state.aheadAll ? `<button class="secondary" data-action="ahead-more">Show less</button>` : ''}
+        ${ex}
+        ${sm ? `<button class="primary in-main" data-go="why" data-rail="Prepare">Prepare for ${short(sm.target.start)}</button>` : ''}
+      </section>`; })() : ''}
     ${ws.some(w => w.roomLow !== w.roomTyp) ? `<p class="small pad mt20">Status is based on the lighter case. Higher income is possible, not guaranteed.</p>` : ''}
   </main>
   ${dock()}`;
@@ -3282,6 +3326,12 @@ function screenWaves() {
 
 /* "Prepare for the wave": move the amount and watch the wave come down. It's a preview until
    Plan is pressed, and the money only counts as set aside once it's confirmed on payday. */
+/* The new wave with a plan in it (Prepare): the same drawing, computed with these set-asides. */
+function seaWithPlan(reserves) {
+  const saved = state.reserves;
+  state.reserves = reserves; FC = null; FCL = null;
+  try { return seaLine(computeWindows(), { height: 110, markLow: true }); } finally { state.reserves = saved; FC = null; FCL = null; }
+}
 function prepCard(ws, sm) {
   const u = unitWord(), k = sm.k, target = ws[k];
   const need = round5(-target.roomLow);
@@ -3289,7 +3339,7 @@ function prepCard(ws, sm) {
   const max = Math.min(need, pv.most);
   return `<div class="card stack gap12">
     <span class="eyebrow" style="color:var(--royal)">Prepare for the wave</span>
-    <div id="prep-chart" class="prep-chart">${waveChart(pv.after)}</div>
+    <div id="prep-chart" class="prep-chart">${(seaWithPlan(pv.reserves) || {}).svg || waveChart(pv.after)}</div>
     <div class="row"><span class="small" style="font-weight:700">Amount prepared</span><span id="prep-val" style="font-size:18px;font-weight:800">${money(pv.prepared)} <span class="small" style="font-weight:600">of ${money(need)}</span></span></div>
     <input type="range" id="prep-range" data-prep min="0" max="${max}" step="5" value="${Math.min(pv.prepared, max)}" aria-label="Amount to prepare for ${windowShortName(target)}" style="width:100%;accent-color:var(--royal)">
     <p id="prep-text" class="small" style="margin:0;line-height:1.5">${prepText(ws, k, pv, need)}</p>
@@ -3301,13 +3351,13 @@ function prepText(ws, k, pv, need) {
   const from = pv.allocs.map(a => `${money(a.amount)} from ${windowShortName(ws[a.from])}`);
   const cap = pv.most < need ? ` The ${u}s before it have ${money(pv.most)} of room in total, so that’s the most you can prepare here.` : '';
   if (!pv.prepared) return `Slide to set money aside from the ${u}s before ${name}. The wave comes down as you do.${cap}`;
-  if (pv.prepared >= need) return `<strong style="color:var(--navy)">${name} is covered.</strong> ${listJoin(from)}. Press Plan on the wave to keep it.`;
+  if (pv.prepared >= need) return `<strong style="color:var(--navy)">${name} is covered.</strong> ${listJoin(from)}. Press “Plan it” to keep it.`;
   return `${money(need - pv.prepared)} still to cover. ${listJoin(from)}.${cap}`;
 }
 let prepWasCovered = false;
 function prepNow(ws, sm) {
   const o = state.picked && sm.opts.find(x => x.id === state.picked);
-  return o ? prepPreview(ws, sm.k, 0, o.allocs) : prepPreview(ws, sm.k, state.prepAmt || 0);
+  return o ? prepPreview(ws, sm.k, 0, o.allocs.map(a => ({ from: a.from, amount: a.amount }))) : prepPreview(ws, sm.k, state.prepAmt || 0);
 }
 function refreshPrep() {
   const ws = computeWindows(), sm = smoothing(ws);
@@ -3315,12 +3365,13 @@ function refreshPrep() {
   const need = round5(-ws[sm.k].roomLow);
   const pv = prepNow(ws, sm);
   const chart = document.getElementById('prep-chart');
-  chart.innerHTML = waveChart(pv.after);
+  chart.innerHTML = (seaWithPlan(pv.reserves) || {}).svg || waveChart(pv.after);
   const covered = pv.prepared >= need;
   if (covered && !prepWasCovered && !reduceMotion()) { chart.classList.remove('settle'); void chart.offsetWidth; chart.classList.add('settle'); }
   prepWasCovered = covered;
   document.getElementById('prep-val').innerHTML = `${money(pv.prepared)} <span class="small" style="font-weight:600">of ${money(need)}</span>`;
   document.getElementById('prep-text').innerHTML = prepText(ws, sm.k, pv, need);
+  const pb = document.querySelector('[data-action="plan"]'); if (pb) pb.disabled = !(state.picked || state.prepAmt > 0);
   updateRail(); save();
 }
 function screenWhy() {
@@ -3330,7 +3381,7 @@ function screenWhy() {
   if (!sm) {
     const g = planGroups().find(x => x.planned > 0);
     if (!g) {
-      return `${header('waves', 'Upcoming')}
+      return `${header('waves', 'What’s ahead')}
       <main class="pad"><section class="stack gap10 mt8">
         <h1 class="h1">You’re covered ahead</h1>
         <p class="body">Every ${p.unit} in the next six covers what's due in it${ws.some(w => w.roomLow !== w.roomTyp) ? ', even on the lighter side' : ''}.</p>
@@ -3340,7 +3391,7 @@ function screenWhy() {
     const target = ws.find(w => parse(g.to) >= w.start && parse(g.to) < w.end);
     const pct = Math.round(g.ready / g.planned * 100);
     const status = r => r.done === true ? '<span style="color:var(--ok-dot);font-weight:700">Set aside</span>' : r.done === false ? '<span style="color:var(--amber-text);font-weight:700">Skipped</span>' : parse(r.from) <= TODAY ? '<span style="color:var(--amber-text);font-weight:700">Waiting for your answer</span>' : 'Planned';
-    return `${header('waves', 'Upcoming')}
+    return `${header('waves', 'What’s ahead')}
     <main>
       <section class="pad stack gap8 mt8">
         <span class="eyebrow">Your plan</span>
@@ -3367,7 +3418,7 @@ function screenWhy() {
   }).join('');
   const picked = sm.opts.find(o => o.id === state.picked);
   const options = sm.opts.map(o => `<button class="tap option ${state.picked === o.id ? 'on' : ''}" aria-pressed="${state.picked === o.id}" data-pick="${o.id}"><span class="radio"></span><span><span class="t">${o.title}</span><span class="d">${o.detail}</span></span></button>`).join('');
-  return `${header('waves', 'Upcoming')}
+  return `${header('waves', 'What’s ahead')}
   <main>
     <section class="pad stack gap6 mt8">
       <span class="eyebrow">${windowEyebrow(w)} · ${w.days} days</span>
@@ -3375,34 +3426,16 @@ function screenWhy() {
       <p class="body" style="margin:0">You have ${sm.prep.length} ${p.unit}${sm.prep.length > 1 ? 's' : ''} to prepare.</p>
     </section>
     <section class="pad mt20">${prepCard(ws, sm)}</section>
-    <section class="pad mt20"><div class="card stack gap4">
-      ${incomeRows}
-      <div class="row" style="padding:6px 0;font-size:15px"><span style="font-weight:600">Coming in</span><strong>${range(w.incomeLow, w.incomeTyp)}</strong></div>
-      <div style="height:1px;background:var(--line);margin:4px 0"></div>
-      ${billRows}
-      <div class="row" style="padding:6px 0;font-size:15px;color:var(--est)"><span>Everyday spending · your estimate</span><span>~${money(w.everyday)}</span></div>
-      <div style="height:1px;background:var(--line);margin:4px 0"></div>
-      <div class="row" style="padding:6px 0;font-size:15px"><span style="font-weight:600">Going out</span><strong>${money(w.spoken)}</strong></div>
-      <div class="row" style="padding:6px 0;font-size:16px;color:var(--amber-text)"><span style="font-weight:700">Difference</span><strong>${range(w.roomLow, w.roomTyp)}</strong></div>
-    </div></section>
-    <section class="pad mt14"><div class="tint stack gap8">
-      ${(() => { const r = windowReasons(whyWindows(), sm.k); return `<p style="margin:0;font-size:15px;line-height:1.55"><strong>Main reason:</strong> ${r.headline} ${r.normal}</p>`; })()}
-      <span style="font-size:12px;font-weight:600;color:var(--muted-2)">Numbers from your entries · explained by Alon</span>
-    </div></section>
-    <section class="pad stack gap10 mt28">
-      <h2 class="h2">Or pick a ready-made plan</h2>
-      <p class="body" style="font-size:14px;margin-bottom:4px">You have ${sm.prep.length} ${p.unit}${sm.prep.length > 1 ? 's' : ''} before then. Options are planned on the lighter case. Setting money aside here doesn't move it; it marks it on your forecast.</p>
-      ${learn('sinking', "What's a sinking fund?",
+    ${picked && picked.id !== 'none' ? `<section class="pad mt14"><div class="tint stack gap6"><span style="font-size:16px;font-weight:700">${picked.title}</span><span class="small">${picked.detail}</span><button class="linkish" style="text-align:left;padding:0" data-whysheet="${sm.k}">Choose a different way</button></div></section>` : `<section class="pad mt14"><button class="linkish" style="text-align:left;padding:0" data-whysheet="${sm.k}">See the numbers and other ways</button></section>`}
+    <section class="pad mt14">${learn('sinking', "What's a sinking fund?",
         `<p>When a big bill is coming, you set aside a smaller amount from each ${p.unit} before it arrives. The bill becomes a little part of every ${p.unit} instead of a shock in one.</p>
          <p>It works best for bills you can see coming: insurance every six months, yearly registration, holidays, a sports season.</p>
-         <p class="you"><strong>For you:</strong> ${sm.opts[0].allocs.length ? `${sm.opts[0].title} covers the ${money(sm.gap)} gap on ${short(sm.target.start)}.` : `the gap on ${short(sm.target.start)} is ${money(sm.gap)}.`} That's the first option below.</p>`,
-        'A general money concept. Your numbers come from your entries.')}
-      ${options}
-    </section>
+         <p class="you"><strong>For you:</strong> ${sm.opts[0].allocs.length ? `${sm.opts[0].title} covers the ${money(sm.gap)} gap on ${short(sm.target.start)}.` : `the gap on ${short(sm.target.start)} is ${money(sm.gap)}.`}</p>`,
+        'A general money concept. Your numbers come from your entries.')}</section>
     <section class="pad stack gap12 mt20">
-      <span class="decision">Your decision.</span>
-      <p class="decision-note">${picked ? (picked.id === 'none' ? 'Press Plan on the wave to keep things as they are.' : 'Press Plan on the wave to mark it on your forecast.') : 'Choose an option, then Plan on the wave.'}</p>
-      <p class="small">Alon doesn't move money; you set it aside yourself. Education, not financial advice.</p>
+      <button class="primary" data-action="plan" ${picked || state.prepAmt > 0 ? '' : 'disabled'}>Plan it</button>
+      <p class="decision-note">Your decision. Alon doesn’t move money; you set it aside yourself, and Alon asks on each payday whether you did.</p>
+      <p class="small">Education, not financial advice.</p>
     </section>
   </main>
   ${dock()}`;
@@ -3441,16 +3474,20 @@ function screenCheck() {
   return `${header('now', 'Now')}
   <main>
     <section class="pad stack gap10 mt8">
-      <h1 class="h1">What if?</h1>
-      <p class="body">What are you thinking about? Try an amount to see what changes. Nothing is saved unless you choose to.</p>
-      <span class="eyebrow">${untilText}</span>
+      <fieldset style="border:0;padding:0;margin:0" class="stack gap8"><legend class="legend" style="margin-bottom:8px;font-size:17px;font-weight:700;color:var(--navy)">What are you thinking about?</legend>
+        <div class="chips">
+          <button type="button" class="chip on" aria-pressed="true">Buy something</button>
+          <button type="button" class="chip" aria-pressed="false" data-go="setaside">Set some aside</button>
+          <button type="button" class="chip" aria-pressed="false" data-explore="prepare">Prepare for a bill</button>
+          <button type="button" class="chip" aria-pressed="false" data-action="surprise">Something came up</button>
+        </div></fieldset>
+      <span class="eyebrow mt8">${untilText}</span>
       ${answer}
-      <button class="linkish mt8" data-action="toggle-buffer" aria-expanded="${!!state.showBuffer}">${state.showBuffer ? "Hide buffer setting" : "Adjust the safety buffer"}</button>
-      ${state.showBuffer ? `<div class="stack gap6 mt8">
+      ${state.bufferOpen ? `<div class="stack gap6 mt8">
         <span class="legend">Keep a buffer of</span>
-        <div class="chips">${[0, 100, 250, 500].map(n => `<button class="chip ${r.c === n ? 'on' : ''}" aria-pressed="${r.c === n}" data-cushion="${n}" style="min-height:40px">$${n}</button>`).join('')}</div>
-        <span class="small">One buffer for all of aLoN: below it, a ${unitWord2()} shows as tight.</span>
-      </div>` : ""}
+        <div class="chips">${[0, 100, 250, 500].map(n => `<button class="chip ${r.c === n ? 'on' : ''}" aria-pressed="${r.c === n}" data-cushion="${n}" style="min-height:44px">$${n}</button>`).join('')}</div>
+        <span class="small">One buffer for all of Alon: below it, a ${unitWord2()} shows as tight.</span>
+      </div>` : `<button class="linkish" style="text-align:left;padding:0" data-action="buffer-open">Change your ${money(r.c)} buffer</button>`}
       ${r.ahead ? `<button class="warn tap stack gap4 mt8" data-go="why"><span style="font-size:15px;font-weight:700">${windowShortName(r.ahead)} already looks ${r.ahead.stretch ? `about ${money(-Math.min(r.ahead.stretch.available, r.ahead.stretch.likely != null ? r.ahead.stretch.likely : 0))}` : money(-r.ahead.roomLow)} short</span><span style="font-size:14px;color:var(--amber-body);line-height:1.45">Money you don't spend now could help cover it. See your options.</span></button>` : ''}
     </section>
     <section class="pad stack gap14 mt28">
@@ -3459,10 +3496,9 @@ function screenCheck() {
       <div class="money"><span>$</span><input id="amount" inputmode="decimal" value="${esc(state.purchaseRaw != null ? state.purchaseRaw : (amt || ''))}" data-input="purchase" autocomplete="off"></div>
       <div class="chips">${[20, 50, 75, 100, 150].map(n => `<button class="chip ${amt === n ? 'on' : ''}" aria-pressed="${amt === n}" data-amount="${n}">$${n}</button>`).join('')}${r.freeLow > 0 && ![20, 50, 75, 100, 150].includes(r.freeLow) ? `<button class="chip ${amt === r.freeLow ? 'on' : ''}" aria-pressed="${amt === r.freeLow}" data-amount="${r.freeLow}">Up to $${r.freeLow.toLocaleString('en-US')}</button>` : ''}</div>
       ${(() => { const sea = seaLine(ws, { purchase: amt, markLow: true, height: 104 }); return sea ? `<div class="now-wave" id="p-sea">${sea.svg}<p class="sea-key" id="p-low">${seaLowText(sea, amt)}</p></div>` : ''; })()}
-      <button class="linkish" data-action="toggle-whatif-detail" aria-expanded="${!!state.showWhatifDetail}">${state.showWhatifDetail ? "Hide extra details" : "Add a name or see the breakdown"}</button>
-      ${state.showWhatifDetail ? `<div class="field"><label for="p-name">What is it? (optional)</label><input class="input" id="p-name" data-input="pname" value="${esc(state.purchaseName)}" placeholder="e.g. New work shoes" autocomplete="off"></div>` : ""}
+      <div class="field"><label for="p-name">What is it? (optional)</label><input class="input" id="p-name" data-input="pname" value="${esc(state.purchaseName)}" placeholder="e.g. New work shoes" autocomplete="off"></div>
     </section>
-    <section class="pad mt24" style="${state.showWhatifDetail ? "" : "display:none"}"><div class="card stack gap12">
+    <section class="pad mt24"><div class="card stack gap12">
       <span class="eyebrow">${windowEyebrow(w0)}</span>
       <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px">
         <div class="stack gap4"><span class="small">${r.st ? `${r.st.basis === 'spendable' ? 'Available' : 'Left'} until ${short(parse(r.st.until))}` : 'Left now'}</span><span style="font-size:22px;font-weight:800">${r.st ? money(r.st.available) : range(w0.roomLow, w0.roomTyp)}</span></div>
@@ -3557,14 +3593,14 @@ function purchaseDecision(ws, amt) {
   }
   return `<section class="pad stack gap10 mt24">
     <span class="decision">Your decision.</span>
-    <p class="decision-note">Nothing changes until you choose to add it. You can remove it under Your bills.</p>
+    ${state.purchaseLater
+      ? `<button class="primary in-main" data-action="buy-later-confirm" data-rail="Plan">Plan it for that ${p.unit === 'month' ? 'window' : p.unit}</button><button class="secondary in-main" data-action="buy-later" data-rail="Today">Buy it today instead</button>`
+      : `<button class="primary in-main" data-action="buy-now" data-rail="Buy">I’m buying it</button><button class="secondary in-main" data-action="buy-later" data-rail="Later">Plan it for later</button>`}
+    <button class="linkish in-main" style="text-align:center" data-action="not-now" data-rail="Not now">Not now</button>
+    <p class="decision-note">Nothing changes until you choose. You can remove it under Your bills.</p>
     ${amt > 0 ? `<button class="secondary" data-action="save-up">Save up for it instead</button>` : ''}
     <p class="small">Based on what you've entered. Education, not financial advice.</p>
     ${later}
-    <div class="stack gap10">
-      <button class="primary" data-action="${state.purchaseLater ? 'buy-later-confirm' : 'buy-now'}" ${!(amt > 0) || (state.purchaseLater && state.purchaseTarget == null) ? 'disabled' : ''}>${state.purchaseLater ? 'Add to that paycheck' : 'Add to my forecast'}</button>
-      <div class="row" style="justify-content:space-between"><button class="linkish" data-action="buy-later" ${amt > 0 ? '' : 'disabled'}>${state.purchaseLater ? 'Try today instead' : 'Try a later paycheck'}</button><button class="linkish" data-action="not-now">Not now</button></div>
-    </div>
   </section>`;
 }
 
@@ -3587,12 +3623,16 @@ function screenPayday() {
       <h1 class="h1" style="font-size:34px">${fixed ? 'Did your paycheck land?' : 'What landed this time?'}</h1>
       <span style="font-size:16px;color:var(--muted)">Expected today: <strong style="color:var(--navy)">${range(pay.low, pay.typ)}</strong>${fixed ? '' : ', ' + (persona().rangeNote || 'it changes')}</span>
     </section>
-    ${fixed && state.payAnswer !== 'different' ? `<p class="decision-note pad mt24">Landed, Different, or Not yet, on the wave.</p>` : ''}
+    ${fixed && state.payAnswer !== 'different' ? `<section class="pad stack gap10 mt24">
+      <button class="primary in-main" data-payday="yes" data-rail="Landed">Yes, ${money(pay.source.typical)} landed</button>
+      <button class="secondary in-main" data-payday="different" data-rail="Different">A different amount</button>
+      <button class="linkish in-main" style="text-align:center" data-payday="notyet" data-rail="Not yet">Not yet</button></section>` : ''}
     ${showEntry ? `<section class="pad mt14"><div class="card stack gap10">
       <label for="landed" class="legend">How much landed?</label>
       <div class="money" style="padding:4px 14px;border-radius:14px"><span style="font-size:28px">$</span><input id="landed" inputmode="decimal" value="${esc(draftVal)}" data-input="draft" style="font-size:28px" autocomplete="off"></div>
       <p class="body" style="color:var(--navy)">That makes this paycheck's room <span id="draft-room">${money(roomWith)}</span>.${fixed ? '' : ' Each amount you confirm helps Alon learn your lighter and typical checks.'}</p>
-      <p class="decision-note">Then press Confirm on the wave.</p>
+      <button class="primary in-main" data-action="confirm-pay" data-rail="Confirm">Confirm</button>
+      <button class="linkish in-main" style="text-align:center" data-payday="notyet" data-rail="Not yet">Not yet</button>
     </div></section>` : ''}
     ${state.payAnswer === 'notyet' ? `<p role="status" class="tint" style="margin:14px 24px 0;font-size:15px;line-height:1.55">No problem. Some deposits arrive later in the day. Alon will check in again tomorrow morning.</p>` : ''}
     <p class="small pad mt28">Alon only asks on payday. Your answers make the next forecasts more accurate.</p>
@@ -3762,7 +3802,8 @@ function screenIncomeEdit() {
         <span class="small" style="font-weight:600;margin-top:6px">What it changes</span>
         <span id="i-impact" class="body" style="color:var(--navy)">${pv.impact}</span>
       </div>
-      <p class="decision-note">Press Save on the wave. Nothing changes until you do.</p>
+      <button class="primary in-main" data-action="save-income" data-rail="Save">Save income</button>
+      <p class="decision-note">Nothing changes until you save.</p>
     </section>
   </main>
   ${dock()}`;
@@ -3972,7 +4013,6 @@ function refreshBillForm() {
   const { preview, note, valid } = billPreview(state.form);
   const p = document.getElementById('bill-preview'), n = document.getElementById('bill-note');
   if (!p) return;
-  const saveButton = document.getElementById('bill-save'); if (saveButton) saveButton.disabled = !valid;
   p.textContent = preview || 'Pick a date';
   n.textContent = note;
   const f = state.form;
@@ -3999,6 +4039,7 @@ function saveBill() {
   const amount = parseMoney(f.amount);
   const due = billDue(f);
   if (!f.name.trim() || !(amount > 0) || !due) { toast(formRanged(f) || !f.due ? 'Add a name, an amount and when it’s due first.' : 'Add a name, an amount and a due date first.'); return; }
+  if (f.freq === 'semimonthly' && !(dayOf(f.day2) && dayOf(f.day2) !== parts(parse(due))[2])) { toast('Add the other day of the month it’s due, different from ' + ordinal(parts(parse(due))[2]) + '.'); return; }
   const ek = escrowKey(f.name);
   if (ek && !f.id && mortgageHome()) {
     if (f.escrowAns === 'included') {
@@ -4034,7 +4075,6 @@ function saveBill() {
   state.picked = null;
   const back = state.returnTo || 'now';
   state.form = blankBillForm(); state.returnTo = null;
-  if (f.setupDraft) state.setupBillDrafts = (state.setupBillDrafts || []).filter(b=>b.id !== f.setupDraft);
   toast(`${fields.name} ${existing ? 'updated' : 'added'}. Forecast updated.`);
   go(back);
 }
@@ -4053,7 +4093,7 @@ function editBill(id) {
   if (!b) return;
   state.returnTo = state.screen === 'add' ? state.returnTo : state.screen;
   if (b.standalone) { state.planForm = planEditFrom(b); state.planBack = state.screen; return go('plan'); }
-  state.form = { day2: b.day2 || '', fromKeep: b.fromKeep || '', id: b.id, name: b.name, amount: String(b.amount), due: isRanged(b) ? '' : b.start, month: isRanged(b) ? b.start.slice(0, 7) : '', when: isRanged(b) ? b.when : 'exact', grace: b.grace != null ? b.grace : null, lateFee: b.lateFee ? String(b.lateFee) : '', freq: b.freq, kind: b.status === 'estimate' ? 'estimate' : 'exact', unconfirmed: b.status === 'unconfirmed', plan: b.plan ? planFormFrom(b.plan, b) : null, saved: preparedLeft(b) ? String(preparedLeft(b).prepared) : '', _opening: true };
+  state.form = { day2: b.day2 ? String(b.day2) : '', fromKeep: b.fromKeep || '', id: b.id, name: b.name, amount: String(b.amount), due: isRanged(b) ? '' : b.start, month: isRanged(b) ? b.start.slice(0, 7) : '', when: isRanged(b) ? b.when : 'exact', grace: b.grace != null ? b.grace : null, lateFee: b.lateFee ? String(b.lateFee) : '', freq: b.freq, kind: b.status === 'estimate' ? 'estimate' : 'exact', unconfirmed: b.status === 'unconfirmed', plan: b.plan ? planFormFrom(b.plan, b) : null, saved: preparedLeft(b) ? String(preparedLeft(b).prepared) : '', _opening: true };
   go('add');
   delete state.form._opening;
 }
@@ -4078,49 +4118,55 @@ function savedFieldHtml(f) {
     <span class="small" id="f-saved-note">${savedNote(amount, saved)}</span></div>`;
 }
 const savedNote = (amount, saved) => saved > 0 && amount > 0 ? (saved >= amount ? 'That covers it. Alon counts it toward this bill only.' : `Remaining to prepare: ${money(amount - saved)}. Alon counts what you set aside toward this bill only.`) : 'Money you’ve kept apart for this, like in savings. Don’t count it in what’s in your account too.';
+/* Step 6: does this bill already use something that lives behind "More options"? Then show them. */
+const billUsesMore = f => !!(f.more || f.savedOpen || f.unconfirmed || f.kind === 'estimate' || f.plan || f.fromKeep || parseMoney(f.saved) > 0 || (f.when && f.when !== 'exact') || (!f.due && f.month) || isRentLike(f));
 function addMarkup(f, preview, note, valid, quick) {
+  const more = billUsesMore(f), existingBill = f.id ? state.bills.find(b => b.id === f.id) : null;
   const back = state.returnTo || 'now';
-  const backLabel = { now: 'Now', detail: 'Back', waves: 'Upcoming', bills: 'Bills', why: 'Back' }[back] || 'Back';
+  const backLabel = { now: 'Now', detail: 'Back', waves: 'What’s ahead', bills: 'Bills', why: 'Back' }[back] || 'Back';
   return `${header(back, backLabel)}
   <main>
     <section class="pad stack gap14 mt8">
       <h1 class="h1">${f.id ? 'Edit bill' : 'Add a bill'}</h1>
       ${f.unconfirmed ? '<div class="warn"><span style="font-size:15px;color:var(--amber-body);line-height:1.5">This amount isn’t confirmed yet. Check your latest bill, then save it as Exact.</span></div>' : ''}
-
-      ${quick.length ? `<button class="linkish" data-action="toggle-bill-suggestions" aria-expanded="${!!f.showSuggestions}">${f.showSuggestions ? 'Hide common bills' : 'Choose a common bill instead'}</button>
-      ${f.showSuggestions ? `<div class="tint stack gap8"><div class="chips">${quick.map(([n, fr, pre]) => `<button class="chip ${f.preset === pre && f.freq === fr ? 'on' : ''}" data-quick="${n}|${fr}|${pre}">${n}</button>`).join('')}</div></div>` : ''}` : ''}
+      ${false ? `<button class="card tap row" data-action="surprise" style="text-align:left"><span class="stack gap4"><span style="font-size:15px;font-weight:700">Something came up?</span><span class="small">A repair or a doctor’s bill. See what it does and how to cover it.</span></span><span style="color:var(--royal);font-weight:700">›</span></button>` : ''}
+      ${quick.length && !f.quickOpen ? `<button type="button" class="secondary" style="min-height:48px" data-action="bill-quick">Pick a common bill</button>` : ''}
+      ${quick.length && f.quickOpen ? `<div class="tint stack gap10">
+        <span style="font-size:15px;font-weight:700">Start with a common one</span>
+        <span style="font-size:14px;color:var(--muted-2);line-height:1.45">Tap one, then rename it if you like (“Navient”). Have two? Add it twice.</span>
+        ${[['Every month', quick.filter(x => x[1] === 'monthly')], ['A few times a year · these cause most surprises', quick.filter(x => x[1] !== 'monthly')]].map(([lab, list]) => `<span class="legend" style="margin-top:4px">${lab}</span>
+        <div class="chips">${list.map(([n, fr, pre]) => `<button class="chip ${f.preset === pre && f.freq === fr ? 'on' : ''}" data-quick="${n}|${fr}|${pre}">${n}</button>`).join('')}</div>`).join('')}
+      </div>` : ''}
     </section>
     <form class="pad stack gap14 mt20" data-form="bill">
       <div class="field"><label for="f-name">What is it?</label><input class="input" id="f-name" data-field="name" value="${esc(f.name)}" placeholder="e.g. Vehicle registration" autocomplete="off"></div>
       <div class="stack gap14">
         <div class="field"><label for="f-amt">Amount</label><input class="input" id="f-amt" data-field="amount" inputmode="decimal" value="${esc(f.amount)}" placeholder="$0" autocomplete="off"></div>
       </div>
-      ${f.showMore || f.kind === 'estimate' ? `<fieldset style="border:0;padding:0;margin:0" class="stack gap8"><legend class="legend" style="margin-bottom:8px">Is that amount exact?</legend>
-        <div class="seg">${['exact', 'estimate'].map(k => `<button type="button" class="${f.kind === k ? 'on' : ''}" aria-pressed="${f.kind === k}" data-kind="${k}">${k === 'exact' ? 'Exact' : 'Estimate'}</button>`).join('')}</div>
-      </fieldset>` : ""}
       <fieldset style="border:0;padding:0;margin:0" class="stack gap8"><legend class="legend" style="margin-bottom:8px">How often?</legend>
         <div class="chips">${FREQS.filter(fr => f.allFreq || COMMON_FREQS.includes(fr.id) || f.freq === fr.id).map(fr => `<button type="button" class="chip ${f.freq === fr.id ? 'on' : ''}" aria-pressed="${f.freq === fr.id}" data-freq="${fr.id}">${fr.label}</button>`).join('')}${f.allFreq || FREQS.every(fr => COMMON_FREQS.includes(fr.id) || f.freq === fr.id) ? '' : `<button type="button" class="chip" data-freqmore style="color:var(--muted-2)">More…</button>`}</div>
       </fieldset>
-      ${whenFieldHtml(f)}
+      ${more ? whenFieldHtml(f) : `<div class="field"><label for="f-due">${f.id ? 'A date it’s due' : 'Next due'}</label><input class="input" id="f-due" type="date" data-field="due" value="${f.due || ''}"></div>`}
       ${f.freq === 'semimonthly' ? `<div class="field"><label for="f-day2">Other day of the month</label><input class="input" id="f-day2" data-field="day2" inputmode="numeric" value="${esc(f.day2 || '')}" placeholder="e.g. 15"></div>` : ''}
-      <button type="button" class="linkish" data-action="toggle-bill-more" aria-expanded="${!!f.showMore}">${f.showMore ? "Fewer options" : "More options · estimates, money prepared, payment plans"}</button>
       <div id="f-escrow-wrap">${escrowFormHtml(f)}</div>
-      ${f.showMore || f.plan || f.fromKeep || parseMoney(f.saved) > 0 ? `
+      ${more ? `
+      <fieldset style="border:0;padding:0;margin:0" class="stack gap8"><legend class="legend" style="margin-bottom:8px">Is that amount exact?</legend>
+        <div class="seg">${['exact', 'estimate'].map(k => `<button type="button" class="${f.kind === k ? 'on' : ''}" aria-pressed="${f.kind === k}" data-kind="${k}">${k === 'exact' ? 'Exact' : 'Estimate'}</button>`).join('')}</div>
+      </fieldset>
       ${savedFieldHtml(f)}
       <fieldset style="border:0;padding:0;margin:0" class="stack gap8"><legend class="legend" style="margin-bottom:8px">How do you pay it?</legend>
         <div class="seg"><button type="button" class="${f.plan ? '' : 'on'}" aria-pressed="${!f.plan}" data-paymode="once">All at once</button><button type="button" class="${f.plan ? 'on' : ''}" aria-pressed="${!!f.plan}" data-paymode="parts">In parts</button></div>
         ${f.plan ? planFields(f.plan, f.freq === 'once' ? 'Pay it in' : 'Each time, pay it in', { monthly: splitByPayday(f), due: f.due, amount: parseMoney(f.amount) }) : ''}
       </fieldset>
-      ${keepPayHtml(f)}
-      ` : ""}
+      ${keepPayHtml(f)}` : `<button type="button" class="linkish" style="text-align:left" data-action="bill-more">More options: an estimate, not sure of the date, paying in parts, money already set aside</button>`}
+      ${existingBill && LONG_FREQS.includes(existingBill.freq) ? spreadOffer([existingBill]) + (/tax/i.test(existingBill.name) ? `<div class="mt8">${taxLearn(existingBill)}</div>` : '') : ''}
       <div id="bill-recent-wrap" data-keys="${esc(billRecentItems(f).map(x => x.key).join(','))}">${billRecentBlock(f)}</div>
       <div class="tint stack gap6 preview-card">
         <span class="small" style="font-weight:600">${f.plan ? 'Alon will expect' : 'Alon will expect it on'}</span>
         <span id="bill-preview" style="font-size:16px;font-weight:700;line-height:1.45">${preview || (f.freq === 'monthly' ? 'Pick a date' : 'Pick the date or the month')}</span>
         <span id="bill-note" class="small">${note}</span>
       </div>
-      <button type="button" data-action="save-bill" class="primary" id="bill-save" style="width:100%" ${valid ? '' : 'disabled'}>Save bill</button>
-      <p class="small">Your forecast updates after saving. ${f.id ? "To remove this bill, use the side rail." : ""}</p>
+      <button class="primary in-main" data-action="save-bill" data-rail="Save">Save bill</button>
     </form>
   </main>
   ${dock()}`;
@@ -4282,7 +4328,8 @@ function screenPlan() {
         <span class="small">Use the amounts from your agreement or the app. Alon only counts what you enter.</span>
       </div>` : `<button type="button" class="more-toggle" data-pmore>＋ Fees or details <span class="sum">Optional</span></button>`}
       <div class="card stack gap6 preview-card"><span class="small" style="font-weight:600">What this changes</span><span id="pl-preview" class="${pv.valid ? 'body' : 'ph'}">${pv.text}</span><div id="pl-rows">${pv.rows}</div></div>
-      <p class="decision-note">Press Save on the wave. You can change or remove it anytime.</p>
+      <button class="primary in-main" data-action="save-plan" data-rail="Save">Save</button>
+      <p class="decision-note">You can change or remove it anytime.</p>
     </section>
   </main>
   ${dock()}`;
@@ -4373,33 +4420,57 @@ function spreadOffer(list) {
     <button class="linkish" style="text-align:center;padding:2px 0" data-spreadno="${c.b.id}">Not now</button>
   </div>`;
 }
+/* Step 6 (Nov 12): one list, by date. Each row is a name, a date and an amount; a short marker only when
+   it matters. Everything else about a bill is inside it (tap). Bills paid in parts show each part on its date. */
 function screenBills() {
-  const sorted = state.bills.map(b => ({ b, due:nextDue(b) })).sort((x,y) =>
-    (x.due == null ? Infinity : x.due) - (y.due == null ? Infinity : y.due) || x.b.name.localeCompare(y.b.name));
-  const rows = sorted.map(({b,due}) => {
-    const prep = preparedLeft(b);
-    const when = due == null ? 'No upcoming date' : isRanged(b) ? 'Date estimated · '+short(due) : short(due);
-    const confidence = b.status === 'estimate' ? ' · amount estimated' : b.status === 'unconfirmed' ? ' · not confirmed' : '';
-    return `<button class="line-item tap" data-editbill="${b.id}" style="width:100%;text-align:left">
-      <span class="stack gap4"><span class="name">${esc(b.name)}</span><span class="meta">${when}${confidence}${prep ? ' · '+money(prep.prepared)+' prepared' : ''}</span></span>
-      <span class="amt">${b.status === 'estimate' ? '~' : ''}${money(b.amount)} ${CHEV}</span></button>`;
-  }).join('');
-  const u=uncertainItems();
-  return `${header('now','Now')}<main>
-    <section class="pad stack gap8 mt8"><h1 class="h1">Coming up</h1>
-      <p class="purpose">Bills and payments in date order. Tap one to see its schedule, edit it or record money already prepared.</p>
-      ${u.dates.length || u.amounts.length ? '<button class="tint tap" data-action="review">Some dates or amounts need confirming · Review</button>' : ''}
+  const horizon = addDays(TODAY, 45);
+  const evs = [].concat(...state.bills.map(b => billEvents(b, TODAY, horizon).filter(x => !(x.orig != null && (b.paid || {})[payKey(x.orig, x.part || 0)]))))
+    .filter(x => x.amount > 0).sort((a, c) => a.date - c.date || eventName(a).localeCompare(eventName(c)));
+  const soonIds = new Set(evs.map(x => x.bill.id));
+  const later = state.bills.filter(b => !soonIds.has(b.id)).map(b => ({ b, nd: nextDue(b) })).filter(o => o.nd).sort((a, c) => a.nd - c.nd);
+  const done = state.bills.filter(b => !soonIds.has(b.id) && !nextDue(b));
+  const marks = (b, x) => { const pl = preparedLeft(b), out = [];
+    if (b.status === 'estimate') out.push('estimate'); if (b.status === 'unconfirmed') out.push('not confirmed');
+    if (x && x.part && x.parts) out.push(`part ${x.part} of ${x.parts}`);
+    if (x && x.fee) out.push('fee'); if (b.surprise) out.push('came up');
+    if (pl && (!x || x.orig === pl.date)) out.push(`${money(pl.prepared)} of ${money(b.amount)} set aside`);
+    if (b.fromKeep) out.push(`from money set aside for ${keepWord(b.fromKeep)}`);
+    if (b.standalone && b.plan) out.push(planStatus(b));   // a payment plan: how many are left
+    return out.length ? ' · ' + out.join(' · ') : ''; };
+  const row = (b, when, amt, x) => `<button class="line-item tap" data-editbill="${b.id}" style="width:100%"><span class="lead">${tileHtml(b)}<span><span class="name">${esc(x ? eventName(x) : b.name)}</span><span class="meta">${when}${marks(b, x)}</span></span></span><span class="end"><span class="amt">${b.status === 'estimate' ? 'about ' : ''}${moneyExact(amt)}</span>${CHEV}</span></button>`;
+  return `${header('now', 'Now')}
+  <main>
+    <section class="pad stack gap8 mt8"><h1 class="h1">Your bills</h1><p class="purpose">What’s coming up, in order. Tap one to change it.</p>
+      ${(() => { const u = uncertainItems(); return (u.cluster ? clusterCard(u.cluster, 'bills') : '') + (u.dates.length || u.amounts.length ? `<button class="tint tap row mt8" style="border:0;text-align:left" data-action="review"><span class="stack gap4"><span style="font-size:15px;font-weight:700">${listJoin([u.dates.length ? `${u.dates.length} date${u.dates.length > 1 ? 's' : ''} not set` : '', u.amounts.length ? `${u.amounts.length} amount${u.amounts.length > 1 ? 's' : ''} not confirmed` : ''].filter(Boolean))}</span><span class="small">Confirming them makes your forecast more accurate.</span></span><span class="see" style="font-weight:700;color:var(--royal)">Review</span></button>` : ''); })()}
     </section>
-    ${setupDraftRows()}
-    <section class="pad mt20"><div class="row-card">${rows || '<p class="small">Nothing added yet.</p>'}</div></section>
-    <section class="pad stack gap10 mt20">
-      <button class="primary" data-go="add">Add a bill</button>
-      <button class="secondary" data-action="add-plan">Add a payment plan</button>
-      <button class="linkish" data-go="setaside">See money set aside</button>
+    <section class="pad stack mt24"><h2 class="h2" style="font-size:18px;margin-bottom:8px">Coming up</h2>
+      ${evs.length ? '<div class="row-card">' + evs.map(x => row(x.bill, nextWhen(x), nextAmt(x), x)).join('') + '</div>' : '<p class="small">Nothing in the next few weeks.</p>'}
     </section>
-  </main>${dock()}`;
+    ${later.length ? `<section class="pad stack mt24"><h2 class="h2" style="font-size:18px;margin-bottom:8px">Later</h2>
+      <div class="row-card">${later.map(o => row(o.b, `${withYear(o.nd)}${LONG_FREQS.includes(o.b.freq) && o.b.freq !== 'once' ? ' · ' + freqLabel(o.b.freq).toLowerCase() : ''}`, o.b.amount, null)).join('')}</div></section>` : ''}
+    ${done.length ? `<section class="pad stack mt24"><h2 class="h2" style="font-size:18px;margin-bottom:8px">Done</h2>
+      <div class="row-card">${done.map(b => row(b, 'Paid off', b.amount, null)).join('')}</div></section>` : ''}
+    ${state.bills.length ? '' : '<p class="small pad mt14">No bills yet. Add your first one below.</p>'}
+    <div class="pad stack gap10 mt24"><button class="primary" data-go="add" data-rail="Add">Add a bill</button><button class="secondary" data-action="add-plan">Add something you’re paying in parts</button><button class="linkish" data-go="setaside">See money set aside</button></div>
+  </main>
+  ${dock()}`;
 }
 
+/* ===================== Savings goals ===================== */
+const monthYear = t => new Date(t).toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' });
+function goalFormFrom(g) {
+  if (!g) return { id: null, name: '', target: '', saved: '', mode: 'date', by: iso(addMonths(TODAY, 6, parts(TODAY)[2])), per: '', paused: false, fund: false };
+  return { id: g.id, name: g.name, target: String(g.target), saved: String(g.saved || 0), mode: g.mode, by: g.by || iso(addMonths(TODAY, 6, parts(TODAY)[2])), per: String(g.per || ''), paused: !!g.paused, fund: !!g.fund };
+}
+function goalFromForm(f) {
+  const base = f.id ? state.goals.find(x => x.id === f.id) : null;
+  return Object.assign({}, base || { id: 'g' + Date.now(), skips: [], hist: {} }, {
+    name: f.name.trim(), target: parseMoney(f.target), saved: parseMoney(f.saved) || 0, mode: f.mode,
+    by: f.by, per: parseMoney(f.per) || 0, paused: !!f.paused, fund: !!f.fund });
+}
+/* A surprise fund is a goal you don't spend on a date: you use it when something comes up,
+   then it refills. A starting target from the person's own numbers: about one month of
+   bills and everyday spending (rare bills averaged over the year), rounded up to $50. */
 function monthOfBillsFor(bills, everydayPerWeek, fromT) {
   const yearOut = sum(bills.filter(b => !b.surprise && !b.purchase), b => sum(billEvents(b, fromT, addDays(fromT, 365)), x => x.amount));
   return Math.ceil((yearOut / 12 + (everydayPerWeek || 0) * 52 / 12) / 50) * 50;
@@ -4476,6 +4547,68 @@ function goalCard(g) {
     ${!plan.done && !g.paused && thisOne ? `<button class="linkish" style="text-align:left;font-size:13px" data-goalskip="${g.id}">Skip this ${u} (${money(thisOne.amount)} spreads over the rest)</button>` : ''}
   </div>`;
 }
+/* Step 7 (Nov 12): one place for every dollar set aside. Six kinds, one idea: set aside, still yours,
+   not counted in what's available. Each row opens its own details (the bill, the goal, the tide pool,
+   the income it's kept from). */
+function screenSetAside() {
+  const u = persona().unit === 'month' ? 'window' : persona().unit;
+  const rows = [];
+  const card = (o) => `<div class="card stack gap8">
+    <button class="tap row" style="background:none;border:0;padding:0;align-items:flex-start;text-align:left" ${o.attrs}>
+      <span class="stack gap4"><span style="font-size:17px;font-weight:700">${o.name}</span>${o.sub ? `<span class="small">${o.sub}</span>` : ''}</span>
+      <span class="stack gap4" style="align-items:flex-end"><span style="font-size:18px;font-weight:800">${money(o.have)}</span>${o.of ? `<span class="small">of ${money(o.of)}</span>` : ''}</span>
+    </button>
+    ${o.of ? `<div class="bar thin"><div style="width:${Math.min(100, Math.round(o.have / Math.max(1, o.of) * 100))}%"></div></div>` : ''}
+    ${o.note ? `<span class="small" style="${o.warn ? 'color:var(--amber-text);font-weight:600' : ''}">${o.note}</span>` : ''}
+  </div>`;
+  // bills: money already set aside, and set-asides planned from Prepare
+  state.bills.forEach(b => {
+    const pl = preparedLeft(b), planned = (state.reserves || []).filter(r => r.bill === b.id && r.done !== false);
+    if (!pl && !planned.length) return;
+    const due = pl ? occDate(b, pl.date, 0) : null, plannedAmt = sum(planned.filter(r => r.done == null), r => r.amount);
+    rows.push({ kind: 'bill', html: card({ name: esc(b.name), have: pl ? pl.prepared + sum(planned.filter(r => r.done === true), r => r.amount) : sum(planned.filter(r => r.done === true), r => r.amount), of: b.amount,
+      sub: `For a bill${due ? ` · due ${short(due)}` : ''}`, note: plannedAmt ? `${money(plannedAmt)} more planned from ${listJoin(planned.filter(r => r.done == null).map(r => short(parse(r.from))))}. Alon asks on that payday.` : '', attrs: `data-editbill="${b.id}"` }) });
+  });
+  // goals and the surprise fund
+  const ws = computeWindows();
+  (state.goals || []).forEach(g => {
+    const plan = goalPlan(g);
+    const line = plan.done ? (g.fund ? 'Full. Ready for whatever comes up.' : 'Reached.') : g.paused ? 'Paused. Nothing is set aside until you resume.'
+      : g.mode === 'amount' ? `${money(plan.per)} a ${u} · about ${plan.finish ? monthYear(plan.finish) : 'later'}` : `${money(plan.per)} a ${u} · by ${withYear(parse(g.by))}`;
+    // the plain fact, only when true: a stretch is short with this goal's set-aside in it
+    const hit = ws.map(w => ({ w, st: stretchFor(w) })).find(x => x.w.goalsIn.some(y => y.goal.id === g.id) && (x.st ? x.st.status === 'Short' : x.w.roomLow < 0));
+    const by = hit ? (hit.st ? -Math.min(hit.st.available, hit.st.likely != null ? hit.st.likely : hit.st.available) : -hit.w.roomLow) : 0;
+    rows.push({ kind: 'goal', html: card({ name: esc(g.fund ? `${g.name}` : g.name), have: g.saved || 0, of: g.target, sub: `${g.fund ? 'For surprises' : 'A goal'} · ${line}`,
+      note: hit ? `${hit.w.i === 0 ? `This ${u}` : windowShortName(hit.w)} is short by about ${money(by)} with it. Tap to adjust or skip that ${u}.` : '', warn: !!hit, attrs: `data-editgoal="${g.id}"` }) });
+  });
+  // the tide pool
+  const P = poolState(), going = P.adds.filter(a => a.done == null && parse(a.from) >= TODAY);
+  if (P.balance > 0 || going.length) rows.push({ kind: 'pool', html: card({ name: 'Tide pool', have: P.balance, sub: 'Covers a short paycheck on its own', note: going.length ? `${money(sum(going, a => a.amount))} planned to go in.` : '', attrs: 'data-go="pool"' }) });
+  // money kept from income when it arrives (taxes, the property, the business)
+  const labels = [...new Set(state.sources.map(keepOf).filter(Boolean).map(k => k.label).concat(Object.keys(state.keptSoFar || {})))];
+  labels.forEach(l => {
+    const from = state.sources.filter(x => (keepOf(x) || {}).label === l);
+    const nextK = (factsLong().heroBalance.rows || []).find(r => r.dir === 'reserve' && r.keepFor === l && r.date >= iso(TODAY));
+    const howMuch = from.map(x => { const k = keepOf(x); return `${k.pct ? k.pct + '% of each' : money(k.amt) + ' from each'} ${esc(x.name)} payment`; });
+    rows.push({ kind: 'keep', html: card({ name: `For ${esc(keepWord(l))}`, have: Number((state.keptSoFar || {})[l]) || 0, sub: howMuch.length ? capFirst(listJoin(howMuch)) : 'Kept from income',
+      note: nextK ? `Next: about ${money(nextK.amount)} around ${short(parse(nextK.date))}.` : (from.some(x => x.certainty === 'uncertain') ? 'More is set aside each time a payment arrives.' : ''), attrs: `data-action="kept-so-far" data-keep="${esc(l)}"` }) });
+  });
+  const total = reservedEvents(TODAY, addDays(TODAY, 1)).existingC / 100;
+  const outside = state.reservedInBalance === false;
+  return `${header('now', 'Now')}
+  <main>
+    <section class="pad stack gap8 mt8"><h1 class="h1">Set aside</h1>
+      <p class="body" style="margin:0">${total > 0 ? `<strong>${money(total)} set aside.</strong> ` : ''}Still yours${outside ? ', kept outside your everyday account' : ''}, just not counted in what’s available.</p><p class="small" style="margin:0">Alon doesn’t move money. You set it aside yourself; Alon keeps track.</p></section>
+    <section class="pad stack gap12 mt20">${rows.length ? rows.map(r => r.html).join('') : `<div class="tint stack gap6"><span style="font-size:16px;font-weight:700">Nothing set aside yet</span><span class="small">A goal, a surprise fund, money for a big bill or for taxes. Everything you put aside shows up here.</span></div>`}</section>
+    <section class="pad stack gap10 mt24">
+      <button class="primary" data-action="add-goal">Start a goal</button>
+      ${(state.goals || []).some(g => g.fund) ? '' : '<button class="secondary" data-action="start-fund">Start a surprise fund</button>'}
+      <button class="secondary" data-go="pool">Carry some forward to your tide pool</button>
+    </section>
+    <section class="pad mt14 stack gap8">${fundLearn()}${learn('sinking', 'What’s a sinking fund?', '<p>Money you set aside a little at a time for a bill you know is coming, like insurance or taxes, so it never lands all at once. In Alon it’s “Already set aside” on that bill.</p>', 'Alon’s explanation. You move the money yourself; Alon only plans it.')}</section>
+  </main>
+  ${dock()}`;
+}
 function screenGoals() {
   const goals = state.goals || [];
   const per = sum(computeWindows()[0].goalsIn, x => x.amount);
@@ -4483,7 +4616,7 @@ function screenGoals() {
   <main>
     <section class="pad stack gap8 mt8"><h1 class="h1">Your goals</h1>
       <p class="body">Something you’re saving for. Alon sets aside a little from each ${persona().unit === 'month' ? 'window' : persona().unit} and shows it in your forecast, so you can see what it changes.</p></section>
-    <section class="pad stack gap12 mt20">${goals.length ? goals.map(goalCard).join('') : `<div class="tint stack gap6"><span style="font-size:16px;font-weight:700">No goals yet</span><span class="small">A car, a trip, a gift. Add one with Add on the wave.</span></div>`}</section>
+    <section class="pad stack gap12 mt20">${goals.length ? goals.map(goalCard).join('') : `<div class="tint stack gap6"><span style="font-size:16px;font-weight:700">No goals yet</span><span class="small">A car, a trip, a gift.</span></div>`}</section>
     ${goals.length && per ? `<p class="small pad mt14">This ${persona().unit === 'month' ? 'window' : persona().unit}: ${money(per)} set aside for goals. Alon doesn’t move money; you move it to savings yourself.</p>` : ''}
     ${goals.some(g => g.fund) ? '' : `<section class="pad mt20"><div class="tint stack gap8">
       <span style="font-size:16px;font-weight:700">For what you can’t plan</span>
@@ -4522,7 +4655,8 @@ function screenGoalEdit() {
         <div id="g-suggest">${goalSuggestHtml(pv)}</div>
       </div>
       ${f.id ? `<label class="row card" style="cursor:pointer"><span class="stack gap4"><span style="font-weight:700">Pause this goal</span><span class="small">For a tight stretch. Nothing is set aside until you turn it back on.</span></span><input type="checkbox" data-gpause ${f.paused ? 'checked' : ''} style="width:22px;height:22px"></label>` : ''}
-      <p class="decision-note">Press Save on the wave. Alon only plans it; you move the money to savings yourself.</p>
+      <button class="primary in-main" data-action="save-goal" data-rail="Save">Save goal</button>
+      <p class="decision-note">Alon only plans it; you move the money to savings yourself.</p>
       ${f.fund ? fundLearn() : ''}
     </section>
   </main>
@@ -4547,7 +4681,7 @@ function saveGoal() {
   if (i >= 0) state.goals[i] = g; else state.goals.push(g);
   state.goalForm = null; state.picked = null;
   toast(`${g.name} ${i >= 0 ? 'updated' : 'added'}. Your forecast now sets money aside for it.`);
-  go('goals');
+  go('setaside');
 }
 
 /* ===================== Something came up =====================
@@ -4786,7 +4920,8 @@ function screenSurprise() {
         : `<p id="s-result" class="small" style="margin:0;line-height:1.5">There’s no surprise fund or goal savings to draw from yet. You can still change the date, or pay it in parts above if they agree to it.</p>`}
       ${fundGoals().length ? '' : `<button type="button" class="more-toggle" data-action="start-fund">For next time: start a surprise fund <span class="sum">›</span></button>`}
       ${surpriseTips(f.kind)}
-      <p class="decision-note">Press Save on the wave. Alon doesn’t lend or move money; it shows you the numbers.</p>
+      <button class="primary in-main" data-action="save-surprise" data-rail="Save">Save it to my forecast</button>
+      <p class="decision-note">Alon doesn’t lend or move money; it shows you the numbers.</p>
     </section>
   </main>
   ${dock()}`;
@@ -4880,9 +5015,9 @@ function screenOptions() {
   return `${header(state.askBack || 'now', 'Back')}
   <main>
     <section class="pad stack gap8 mt8">
-      <span class="eyebrow">What if?</span>
+      <span class="eyebrow">You asked</span>
       <h1 class="h1" style="font-size:24px">“${esc(a.q)}”</h1>
-      <p class="body">Explore possible changes and see how they affect your future money. These are illustrations, not recommendations; you decide what works.</p>
+      <p class="body">When a bill is bigger than what’s coming in, these are what people use. Alon doesn’t pick one for you; it shows what each would cost. Alon isn’t paid by any of them.</p>
       ${quoteNote}
     </section>
     ${owSection(ctx)}
@@ -5111,7 +5246,7 @@ function screenPool() {
   const covers = ws.filter(w => w.poolIn > 0);
   const extras = ws.filter(w => w.roomLow >= 50 && extraPct(w) >= 15 && !P.adds.some(a => a.from === iso(w.start) && a.done !== false)).slice(0, 6);
   const last = ws[ws.length - 1];
-  return `${header('now', 'Now')}
+  return `${header('setaside', 'Set aside')}
   <main>
     <section class="pad stack gap8 mt8">
       <h1 class="h1">Your tide pool</h1>
@@ -5123,11 +5258,12 @@ function screenPool() {
       <span class="small">${going.length ? `${money(sum(going, a => a.amount))} planned to go in. ` : ''}${covers.length ? `Covers ${listJoin(covers.map(w => `${windowShortName(w)} (${money(w.poolIn)})`))}.` : `Everything ahead is covered, so it stays yours to use.`} About ${money(last.poolAfter)} left by ${short(last.start)}.</span>
       <button class="linkish" style="text-align:left" data-action="pool-balance">Change the amount in it</button>
     </div></section>
+    <section class="pad mt14"><button class="primary in-main" data-action="pool-other" data-rail="Add">Carry some forward</button></section>
     ${going.length ? `<section class="pad stack mt24"><h2 class="h2" style="font-size:16px;margin-bottom:4px">Going in</h2>
       ${going.map(a => `<div class="line-item"><span><span class="name">From ${short(parse(a.from))}</span><span class="meta"><span class="dot" style="background:var(--royal)"></span>Planned · Alon asks on that payday</span></span><span class="row" style="gap:12px"><span class="amt">${money(a.amount)}</span><button class="linkish" style="font-size:13px;color:var(--muted)" data-poolremove="${a.id}" aria-label="Remove ${money(a.amount)} from ${short(parse(a.from))}">Remove</button></span></div>`).join('')}
     </section>` : ''}
     ${extras.length ? `<section class="pad stack mt24"><h2 class="h2" style="font-size:16px;margin-bottom:4px">${u === 'week' ? 'Weeks' : 'Paychecks'} with room to spare</h2>
-      ${extras.map(w => `<button class="line-item tap" data-poolfrom="${iso(w.start)}"><span><span class="name">${windowShortName(w)}</span><span class="meta">${money(extraOf(w))} left · ${extraPct(w)}% of what comes in · Tap to carry some forward</span></span><span class="amt" style="color:var(--royal)">＋</span></button>`).join('')}
+      ${extras.map(w => `<button class="line-item tap" data-poolfrom="${iso(w.start)}"><span><span class="name">${windowShortName(w)}</span><span class="meta">${money(extraOf(w))} left · Tap to carry some forward</span></span><span class="amt" style="color:var(--royal)">＋</span></button>`).join('')}
     </section>` : ''}
     <section class="pad mt20">${learn('pool', 'How is this different from the surprise fund?',
       `<p>The tide pool smooths ordinary ups and downs: a light ${u}, a month with a big bill. Alon uses it automatically when a ${u} would come up short.</p>
@@ -5238,6 +5374,14 @@ function obRareDate(today, name, freq) {
   if (/School/.test(name)) return firstAfter([`${y}-08-15`, `${y + 1}-08-15`]);
   return iso(addDays(t, { semiannual: 60, yearly: 90 }[freq] || 60));
 }
+/* Setup's button says what comes next, so nobody wonders how much is left. */
+const OB_NEXT = { income: 'your pay', onhand: 'what’s in your account', home: 'your home', homecosts: 'other home costs', bills: 'your other bills', style: 'bigger bills', recent: 'recent payments', everyday: 'everyday spending', ready: 'your first look' };
+function obNextLabel() {
+  const steps = obSteps(), nx = steps[Math.min(state.ob.step, steps.length - 1) + 1];
+  if (!nx) return 'Continue';
+  if (nx.startsWith('other:')) { const x = state.ob.others[Number(nx.slice(6))]; return `Next: ${((OB_WAYS.find(w => w[0] === (x || {}).kind) || [0, 'your other income'])[1]).toLowerCase().replace('1099', '1099')}`; }
+  return OB_NEXT[nx] ? `Next: ${OB_NEXT[nx]}` : 'Continue';
+}
 const obStep = () => state.ob.extra || obSteps()[Math.min(state.ob.step, obSteps().length - 1)];
 const obNum = v => { const n = parseMoney(v); return isNaN(n) ? null : n; };
 
@@ -5264,8 +5408,7 @@ function obValid() {
     if (o.housing === 'other' && !(obNum(o.rent) > 0)) return true;
     return obNum(o.rent) > 0 && (o.housing === 'rent' && o.rentSplit ? !obSplitProblem(o) : !!o.rentDate);
   }
-  if (st === 'bills' || st === 'rare') return true;
-  if (['homecosts','plans'].includes(st)) return !obStepProblem(o,st);
+  if (['bills','rare','homecosts','plans'].includes(st)) return !obStepProblem(o,st);
   if (st === 'style') return !!o.style;
   if (st === 'recent') return recentAnswered(obRecent(o), o.recent);
   if (st === 'everyday') return o.everyday === 'none' || o.everyday === 'unsure' || obNum(o.everyday) != null;
@@ -5377,17 +5520,6 @@ function obCardProblem(b, list) {
   return LONG_FREQS.includes(freq) ? 'Choose the next due date, or the month if you’re unsure of the day.' : 'Choose the next due date for this schedule.';
 }
 function obSecondDayHtml(path, value) { return `<div class="field"><label for="ob-day2-${path.replace(/\./g,'-')}">Other day of the month</label><input class="input" id="ob-day2-${path.replace(/\./g,'-')}" data-obf="${path}" inputmode="numeric" value="${esc(value || '')}" placeholder="e.g. 15"><span class="small">1 to 31, different from the next payment’s day.</span></div>`; }
-function obUnfinishedBills(o) {
-  return ['bills','rare'].flatMap(list => (o[list] || []).map((b,i) => ({...b, id: `setup-${list}-${i}`, name: obBillName(o[list],i), freq: obCardFreq(b,list)})).filter(b=>obCardProblem(b,list)));
-}
-function setupDraftNotice() {
-  const n = (state.setupBillDrafts || []).length;
-  return n ? `<button class="warn tap stack gap4 mt14" data-go="bills"><strong>${n} unfinished ${n === 1 ? 'bill' : 'bills'} not in your forecast yet</strong><span class="small">Your entries are saved. Add the missing details when you can.</span></button>` : '';
-}
-function setupDraftRows() {
-  const list = state.setupBillDrafts || [];
-  return list.length ? `<section class="pad stack gap10 mt20"><h2 class="h2">Finish when you’re ready</h2><p class="small">These bills are saved as drafts and are not included in the forecast yet.</p>${list.map(b=>`<button class="line-item tap" data-setupdraft="${b.id}"><span><span class="name">${esc(b.name || 'Unfinished bill')}</span><span class="meta">${freqLabel(b.freq)} · needs details</span></span><span class="amt">${money(obNum(b.amount) || 0)} ›</span></button>`).join('')}</section>` : '';
-}
 function obStepProblem(o, st) {
   if (['bills','rare','homecosts'].includes(st)) return (o[st] || []).map(b=>obCardProblem(b,st)).find(Boolean) || '';
   if (st === 'plans') return o.plans.some(x=>obNum(x.each)>0 && (!x.name.trim() || !Number.isInteger(Number(x.left)) || Number(x.left)<1 || !x.next)) ? 'Add the plan name, whole number of payments left, and next payment date.' : '';
@@ -5422,7 +5554,6 @@ function obBills(o) {
   });
   // a monthly bill with no exact date counts as "I'm not sure": skipping the date isn't a guess
   o.bills.forEach((b, n) => {
-    if (obCardProblem(b,'bills')) return;
     const nm = obBillName(o.bills, n); if (!(obNum(b.amount) > 0) || !nm) return;
     if (obCardFreq(b,'bills') !== 'monthly') {
       const start = b.when === 'unsure' ? (b.month ? b.month + '-01' : '') : b.date;
@@ -5450,7 +5581,6 @@ function obBills(o) {
     return bill;
   };
   o.rare.forEach((b, n) => {
-    if (obCardProblem(b,'rare')) return;
     const nm = obBillName(o.rare, n); if (!(obNum(b.amount) > 0) || !nm) return;
     const bill = rareBill(b, 'obr' + n, nm, b.est ? 'estimate' : 'confirmed');
     if (bill) bills.push(bill);
@@ -5658,8 +5788,7 @@ function obClick(ds) {
   }
   if (ds.ob === 'finish') {
     const keep = { railLeft: state.railLeft, fold: state.fold, lastBackup: state.lastBackup, hsDismissed: state.hsDismissed };
-    const setupBillDrafts = obUnfinishedBills(o);
-    state = Object.assign(freshState('custom', obSeed()), keep, { ackTerms: true, railHint: false, setupBillDrafts });
+    state = Object.assign(freshState('custom', obSeed()), keep, { ackTerms: true, railHint: false });
     askPersist();
     go('now'); state.tour = 0;
     return render(false, true);
@@ -5674,7 +5803,6 @@ function refreshOb() {
   const b = document.getElementById('ob-next');
   if (b) b.disabled = !obValid();
   const o = state.ob;
-  const message = document.getElementById('ob-problem'); if (message) { const st = obStep(), problem = obStepProblem(o,st); message.textContent = problem ? (st === 'bills' || st === 'rare' ? 'You can continue. Unfinished bills stay as drafts, outside the forecast, until you add their details.' : problem) : ''; }
   ['bills', 'rare', 'homecosts'].forEach(list => (o[list] || []).forEach((c, i) => { const el = document.getElementById(`ob-${list}-${i}-sn`); if (el) el.textContent = savedNote(obNum(c.amount), obNum(c.saved)); }));
   const sum = document.getElementById('ob-split-sum'); if (sum) sum.innerHTML = obSplitSummary(o);
   const opts = document.getElementById('ob-split-opts'); if (opts) opts.innerHTML = obSplitOpts(o);
@@ -5695,7 +5823,7 @@ function screenOb() {
   const q = (title, sub) => `<section class="stack gap8 mt24"><h1 class="h1" style="font-size:30px">${title}</h1>${sub ? `<p class="body">${sub}</p>` : ''}</section>`;
   const money_ = (id, path, label, val, ph) => `<div class="field"><label for="${id}">${label}</label><input class="input" id="${id}" data-obf="${path}" inputmode="decimal" value="${esc(val)}" placeholder="${ph || '$0'}" autocomplete="off"></div>`;
   const date_ = (id, path, label, val) => `<div class="field"><label for="${id}">${label}</label><input class="input" id="${id}" type="date" data-obf="${path}" value="${esc(val)}"></div>`;
-  const foot = (extra) => `<div class="ob-foot stack gap10">${o.extra ? `<button class="secondary" data-ob="skip">Not now</button>` : extra || ''}<button class="primary" id="ob-next" data-ob="next" ${obValid() ? '' : 'disabled'}>${o.extra ? 'Done' : 'Continue'}</button><p id="ob-problem" class="small" role="status" style="margin:0">${obStepProblem(o,st) ? (st === 'bills' || st === 'rare' ? 'You can continue. Unfinished bills stay as drafts, outside the forecast, until you add their details.' : obStepProblem(o,st)) : ''}</p></div>`;
+  const foot = (extra) => `<div class="ob-foot stack gap10">${o.extra ? `<button class="secondary" data-ob="skip">Not now</button>` : extra || ''}<button class="primary" id="ob-next" data-ob="next" ${obValid() ? '' : 'disabled'}>${o.extra ? 'Done' : obNextLabel()}</button>${obStepProblem(o, st) ? `<p class="small" role="status" style="margin:0">${obStepProblem(o, st)}</p>` : ''}</div>`;
   let body = '', footer = foot();
   const payLabel = o.way === 'benefit' ? 'When does it arrive next?' : o.way === 'free' || o.mainKind === 'rental' ? 'About when does the next one arrive?' : 'When is your next payday?';
   const segRow = (path, cur, opts) => `<div class="seg" style="grid-template-columns:repeat(${opts.length},minmax(0,1fr))">${opts.map(([v, l]) => `<button type="button" class="${String(cur) === String(v) ? 'on' : ''}" aria-pressed="${String(cur) === String(v)}" data-obset="${path}=${v}">${l}</button>`).join('')}</div>`;
@@ -5708,7 +5836,7 @@ function screenOb() {
 
   if (st === 'way') {
     body = q('How does your money come in?', 'Pick all that apply. Each one gets its own short question next, and they all go in one forecast.') +
-      `<section class="stack gap10 mt20">${OB_WAYS.map(([k, t, d]) => { const on = (o.ways || []).includes(k); return `<button class="tap option ${on ? 'on' : ''}" aria-pressed="${on}" data-obway="${k}"><span class="radio" style="border-radius:6px"></span><span><span class="t">${t}</span><span class="d">${d}</span></span></button>`; }).join('')}</section>
+      `<section class="stack gap10 mt20">${OB_WAYS.map(([k, t, d]) => { const on = (o.ways || []).includes(k); return `<button class="tap option ${on ? 'on' : ''}" aria-pressed="${on}" data-obway="${k}"><span class="radio box"></span><span><span class="t">${t}</span><span class="d">${d}</span></span></button>`; }).join('')}</section>
       ${ALPHA ? '' : '<button class="linkish mt14" style="text-align:left" data-go="arrival">Or try an example person first</button>'}`;
   } else if (st === 'income') {
     const freqChips = `<fieldset style="border:0;padding:0;margin:0" class="stack gap8"><legend class="legend" style="margin-bottom:8px">How often?</legend><div class="chips">${['weekly', 'biweekly', 'semimonthly', 'monthly'].map(f => `<button type="button" class="chip ${o.freq === f ? 'on' : ''}" aria-pressed="${o.freq === f}" data-obfreq="${f}">${freqLabel(f)}</button>`).join('')}</div></fieldset>${o.freq === 'semimonthly' ? obSecondDayHtml('day2',o.day2) : ''}`;
@@ -5884,7 +6012,7 @@ function screenOb() {
     body = `<section class="stack gap14" style="margin-top:8vh">
       <span style="width:10px;height:10px;border-radius:5px;background:var(--royal);box-shadow:0 0 0 6px var(--tint)"></span>
       <h1 class="h1" style="font-size:34px">I have enough to help you begin.</h1>
-      <p class="body">${esc(inc.name)} (${inc.certainty === 'variable' ? range(inc.low, inc.typical) : money(inc.typical)}${inc.perWeek ? ' a week' : ', ' + freqLabel(inc.freq).toLowerCase()}), ${nb} bill${nb === 1 ? '' : 's'}, ${seed.everydayUnknown ? ', everyday spending not set yet' : seed.everyday ? ` and about ${money(seed.everyday)} a week for everyday things` : ', and nothing for everyday things'}${seed.bills.some(b => b.plan) ? `, ${seed.bills.filter(b => b.plan).length} paid in parts` : ''}${fd ? `, and a surprise fund${fd.saved ? ` with ${money(fd.saved)}` : ''}${fd.paused ? '' : ` getting ${money(fd.per)} each ${seed.meta.unit}`}` : ''}. Everything is an estimate you can change anytime.</p>
+      <p class="body">${esc(inc.name)} (${inc.certainty === 'variable' ? range(inc.low, inc.typical) : money(inc.typical)}${inc.perWeek ? ' a week' : ', ' + freqLabel(inc.freq).toLowerCase()}), ${nb} bill${nb === 1 ? '' : 's'}${seed.everydayUnknown ? ', everyday spending not set yet' : seed.everyday ? `, and about ${money(seed.everyday)} a week for everyday things` : ', and nothing for everyday things'}${seed.bills.some(b => b.plan) ? `, ${seed.bills.filter(b => b.plan).length} paid in parts` : ''}${fd ? `, and a surprise fund${fd.saved ? ` with ${money(fd.saved)}` : ''}${fd.paused ? '' : ` getting ${money(fd.per)} each ${seed.meta.unit}`}` : ''}. Everything is an estimate you can change anytime.</p>
       ${seed.sources.length > 1 ? `<p class="small">Plus ${listJoin(seed.sources.slice(1).map(x => esc(x.name)))}: each counted on its own, in one forecast.</p>` : ''}
       ${(() => { const c = sameDayCluster(seed.bills, o.clusterOk); return c ? clusterCard(c, 'ob') : ''; })()}
     </section>
@@ -6088,7 +6216,7 @@ function screenFeedback() {
         <textarea class="input" id="fb-text" data-fbtext rows="5" style="padding:14px 16px;min-height:140px;resize:vertical;line-height:1.45" placeholder="${f.kind === 'wrong' ? 'Which number, and what did you expect?' : f.kind === 'idea' ? 'What would make Alon more useful?' : 'What were you trying to do?'}">${esc(f.text)}</textarea></div>
       <div class="card stack gap6 preview-card"><span class="small" style="font-weight:600">What we’ll receive</span>
         <span class="ph">Your note, that you were on ${esc(where)}, and the app version. Not your income, bills or goals; those stay on this device.</span></div>
-      <p class="decision-note">Press Send on the wave.</p>
+      <button class="primary in-main" data-action="send-feedback" data-rail="Send">Send feedback</button>
     </section>
   </main>`;
 }
@@ -6181,7 +6309,8 @@ function screenYear() {
         <span style="font-size:22px;font-weight:800;line-height:1.25">I saw 9 money waves coming this year.</span>
         <span style="font-size:13px;color:#BFCDE3">Made with Alon</span>
       </div>
-      <span class="small">No dollar amounts on the shareable card. Share it with Share on the wave.</span>
+      <span class="small">No dollar amounts on the shareable card.</span>
+      <button class="primary in-main" data-action="share-year" data-rail="Share">Share my card</button>
     </section>
   </main>
   ${dock()}`;
@@ -6299,19 +6428,25 @@ function whySheetHtml() {
   </div></div>`;
   const title = carried(w) ? `${capFirst(name)} leans on earlier ${u}s` : w.roomLow < 0 ? `Why ${name} could come up ${money(gap)} short` : w.status === 'Tight' ? `Why ${name} is tight` : `${capFirst(name)} is covered`;
   const mp = monthPaycheck(w);
-  const parts_ = [];
-  // main reason
-  if (w.roomLow < bufferAmt()) parts_.push(`<div class="why-main"><span class="k">Main reason</span><p>${r.headline}</p><p class="why-normal">${r.normal}</p></div>`);
+  /* Step 3 (Nov 12): what happened, then why, then what you can do. The sheet opens on the answer and
+     one reason; the receipt ("See the numbers") and the options ("Explore options") are a tap away. */
+  const view = s.view || {}, needs = w.roomLow < bufferAmt();
+  const parts_ = [], numbers = [], explore = [];
+  if (needs) parts_.push(`<div class="why-main"><span class="k">Main reason</span><p>${r.headline}</p><p class="why-normal">${r.normal}</p></div>`);
   if (r.dateNote) parts_.push(`<div class="warn why-note"><span class="k" style="color:var(--amber-body)">Before you plan around it</span><p style="color:var(--amber-body)">${r.dateNote}</p><button class="secondary why-btn" data-action="review">Review the dates</button></div>`);
-  else parts_.push(`<p class="body" style="margin:0">${w.roomLow + w.everyday !== w.roomLow ? `About ${money(w.roomLow)}` : money(w.roomLow)} is left after the bills due before ${w.end ? short(w.end) : 'the next one'}${w.everyday > 0 ? ` and your everyday estimate. Bills alone leave ${w.items.some(x => x.bill.status === 'estimate') ? 'about ' : ''}${money(w.roomLow + w.everyday)}` : ''}.</p>`);
-  parts_.push(receiptHtml(w, r));
+  const bills0 = w.roomLow + w.everyday, est = w.items.some(x => x.bill.status === 'estimate') ? 'about ' : '';
+  const sentence = w.roomLow < 0
+    ? `${capFirst(name)} could come up about ${money(-w.roomLow)} short after the bills due before ${w.end ? short(w.end) : 'the next one'}${w.everyday > 0 ? ` and your everyday estimate. Bills alone ${bills0 < 0 ? `are about ${money(-bills0)} more than it brings` : `leave ${est}${money(bills0)}`}` : ''}.`
+    : `${w.everyday > 0 ? `About ${money(w.roomLow)}` : money(w.roomLow)} is left after the bills due before ${w.end ? short(w.end) : 'the next one'}${w.everyday > 0 ? ` and your everyday estimate. Bills alone leave ${est}${money(bills0)}` : ''}.`;
+  (needs ? numbers : parts_).push(`<p class="body" style="margin:0">${sentence}</p>`);
+  numbers.push(receiptHtml(w, r));
   // the truth about carrying money forward
   if (w.roomLow < 0 && r.type !== 'ongoing') {
-    if (w.i === 0) parts_.push(`<div class="tint why-note"><p>This is the ${u} you’re in now, so there’s nothing earlier to set aside from. You still have options below.</p></div>`);
+    if (w.i === 0) explore.push(`<div class="tint why-note"><p>This is the ${u} you’re in now, so there’s nothing earlier to set aside from. You still have options below.</p></div>`);
     else {
       const pa = prepAllocs(ws, s.i, round5(gap));
       const from = listJoin(pa.allocs.map(a => short(ws[a.from].start)));
-      parts_.push(`<div class="tint why-note"><span class="k">How Alon counts</span><p>Alon counts each ${u} on its own. Money left from an earlier ${u} isn’t carried forward unless you keep it. ${term(`Why ${u}s, not months?`, 'paycheck')}</p>${pa.prepared >= round5(gap) && pa.allocs.length ? `<p><strong>If you keep ${money(round5(gap))} of what’s left from ${from}, ${name} is covered.</strong></p>` : pa.most > 0 ? `<p>The ${u}s before it have ${money(pa.most)} to spare in total, so keeping that covers part of it.</p>` : ''}</div>`);
+      explore.push(`<div class="tint why-note"><span class="k">How Alon counts</span><p>Alon counts each ${u} on its own. Money left from an earlier ${u} isn’t carried forward unless you keep it. ${term(`Why ${u}s, not months?`, 'paycheck')}</p>${pa.prepared >= round5(gap) && pa.allocs.length ? `<p><strong>If you keep ${money(round5(gap))} of what’s left from ${from}, ${name} is covered.</strong></p>` : pa.most > 0 ? `<p>The ${u}s before it have ${money(pa.most)} to spare in total, so keeping that covers part of it.</p>` : ''}</div>`);
     }
   }
   // teach: spread a big bill
@@ -6323,7 +6458,7 @@ function whySheetHtml() {
     const plan = spreadPlan(x.bill, ws);
     const already = spreadAlready(x.bill);
     const soon = plan && plan.allocs.length && plan.prepared / plan.allocs.length > per * 1.5;
-    parts_.push(`<div class="why-teach"><span class="k">A way to think about it</span>
+    explore.push(`<div class="why-teach"><span class="k">A way to think about it</span>
       <p>${esc(capFirst(inSentence(x.bill.name)))} is ${money(x.bill.amount)} ${freqLabel(x.bill.freq).toLowerCase()}. Spread over the whole time, that’s about <strong>${money(per)} a ${u}</strong>, so it never lands all at once.</p>
       ${soon && !already ? (() => { const n = Math.max(1, plan.k - 1), skipped = ws.slice(1, plan.k).filter(v => !plan.allocs.some(al => al.from === v.i)); return `<p>This time there ${n === 1 ? 'is only 1 ' + u : 'are only ' + n + ' ' + u + 's'} before it${skipped.length ? `, and ${listJoin(skipped.map(v => short(v.start)))} ${skipped.length === 1 ? 'is' : 'are'} already tight` : ''}, so it’s more each time. After this one, the ${money(per)} a ${u} pace works.</p>`; })() : ''}
       ${already ? `<p class="small" style="margin:0;color:var(--royal);font-weight:700">You’re spreading it. Alon asks on each payday.</p>`
@@ -6332,7 +6467,7 @@ function whySheetHtml() {
   });
   // how sure, and why
   const c = r.confidence, unc = uncertainItems();
-  parts_.push(`<div class="why-conf ${c.level}"><span class="dotc" aria-hidden="true"></span><span><strong>${c.label}.</strong> ${c.text}${unc.dates.length || unc.amounts.length || unc.cluster ? ` <button class="linkish" style="padding:0;font-size:13.5px" data-action="review">Review uncertain items</button>` : ''}</span></div>`);
+  numbers.push(`<div class="why-conf ${c.level}"><span class="dotc" aria-hidden="true"></span><span><strong>${c.label}.</strong> ${c.text}${unc.dates.length || unc.amounts.length || unc.cluster ? ` <button class="linkish" style="padding:0;font-size:13.5px" data-action="review">Review uncertain items</button>` : ''}</span></div>`);
   // remembered decision
   if (d && !d.stale) parts_.push(`<div class="tint why-note"><p>${decisionLine(d)} Alon still shows the number, without the warning.</p><button class="linkish" data-undecide="${d.win}">Undo</button></div>`);
   if (d && d.stale) parts_.push(`<div class="warn why-note"><p style="color:var(--amber-body)">You said you had this covered when it was ${money(d.gap)} short. It’s now ${money(gap)} short, so Alon is showing it again.</p></div>`);
@@ -6357,6 +6492,8 @@ function whySheetHtml() {
       const pv = prepPreview(computeWindows(), sm.k, round5(gap));
       const changes = pv.allocs.map(a => `${short(ws[a.from].start)} ${money(ws[a.from].roomLow)} → ${money(ws[a.from].roomLow - a.amount)}`).join(' · ');
       items.push(['data-action="why-prepare"', `Prepare ${money(pv.prepared)} from earlier ${u}s`, changes ? `What this changes: ${changes}` : 'Set a little aside from the paychecks before it.']);
+      // the ready-made plans live here too (merged from Prepare): pick one, then see it on the wave
+      sm.opts.filter(o => o.id !== 'none' && o.allocs.length).forEach(o => items.push([`data-pick="${o.id}"`, o.title, o.detail]));
     }
     // rent with a grace period that reaches the next payday: pay it from that paycheck, still with no late fee
     const rentX = w.items.find(x => isRentLike(x.bill) && !x.bill.plan && !x.part && x.orig && !(x.bill.moved || {})[payKey(x.orig, 0)] && graceEnd(x.bill, x.orig) && w.end <= graceEnd(x.bill, x.orig));
@@ -6370,16 +6507,25 @@ function whySheetHtml() {
   } else {
     opts = `<button class="primary" data-action="close-why">Got it</button>`;
   }
+  const short_ = w.roomLow < 0 && !s.ack, canExplore = short_ || explore.length > 0;
+  const toggles = s.ack ? '' : `<div class="stack gap8">
+      <button class="secondary" data-whyview="numbers" aria-expanded="${!!view.numbers}">${view.numbers ? 'Hide the numbers' : 'See the numbers'}</button>
+      ${view.numbers ? numbers.join('') : ''}
+      ${canExplore ? `<button class="${short_ ? 'primary' : 'secondary'}" data-whyview="explore" aria-expanded="${!!view.explore}">${view.explore ? 'Hide the options' : 'Explore options'}</button>` : ''}
+      ${view.explore ? explore.join('') + (short_ ? opts : '') : ''}
+    </div>`;
   return `<div class="scrim" data-action="close-why"><div class="sheet why-sheet" role="dialog" aria-modal="true" aria-labelledby="why-title" data-stop>
     <span class="grab" aria-hidden="true"></span>
     <span class="eyebrow" style="font-size:13px">${mp ? `${mp} · ` : ''}${short(w.start)} – ${short(w.last)}</span>
     <h2 id="why-title" class="h2" style="font-size:21px;line-height:1.25">${title}</h2>
     ${parts_.join('')}
-    ${opts}
+    ${toggles}
+    ${s.ack ? opts : short_ ? (view.explore ? '' : '<button class="linkish" style="text-align:center" data-action="close-why">Leave it as is</button>') : opts}
     <button class="linkish" style="text-align:center" data-action="why-all">See everything in this ${u}</button>
   </div></div>`;
 }
-function openWhy(i) { state.why = { i }; state.menuOpen = false; render(true); }
+function openWhy(i, view) { state.why = view ? { i, view } : { i }; state.menuOpen = false; render(true); }
+const openWhyAll = i => openWhy(i, { numbers: true, explore: true });   // the receipt and the options, open (for a planner, and the tests)
 
 /* ---------- the tutor's small helpers: words you can tap, a 60-second walkthrough ---------- */
 const TERMS = {
@@ -6534,45 +6680,6 @@ function reviewSheetHtml() {
 }
 
 /* ---------- render + events ---------- */
-/* Unified set-aside hub: a presentation-only grouping.
-   Each existing category retains its original accounting and edit flow. */
-function screenSetAside() {
-  const goals = state.goals || [];
-  const P = poolState();
-  const prepared = state.bills.map(b => ({ bill:b, value:preparedLeft(b) })).filter(x => x.value);
-  const goalSaved = sum(goals, g => Number(g.saved)||0);
-  const billSaved = sum(prepared, x => x.value.prepared);
-  const taxPrepared = prepared.filter(x => /tax/i.test(x.bill.name));
-  const taxSaved = sum(taxPrepared, x => x.value.prepared);
-  const pendingPool = poolPending();
-  const goalRows = goals.map(g => `<button class="line-item tap" data-editgoal="${g.id}" style="width:100%"><span><span class="name">${esc(g.name)}</span><span class="meta">${g.fund ? 'Surprise fund' : 'Goal'} · ${money(g.target)} target</span></span><span class="amt">${money(g.saved||0)}</span></button>`).join('');
-  const billRows = prepared.map(x => `<button class="line-item tap" data-editbill="${x.bill.id}" style="width:100%"><span><span class="name">${esc(x.bill.name)}</span><span class="meta">Prepared for ${short(x.value.date)} · ${money(x.value.left)} still needed</span></span><span class="amt">${money(x.value.prepared)}</span></button>`).join('');
-  return `${header('now','Now')}
-  <main>
-    <section class="pad stack gap8 mt8"><h1 class="h1">Set aside</h1>
-      <p class="purpose">Money with a purpose. See your plans in one place without mixing up what each amount is for.</p>
-      <p class="small">These are separate records, not a single bank balance. Some may be held in the same account. aLoN doesn't move money or automatically transfer it.</p>
-    </section>
-    <section class="pad stack gap12 mt20">
-      <button class="card tap stack gap8" data-go="pool"><span class="row"><strong>Tide pool</strong><strong>${money(P.balance)}</strong></span><span class="small">${pendingPool ? money(pendingPool) + " planned to add · " : ""}Carry money forward to smooth uneven stretches. Tap for details.</span></button>
-      <div class="card stack gap8"><div class="row"><strong>Goals and surprise fund</strong><strong>${money(goalSaved)}</strong></div>
-        ${goalRows || '<p class="small">No goals or surprise fund yet.</p>'}
-        <button class="secondary" data-action="add-goal">Add a goal</button>
-        ${!goals.some(g=>g.fund) ? '<button class="linkish" data-action="start-fund">Start a surprise fund</button>' : ''}
-      </div>
-      <div class="card stack gap8"><div class="row"><strong>Prepared for bills</strong><strong>${money(billSaved)}</strong></div>
-        ${billRows || '<p class="small">No money recorded as prepared for upcoming bills.</p>'}
-        <button class="secondary" data-go="bills">View bills and prepare</button>
-      </div>
-      <div class="tint stack gap8"><strong>Money kept for taxes or property</strong>
-        <p class="small">Use bill preparation to record money already reserved for a known obligation. ${taxPrepared.length ? money(taxSaved) + ' currently recorded for tax bills.' : 'No tax-specific prepared bill amount recorded.'} Income withholding is reflected in the forecast. If you already have tax savings, record the amount prepared against the matching tax bill; do not record the same dollars twice.</p>
-        <button class="secondary" data-go="bills">Manage tax and property bills</button>
-      </div>
-      <button class="secondary" data-go="goals">More goal details</button>
-    </section>
-  </main>${dock()}`;
-}
-
 const screens = { setaside: screenSetAside, ob: screenOb, welcome: screenWelcome, about: screenAbout, year: screenYear, arrival: screenArrival, now: screenNow, detail: screenDetail, waves: screenWaves, why: screenWhy, check: screenCheck, add: screenAdd, payday: screenPayday, bills: screenBills, income: screenIncome, 'income-edit': screenIncomeEdit, goals: screenGoals, 'goal-edit': screenGoalEdit, surprise: screenSurprise, options: screenOptions, plan: screenPlan, feedback: screenFeedback, pool: screenPool, data: screenData, outcome: screenOutcome };
 const app = document.getElementById('app');
 
@@ -6626,9 +6733,9 @@ function go(screen) {
     state.returnTo = state.screen === 'income-edit' ? 'income' : state.screen;
   }
   if (['why', 'surprise', 'detail', 'options'].includes(screen) && state.screen !== screen) state.ow = Object.assign(freshOw(), state.ow || {}, { open: null, amount: null });
-  if (screen === 'add' && state.form && (state.form.id || state.form.plan || state.form.saved || state.form.prepared)) state.form.showMore = true;
   state.screen = screen; state.menuOpen = false; state.why = null; state.termOpen = null; state.review = false; if (screen !== 'now') state.tour = null;
   if (screen === 'why') { state.picked = null; state.prepAmt = 0; prepWasCovered = false; }
+  if (screen !== 'check') state.bufferOpen = false;
   if (screen === 'payday') { state.payAnswer = null; state.draftRaw = null; }
   render(false, true);
 }
@@ -6661,13 +6768,12 @@ app.addEventListener('click', e => {
   const t = btn || e.target.closest('[data-action]');
   if (!t) { if (state.menuOpen) { state.menuOpen = false; render(); } return; }
   const ds = t.dataset;
+  if (t.classList && t.classList.contains('in-main') && ds.action) {
+    const spec = (railSpec() || []).find(a => a && a.attrs === `data-action="${ds.action}"`);
+    if (spec && spec.disabled) { toast(spec.hint || 'Not ready yet.'); return; }
+  }
   syncToday();
 
-  if (ds.action === 'toggle-ahead') { state.showAllAhead = !state.showAllAhead; return render(true); }
-  if (ds.action === 'toggle-buffer') { state.showBuffer = !state.showBuffer; return render(true); }
-  if (ds.action === 'toggle-whatif-detail') { state.showWhatifDetail = !state.showWhatifDetail; return render(true); }
-  if (ds.action === 'toggle-bill-more') { state.form.showMore = !state.form.showMore; return render(true); }
-  if (ds.action === 'toggle-bill-suggestions') { state.form.showSuggestions = !state.form.showSuggestions; return render(true); }
   if (ds.action === 'ack') { state.ackTerms = true; state.ob = freshOb(); return go('ob'); }
   if (ds.escrow) {
     const inTax = ds.escrow === 'both' || ds.escrow === 'tax', inIns = ds.escrow === 'both' || ds.escrow === 'ins';
@@ -6750,10 +6856,23 @@ app.addEventListener('click', e => {
   if (ds.explore) {
     const k = ds.explore; state.explore = false;
     if (k === 'keep') { toast('It stays available. Nothing changes.'); return render(true); }
-    if (k === 'goal') return go('goals');
+    if (k === 'goal') return go('setaside');
     if (k === 'pool') return go('pool');
     if (k === 'debt') { toast('Tap a debt to see it. Paying extra is your call.'); return go('bills'); }
-    if (k === 'prepare') { const b = state.bills.find(x => LONG_FREQS.includes(x.freq) && x.freq !== 'once' && !x.plan && nextOcc(x, TODAY) != null); if (b) { editBill(b.id); state.form.savedOpen = true; state.returnTo = 'now'; toast('Add what you’ve set aside for it.'); return render(true); } return go('bills'); }
+    if (k === 'prepare' && state.screen === 'check' && smoothing(computeWindows())) return go('why');
+    if (k === 'prepare') { const b = state.bills.find(x => LONG_FREQS.includes(x.freq) && x.freq !== 'once' && !x.plan && nextOcc(x, TODAY) != null); if (b) { editBill(b.id); state.form.savedOpen = true; state.form.more = true; state.returnTo = 'now'; toast('Add what you’ve set aside for it.'); return render(true); } return go('bills'); }
+  }
+  if (ds.action === 'bill-quick') { state.form.quickOpen = true; return render(true); }
+  if (ds.action === 'buffer-open') { state.bufferOpen = true; return render(true); }
+  if (ds.action === 'bill-more') { state.form.more = true; if (!state.form.when && state.form.due) state.form.when = 'exact'; return render(true); }
+  if (ds.action === 'ahead-more') { state.aheadAll = !state.aheadAll; return render(true); }
+  if (ds.action === 'why-now') {   // the stretch the pressure is about: now, or the first short one ahead
+    const f = facts(), m = f.money, ws = whyWindows();
+    if (m && m.state === 'PRESSURE' && m.when === 'now') return openWhy(0);
+    const bal = f.hero.basis === 'spendable' || f.hero.basis === 'runway';
+    let i = bal ? ws.findIndex(w => w.i > 0 && stretchFor(w) && stretchFor(w).status === 'Short') : nextShort(ws);
+    if (i < 0) i = ws.findIndex(w => w.roomLow < 0);
+    return openWhy(i < 0 ? 0 : i);
   }
   if (ds.action === 'why-sheet') { const ws = whyWindows(); let i = nextShort(ws); if (i < 0) i = ws.findIndex(w => w.roomLow < 0); return openWhy(i < 0 ? 0 : i); }
   if (ds.action === 'why-all') { const i = state.why ? state.why.i : 0; state.why = null; if (i === 0) return go('detail'); state.openWindows = { [i]: true }; return go('waves'); }   // this paycheck: the full list you can edit
@@ -6817,6 +6936,7 @@ app.addEventListener('click', e => {
     state.sheet = { kind: 'pooladd', from, title: `Carry forward from ${w.i === 0 ? 'this ' + unitWord() : short(w.start)}`, body: `It has ${money(extraOf(w))} left. Only what you choose goes to the tide pool; the rest stays yours to spend.`, amount: floor5(extraOf(w) * .25) || '', save: 'Add to tide pool' };
     return render();
   }
+  if (ds.action === 'kept-so-far') { const l = ds.keep; state.sheet = { kind: 'kept', label: l, title: `Already set aside for ${keepWord(l)}?`, body: `What you’ve already put aside from earlier payments. It stays yours; Alon counts it as set aside, not available, and uses it for bills you mark as paid from it.`, amount: (state.keptSoFar || {})[l] || '', save: 'Save' }; return render(true); }
   if (ds.action === 'pool-balance') { state.sheet = { kind: 'poolbal', title: 'What’s in your tide pool now?', body: 'The money you’ve already set aside for it. A rough number is fine.', amount: poolState().balance || '', save: 'Save' }; return render(); }
   if (ds.poolremove) { const P = poolState(); P.adds = P.adds.filter(a => a.id !== ds.poolremove); toast('Removed. Forecast updated.'); return render(); }
   if (ds.poolans) {
@@ -6912,6 +7032,8 @@ app.addEventListener('click', e => {
   if (ds.window !== undefined) return openWhy(Number(ds.window));
   if (ds.toggle !== undefined) { state.openWindows[ds.toggle] = !state.openWindows[ds.toggle]; return render(); }
 
+  if (ds.whyview && state.why) { const v = Object.assign({}, state.why.view); v[ds.whyview] = !v[ds.whyview]; state.why = Object.assign({}, state.why, { view: v }); return render(true); }
+  if (ds.pick && state.why) { state.why = null; go('why'); state.picked = ds.pick; const sm = smoothing(computeWindows()); const o = sm && sm.opts.find(x => x.id === ds.pick); state.prepAmt = o ? sum(o.allocs, a => a.amount) : 0; return render(true); }
   if (ds.pick) { state.picked = ds.pick; const sm = smoothing(computeWindows()); const o = sm && sm.opts.find(x => x.id === ds.pick); state.prepAmt = o ? sum(o.allocs, a => a.amount) : 0; return render(true); }
   if (ds.learn) { state.learnOpen = Object.assign({}, state.learnOpen, { [ds.learn]: !(state.learnOpen || {})[ds.learn] }); return render(); }
   if (ds.action === 'plan') {
@@ -6958,7 +7080,7 @@ app.addEventListener('click', e => {
     return go('now');
   }
 
-  if (ds.quick) { const [n, fr, pre] = ds.quick.split('|'); state.form.name = n; state.form.freq = fr; state.form.preset = pre || null; return render(); }
+  if (ds.quick) { const [n, fr, pre] = ds.quick.split('|'); state.form.name = n; state.form.freq = fr; state.form.preset = pre || null; return render(); }   // the list stays open so the pick shows as selected
   if (ds.kind) { state.form.kind = ds.kind; return render(); }
   if (ds.fwhen) { state.form.when = ds.fwhen; return render(true); }
   if (ds.fescrow) { state.form.escrowAns = state.form.escrowAns === ds.fescrow ? null : ds.fescrow; return render(true); }
@@ -7028,11 +7150,6 @@ app.addEventListener('click', e => {
     return render();
   }
 
-  if (ds.setupdraft) {
-    const d = (state.setupBillDrafts || []).find(b=>b.id === ds.setupdraft); if (!d) return;
-    state.returnTo = 'bills'; state.form = {...blankBillForm(), setupDraft: d.id, name:d.name || '', amount:d.amount || '', freq:d.freq || 'monthly', due:d.date || '', month:d.month || '', when:d.when || null, day2:d.day2 || '', saved:d.saved || '', preset:d.preset, kind:d.est ? 'estimate' : 'exact'};
-    return go('add');
-  }
   if (ds.editbill) return editBill(ds.editbill);
   if (ds.action === 'remove-bill') {
     const f = state.form; const b = f.id && state.bills.find(x => x.id === f.id);
@@ -7065,6 +7182,7 @@ app.addEventListener('click', e => {
     else if (state.sheet.kind === 'onhand') { state.onHand = v; state.onHandDate = iso(TODAY); state.seq = (state.seq || 0) + 1; state.onHandAt = state.seq; toast('On-hand amount saved. Forecast updated.'); }
     else if (state.sheet.kind === 'pooladd') { if (v > 0) { poolState().adds.push({ id: 'pa' + Date.now(), from: state.sheet.from, amount: v, done: null }); toast(`${money(v)} planned for your tide pool from ${parse(state.sheet.from) === TODAY ? 'this ' + unitWord() : short(parse(state.sheet.from))}.`); } }
     else if (state.sheet.kind === 'poolbal') { poolState().balance = v; toast(`Tide pool set to ${money(v)}. Forecast updated.`); }
+    else if (state.sheet.kind === 'kept') { state.keptSoFar = Object.assign({}, state.keptSoFar, { [state.sheet.label]: v }); toast(`${money(v)} set aside for ${keepWord(state.sheet.label)}. Forecast updated.`); }
     else if (state.sheet.kind === 'log') { state.logged += v; toast(`${money(v)} added. ${money(state.logged)} logged this week.`); }
     else { state.everydayPerWeek = v; state.everydayUnknown = false; toast('Everyday estimate updated.'); }
     state.sheet = null; return render();
@@ -7134,6 +7252,7 @@ app.addEventListener('input', e => {
   }
   if (el.dataset.field) {
     state.form[el.dataset.field] = el.value;
+    if (el.dataset.field === 'due' && el.value && !billUsesMore(state.form)) state.form.when = 'exact';   // the simple form's date is an exact date
     if (el.dataset.field === 'due' || el.dataset.field === 'month') render(true); else refreshBillForm();
   }
 });
@@ -7169,7 +7288,7 @@ function ask() {
   }
   if (/sinking|set aside|save up for/.test(q)) { state.learnOpen = Object.assign({}, state.learnOpen, { sinking: true }); return go('why'); }
   if (/tide pool|carry (it |some )?forward|extra money|leftover/.test(q)) return go('pool');
-  if (/emergency fund|surprise fund|rainy/.test(q)) { state.learnOpen = Object.assign({}, state.learnOpen, { fund: true }); return go('goals'); }
+  if (/emergency fund|surprise fund|rainy/.test(q)) { state.learnOpen = Object.assign({}, state.learnOpen, { fund: true }); return go('setaside'); }
   const kindQ = /\bcar\b|engine|brake|tire|transmission|mechanic/.test(q) ? 'car' : /medical|hospital|doctor|dentist|er visit|surgery|prescription/.test(q) ? 'medical' : /hvac|furnace|\bac\b|air condition|heat|pipe|leak|plumb|roof|water heater|house|home/.test(q) ? 'home' : null;
   if (kindQ && /repair|broke|bill|fix|unexpected|need|came up|emergency|replace|burst|\bout\b/.test(q) || /unexpected|emergency|came up|surprise bill/.test(q)) {
     state.surpriseBack = 'now'; state.surpriseForm = freshSurpriseForm(kindQ);
@@ -7226,5 +7345,4 @@ document.addEventListener('scroll', e => { if (e.target && e.target.id === 'wave
 </script>
 </body>
 </html>
-
 
