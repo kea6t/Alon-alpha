@@ -600,6 +600,7 @@ const withYear = t => new Date(t).toLocaleDateString('en-US', { month: 'short', 
 const money = n => (n < 0 ? '−$' : '$') + Math.abs(Math.round(n)).toLocaleString('en-US');
 const range = (lo, hi) => lo === hi ? money(lo) : (lo < 0 ? `${money(lo)} to ${money(hi)}` : `${money(lo)}–${money(hi).slice(1)}`);
 const round5 = n => Math.ceil(n / 5) * 5;
+const floor5 = n => Math.max(0, Math.floor(Number(n || 0) / 5) * 5);
 /* Exact amounts for payment plans: cents when there are cents ($37.50), whole dollars otherwise. */
 const moneyExact = n => { const c = Math.round(n * 100) / 100; return Number.isInteger(c) ? money(c) : (c < 0 ? '−$' : '$') + Math.abs(c).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/, ','); };
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
