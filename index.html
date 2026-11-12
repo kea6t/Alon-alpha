@@ -11,7 +11,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="manifest" href="manifest.webmanifest">
-<title>Alon</title>
+<title>aLoN</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -403,7 +403,7 @@ const FEEDBACK_EMAIL = '';      // optional fallback
    form = the .../formResponse address, fields = the entry.NNN id for each question.
    Until it's set, feedback waits on this device and goes out once it is. */
 const FEEDBACK_FORM = { url: '', fields: { screen: '', build: '', feedback: '' } };
-const BUILD = 'v4 · Nov 4';
+const BUILD = 'v5 · Nov 12';
 const STORE = ALPHA ? 'alon-alpha-v1' : 'alon-proto-v4';
 const DEMO_START = Date.UTC(2026, 9, 30);       // Fri, Oct 30, 2026
 let TODAY = DEMO_START;                         // moves forward with the demo's skip-ahead
@@ -1989,8 +1989,7 @@ function header(backTo, backLabel) {
       <button data-action="tour-start">How Alon works</button>
       <button data-go="income">Your income</button>
       <button data-go="bills">Your bills</button>
-      <button data-go="goals">Your goals</button>
-      <button data-go="pool">Your tide pool</button>
+      <button data-go="setaside">Set aside</button>
       <button data-action="surprise">Something came up</button>
       <button data-go="year">Your year in waves</button>
       <button data-go="about">About &amp; disclaimers</button>
@@ -2373,13 +2372,14 @@ function railActions() {
               state.form.id ? act('Remove', 'remove-bill', { aria: 'Remove this bill' }) : go('Bills', 'bills')];
     }
     case 'bills': return [go('Back', 'now'), go('Add', 'add'), null];
-    case 'goals': return [go('Back', 'now'), act('Add', 'add-goal', { aria: 'Add a goal' }), go('Ahead', 'waves')];
+    case 'setaside': return [go('Now', 'now'), act('Add goal', 'add-goal', { aria: 'Add a goal' }), go('Ahead', 'waves')];
+    case 'goals': return [go('Back', 'setaside'), act('Add', 'add-goal', { aria: 'Add a goal' }), go('Ahead', 'waves')];
     case 'goal-edit': return [go('Back', 'goals'), act('Save', 'save-goal', { disabled: !goalValid(state.goalForm), hint: 'Add a name, a target and a date or amount first.', aria: 'Save goal' }), state.goalForm && state.goalForm.id ? act('Remove', 'remove-goal', { aria: 'Remove this goal' }) : null];
     case 'plan': return [go('Back', state.planBack && state.planBack !== 'plan' ? state.planBack : 'bills'), act('Save', 'save-plan', { disabled: !planValid(state.planForm), hint: 'Add what it’s for, the amount, how many are left and the next date.', aria: 'Save payment plan' }), state.planForm && state.planForm.id ? act('Remove', 'remove-plan', { aria: 'Remove this plan' }) : null];
     case 'surprise': return [go('Back', state.surpriseBack || 'now'), act('Save', 'save-surprise', { disabled: !surpriseValid(state.surpriseForm), hint: 'Add what it is and how much first.', aria: 'Save it to your forecast' }), go('Goals', 'goals')];
     case 'year': return [go('Back', 'now'), act('Share', 'share-year', { aria: 'Share your year card' }), null];
     case 'about': return state.persona ? [go('Back', 'now'), null, null] : null;
-    case 'pool': return [go('Back', 'now'), act('Add', 'pool-other', { aria: 'Carry some forward' }), go('Ahead', 'waves')];
+    case 'pool': return [go('Back', 'setaside'), act('Add', 'pool-other', { aria: 'Carry some forward' }), go('Ahead', 'waves')];
     case 'outcome': return [go('Ahead', 'waves'), act('Done', 'outcome-done'), null];
     case 'data': return !state.persona ? null : [go('Back', 'now'), act('Backup', 'backup', { aria: 'Save a backup' }), null];
     case 'feedback': return [go('Back', state.fbFrom || 'now'), act('Send', 'send-feedback', { disabled: !fbValid(), hint: 'Pick one or write a sentence first.', aria: 'Send feedback' }), null];
@@ -2796,7 +2796,7 @@ function goalsLine(w0) {
   const goals = (state.goals || []).filter(g => !goalPlan(g).done);
   if (!goals.length) return '';
   const g = goals[0], pct = Math.min(100, Math.round((g.saved || 0) / g.target * 100));
-  return `<button class="card tap stack gap6 mt14" data-go="goals">
+  return `<button class="card tap stack gap6 mt14" data-go="setaside">
     <span class="row"><span style="font-size:15px;font-weight:700">${g.fund ? 'Refilling' : 'Saving for'} ${esc(g.name)}${goals.length > 1 ? ` <span class="small">+${goals.length - 1} more</span>` : ''}</span><span class="small">${money(g.saved || 0)} of ${money(g.target)}</span></span>
     <span class="bar thin" style="display:block"><span style="display:block;height:100%;border-radius:4px;background:var(--royal);width:${pct}%"></span></span>
     <span class="small">${w0.goalTotal ? `${money(w0.goalTotal)} set aside for goals this ${persona().unit === 'month' ? 'window' : persona().unit}` : 'Nothing set aside this time'}</span>
@@ -3038,12 +3038,9 @@ function nowMainButton(ws) {
   const ms = persona().unit === 'paycheck' ? nowState(ws[0]) : null;
   const arrow = '<svg width="18" height="18" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   const b = (attrs, label) => `<button class="primary now-main mt20" ${attrs}>${label}${arrow}</button>`;
-  if (ms && ms.state === 'PRESSURE') {
-    const later = ms.when === 'ahead' && !!smoothing(computeWindows());
-    return later ? b('data-go="why"', `Prepare for ${ms.date ? short(parse(ms.date)) : 'it'}`) : b('data-action="options-now"', 'See your options');
-  }
+  if (ms && ms.state === 'PRESSURE') return b('data-whysheet="0"', 'See why');
   if (ms && ms.state === 'OPPORTUNITY') return b('data-action="explore"', 'Explore what you could do');
-  if (!ms && knownShort(ws[0])) return b('data-action="options-now"', 'See your options');
+  if (!ms && knownShort(ws[0])) return b('data-whysheet="0"', 'See why');
   return b('data-go="waves"', 'See what’s ahead');
 }
 /* The big number, opened: what's in the account, minus what's set aside and the bills before the
@@ -3218,7 +3215,7 @@ function screenWaves() {
   const ws = computeWindows(null, carouselCount());
   UP_EXTRAS = extraPaychecks(400);
   const sts = ws.map(stretchFor), anySt = sts.some(Boolean), basis = anySt ? sts.find(Boolean).basis : null;
-  const cards = ws.map(w => {
+  const cards = ws.slice(0, state.showAllAhead ? 12 : 6).map(w => {
     const open = !!state.openWindows[w.i];
     const st = sts[w.i] || null;   // one number, one meaning: the same rule as Now's big number
     const isShort = st ? st.status === 'Short' : w.roomLow < 0;
@@ -3268,6 +3265,7 @@ function screenWaves() {
         <div class="now-wave-dates" aria-hidden="true"><span>Today</span><span>${short(sw[Math.floor(sw.length / 2)].start)}</span><span>${short(sw[sw.length - 1].last || sw[sw.length - 1].end)}</span></div>
         <p class="sea-key">The water rises on payday and dips for bills.${bufferAmt() ? ` The dashed line is your ${money(bufferAmt())} buffer.` : ''}${sea.maybe.length ? ' A dashed rise is income that isn’t certain.' : ''} Tap it to see why.</p></section>`; })()}
     <div class="pad stack gap12 mt20 waves-list">${cards}</div>
+    <section class="pad mt14"><button class="secondary" data-action="toggle-ahead">${state.showAllAhead ? "Show less" : "Show more"}</button></section>
     ${ws.some(w => w.roomLow !== w.roomTyp) ? `<p class="small pad mt20">Status is based on the lighter case, so a good ${p.unit} is a bonus, not a plan.</p>` : ''}
   </main>
   ${dock()}`;
@@ -6451,7 +6449,45 @@ function reviewSheetHtml() {
 }
 
 /* ---------- render + events ---------- */
-const screens = { ob: screenOb, welcome: screenWelcome, about: screenAbout, year: screenYear, arrival: screenArrival, now: screenNow, detail: screenDetail, waves: screenWaves, why: screenWhy, check: screenCheck, add: screenAdd, payday: screenPayday, bills: screenBills, income: screenIncome, 'income-edit': screenIncomeEdit, goals: screenGoals, 'goal-edit': screenGoalEdit, surprise: screenSurprise, options: screenOptions, plan: screenPlan, feedback: screenFeedback, pool: screenPool, data: screenData, outcome: screenOutcome };
+/* Unified set-aside hub: a presentation-only grouping.
+   Each existing category retains its original accounting and edit flow. */
+function screenSetAside() {
+  const goals = state.goals || [];
+  const P = poolState();
+  const prepared = state.bills.map(b => ({ bill:b, value:preparedLeft(b) })).filter(x => x.value);
+  const goalSaved = sum(goals, g => Number(g.saved)||0);
+  const billSaved = sum(prepared, x => x.value.prepared);
+  const taxPrepared = prepared.filter(x => /tax/i.test(x.bill.name));
+  const taxSaved = sum(taxPrepared, x => x.value.prepared);
+  const goalRows = goals.map(g => `<button class="line-item tap" data-editgoal="${g.id}" style="width:100%"><span><span class="name">${esc(g.name)}</span><span class="meta">${g.fund ? 'Surprise fund' : 'Goal'} · ${money(g.target)} target</span></span><span class="amt">${money(g.saved||0)}</span></button>`).join('');
+  const billRows = prepared.map(x => `<button class="line-item tap" data-editbill="${x.bill.id}" style="width:100%"><span><span class="name">${esc(x.bill.name)}</span><span class="meta">Prepared for ${short(x.value.date)} · ${money(x.value.left)} still needed</span></span><span class="amt">${money(x.value.prepared)}</span></button>`).join('');
+  return `${header('now','Now')}
+  <main>
+    <section class="pad stack gap8 mt8"><h1 class="h1">Set aside</h1>
+      <p class="purpose">Money with a purpose. See your plans in one place without mixing up what each amount is for.</p>
+      <p class="small">These are separate records, not a single bank balance. Some may be held in the same account. Alon doesn't move money.</p>
+    </section>
+    <section class="pad stack gap12 mt20">
+      <button class="card tap stack gap8" data-go="pool"><span class="row"><strong>Tide pool</strong><strong>${money(P.balance)}</strong></span><span class="small">Carry money forward to smooth uneven stretches. View or change it.</span></button>
+      <div class="card stack gap8"><div class="row"><strong>Goals and surprise fund</strong><strong>${money(goalSaved)}</strong></div>
+        ${goalRows || '<p class="small">No goals or surprise fund yet.</p>'}
+        <button class="secondary" data-action="add-goal">Add a goal</button>
+        ${!goals.some(g=>g.fund) ? '<button class="linkish" data-action="start-fund">Start a surprise fund</button>' : ''}
+      </div>
+      <div class="card stack gap8"><div class="row"><strong>Prepared for bills</strong><strong>${money(billSaved)}</strong></div>
+        ${billRows || '<p class="small">No money recorded as prepared for upcoming bills.</p>'}
+        <button class="secondary" data-go="bills">View bills and prepare</button>
+      </div>
+      <div class="tint stack gap8"><strong>Money kept for taxes or property</strong>
+        <p class="small">Use bill preparation to record money already reserved for a known obligation. ${taxPrepared.length ? money(taxSaved) + ' currently recorded for tax bills.' : 'No tax-specific prepared bill amount recorded.'} Money withheld from 1099 or rental income is not automatically treated as a separate reserve unless explicitly recorded.</p>
+        <button class="secondary" data-go="bills">Manage tax and property bills</button>
+      </div>
+      <button class="secondary" data-go="goals">More goal details</button>
+    </section>
+  </main>${dock()}`;
+}
+
+const screens = { setaside: screenSetAside, ob: screenOb, welcome: screenWelcome, about: screenAbout, year: screenYear, arrival: screenArrival, now: screenNow, detail: screenDetail, waves: screenWaves, why: screenWhy, check: screenCheck, add: screenAdd, payday: screenPayday, bills: screenBills, income: screenIncome, 'income-edit': screenIncomeEdit, goals: screenGoals, 'goal-edit': screenGoalEdit, surprise: screenSurprise, options: screenOptions, plan: screenPlan, feedback: screenFeedback, pool: screenPool, data: screenData, outcome: screenOutcome };
 const app = document.getElementById('app');
 
 function syncToday() {
@@ -6540,6 +6576,7 @@ app.addEventListener('click', e => {
   const ds = t.dataset;
   syncToday();
 
+  if (ds.action === 'toggle-ahead') { state.showAllAhead = !state.showAllAhead; return render(true); }
   if (ds.action === 'ack') { state.ackTerms = true; state.ob = freshOb(); return go('ob'); }
   if (ds.escrow) {
     const inTax = ds.escrow === 'both' || ds.escrow === 'tax', inIns = ds.escrow === 'both' || ds.escrow === 'ins';
