@@ -408,7 +408,7 @@ const FEEDBACK_EMAIL = '';      // optional fallback
    form = the .../formResponse address, fields = the entry.NNN id for each question.
    Until it's set, feedback waits on this device and goes out once it is. */
 const FEEDBACK_FORM = { url: '', fields: { screen: '', build: '', feedback: '' } };
-const BUILD = 'v7.4 · Nov 12';
+const BUILD = 'v7.5 · Nov 12';
 const STORE = ALPHA ? 'alon-alpha-v1' : 'alon-proto-v4';
 const DEMO_START = Date.UTC(2026, 9, 30);       // Fri, Oct 30, 2026
 let TODAY = DEMO_START;                         // moves forward with the demo's skip-ahead
@@ -2778,6 +2778,7 @@ function screenNow() {
         <span class="hero-sub">${leftLine(w0)}${isRange && p.rangeNote ? `<span class="small" style="display:block;font-weight:500;font-size:15px">${p.rangeNote.charAt(0).toUpperCase() + p.rangeNote.slice(1)}</span>` : ''}</span></button>`}
         ${eb ? '' : statusPill(ws, hm)}`}
         ${notice}
+      ${setupDraftNotice()}
       </section>
       ${w0.cashUnknown || wide ? '' : nowWave()}
       ${nextUpCard(ws)}
@@ -4033,6 +4034,7 @@ function saveBill() {
   state.picked = null;
   const back = state.returnTo || 'now';
   state.form = blankBillForm(); state.returnTo = null;
+  if (f.setupDraft) state.setupBillDrafts = (state.setupBillDrafts || []).filter(b=>b.id !== f.setupDraft);
   toast(`${fields.name} ${existing ? 'updated' : 'added'}. Forecast updated.`);
   go(back);
 }
@@ -4388,6 +4390,7 @@ function screenBills() {
       <p class="purpose">Bills and payments in date order. Tap one to see its schedule, edit it or record money already prepared.</p>
       ${u.dates.length || u.amounts.length ? '<button class="tint tap" data-action="review">Some dates or amounts need confirming · Review</button>' : ''}
     </section>
+    ${setupDraftRows()}
     <section class="pad mt20"><div class="row-card">${rows || '<p class="small">Nothing added yet.</p>'}</div></section>
     <section class="pad stack gap10 mt20">
       <button class="primary" data-go="add">Add a bill</button>
@@ -5261,7 +5264,8 @@ function obValid() {
     if (o.housing === 'other' && !(obNum(o.rent) > 0)) return true;
     return obNum(o.rent) > 0 && (o.housing === 'rent' && o.rentSplit ? !obSplitProblem(o) : !!o.rentDate);
   }
-  if (['bills','rare','homecosts','plans'].includes(st)) return !obStepProblem(o,st);
+  if (st === 'bills' || st === 'rare') return true;
+  if (['homecosts','plans'].includes(st)) return !obStepProblem(o,st);
   if (st === 'style') return !!o.style;
   if (st === 'recent') return recentAnswered(obRecent(o), o.recent);
   if (st === 'everyday') return o.everyday === 'none' || o.everyday === 'unsure' || obNum(o.everyday) != null;
@@ -5373,6 +5377,17 @@ function obCardProblem(b, list) {
   return LONG_FREQS.includes(freq) ? 'Choose the next due date, or the month if you’re unsure of the day.' : 'Choose the next due date for this schedule.';
 }
 function obSecondDayHtml(path, value) { return `<div class="field"><label for="ob-day2-${path.replace(/\./g,'-')}">Other day of the month</label><input class="input" id="ob-day2-${path.replace(/\./g,'-')}" data-obf="${path}" inputmode="numeric" value="${esc(value || '')}" placeholder="e.g. 15"><span class="small">1 to 31, different from the next payment’s day.</span></div>`; }
+function obUnfinishedBills(o) {
+  return ['bills','rare'].flatMap(list => (o[list] || []).map((b,i) => ({...b, id: `setup-${list}-${i}`, name: obBillName(o[list],i), freq: obCardFreq(b,list)})).filter(b=>obCardProblem(b,list)));
+}
+function setupDraftNotice() {
+  const n = (state.setupBillDrafts || []).length;
+  return n ? `<button class="warn tap stack gap4 mt14" data-go="bills"><strong>${n} unfinished ${n === 1 ? 'bill' : 'bills'} not in your forecast yet</strong><span class="small">Your entries are saved. Add the missing details when you can.</span></button>` : '';
+}
+function setupDraftRows() {
+  const list = state.setupBillDrafts || [];
+  return list.length ? `<section class="pad stack gap10 mt20"><h2 class="h2">Finish when you’re ready</h2><p class="small">These bills are saved as drafts and are not included in the forecast yet.</p>${list.map(b=>`<button class="line-item tap" data-setupdraft="${b.id}"><span><span class="name">${esc(b.name || 'Unfinished bill')}</span><span class="meta">${freqLabel(b.freq)} · needs details</span></span><span class="amt">${money(obNum(b.amount) || 0)} ›</span></button>`).join('')}</section>` : '';
+}
 function obStepProblem(o, st) {
   if (['bills','rare','homecosts'].includes(st)) return (o[st] || []).map(b=>obCardProblem(b,st)).find(Boolean) || '';
   if (st === 'plans') return o.plans.some(x=>obNum(x.each)>0 && (!x.name.trim() || !Number.isInteger(Number(x.left)) || Number(x.left)<1 || !x.next)) ? 'Add the plan name, whole number of payments left, and next payment date.' : '';
@@ -5407,6 +5422,7 @@ function obBills(o) {
   });
   // a monthly bill with no exact date counts as "I'm not sure": skipping the date isn't a guess
   o.bills.forEach((b, n) => {
+    if (obCardProblem(b,'bills')) return;
     const nm = obBillName(o.bills, n); if (!(obNum(b.amount) > 0) || !nm) return;
     if (obCardFreq(b,'bills') !== 'monthly') {
       const start = b.when === 'unsure' ? (b.month ? b.month + '-01' : '') : b.date;
@@ -5434,6 +5450,7 @@ function obBills(o) {
     return bill;
   };
   o.rare.forEach((b, n) => {
+    if (obCardProblem(b,'rare')) return;
     const nm = obBillName(o.rare, n); if (!(obNum(b.amount) > 0) || !nm) return;
     const bill = rareBill(b, 'obr' + n, nm, b.est ? 'estimate' : 'confirmed');
     if (bill) bills.push(bill);
@@ -5641,7 +5658,8 @@ function obClick(ds) {
   }
   if (ds.ob === 'finish') {
     const keep = { railLeft: state.railLeft, fold: state.fold, lastBackup: state.lastBackup, hsDismissed: state.hsDismissed };
-    state = Object.assign(freshState('custom', obSeed()), keep, { ackTerms: true, railHint: false });
+    const setupBillDrafts = obUnfinishedBills(o);
+    state = Object.assign(freshState('custom', obSeed()), keep, { ackTerms: true, railHint: false, setupBillDrafts });
     askPersist();
     go('now'); state.tour = 0;
     return render(false, true);
@@ -5656,6 +5674,7 @@ function refreshOb() {
   const b = document.getElementById('ob-next');
   if (b) b.disabled = !obValid();
   const o = state.ob;
+  const message = document.getElementById('ob-problem'); if (message) { const st = obStep(), problem = obStepProblem(o,st); message.textContent = problem ? (st === 'bills' || st === 'rare' ? 'You can continue. Unfinished bills stay as drafts, outside the forecast, until you add their details.' : problem) : ''; }
   ['bills', 'rare', 'homecosts'].forEach(list => (o[list] || []).forEach((c, i) => { const el = document.getElementById(`ob-${list}-${i}-sn`); if (el) el.textContent = savedNote(obNum(c.amount), obNum(c.saved)); }));
   const sum = document.getElementById('ob-split-sum'); if (sum) sum.innerHTML = obSplitSummary(o);
   const opts = document.getElementById('ob-split-opts'); if (opts) opts.innerHTML = obSplitOpts(o);
@@ -5676,7 +5695,7 @@ function screenOb() {
   const q = (title, sub) => `<section class="stack gap8 mt24"><h1 class="h1" style="font-size:30px">${title}</h1>${sub ? `<p class="body">${sub}</p>` : ''}</section>`;
   const money_ = (id, path, label, val, ph) => `<div class="field"><label for="${id}">${label}</label><input class="input" id="${id}" data-obf="${path}" inputmode="decimal" value="${esc(val)}" placeholder="${ph || '$0'}" autocomplete="off"></div>`;
   const date_ = (id, path, label, val) => `<div class="field"><label for="${id}">${label}</label><input class="input" id="${id}" type="date" data-obf="${path}" value="${esc(val)}"></div>`;
-  const foot = (extra) => `<div class="ob-foot stack gap10">${o.extra ? `<button class="secondary" data-ob="skip">Not now</button>` : extra || ''}<button class="primary" id="ob-next" data-ob="next" ${obValid() ? '' : 'disabled'}>${o.extra ? 'Done' : 'Continue'}</button>${obStepProblem(o,st) ? `<p class="small" role="status" style="margin:0">${obStepProblem(o,st)}</p>` : ''}</div>`;
+  const foot = (extra) => `<div class="ob-foot stack gap10">${o.extra ? `<button class="secondary" data-ob="skip">Not now</button>` : extra || ''}<button class="primary" id="ob-next" data-ob="next" ${obValid() ? '' : 'disabled'}>${o.extra ? 'Done' : 'Continue'}</button><p id="ob-problem" class="small" role="status" style="margin:0">${obStepProblem(o,st) ? (st === 'bills' || st === 'rare' ? 'You can continue. Unfinished bills stay as drafts, outside the forecast, until you add their details.' : obStepProblem(o,st)) : ''}</p></div>`;
   let body = '', footer = foot();
   const payLabel = o.way === 'benefit' ? 'When does it arrive next?' : o.way === 'free' || o.mainKind === 'rental' ? 'About when does the next one arrive?' : 'When is your next payday?';
   const segRow = (path, cur, opts) => `<div class="seg" style="grid-template-columns:repeat(${opts.length},minmax(0,1fr))">${opts.map(([v, l]) => `<button type="button" class="${String(cur) === String(v) ? 'on' : ''}" aria-pressed="${String(cur) === String(v)}" data-obset="${path}=${v}">${l}</button>`).join('')}</div>`;
@@ -7009,6 +7028,11 @@ app.addEventListener('click', e => {
     return render();
   }
 
+  if (ds.setupdraft) {
+    const d = (state.setupBillDrafts || []).find(b=>b.id === ds.setupdraft); if (!d) return;
+    state.returnTo = 'bills'; state.form = {...blankBillForm(), setupDraft: d.id, name:d.name || '', amount:d.amount || '', freq:d.freq || 'monthly', due:d.date || '', month:d.month || '', when:d.when || null, day2:d.day2 || '', saved:d.saved || '', preset:d.preset, kind:d.est ? 'estimate' : 'exact'};
+    return go('add');
+  }
   if (ds.editbill) return editBill(ds.editbill);
   if (ds.action === 'remove-bill') {
     const f = state.form; const b = f.id && state.bills.find(x => x.id === f.id);
@@ -7202,4 +7226,5 @@ document.addEventListener('scroll', e => { if (e.target && e.target.id === 'wave
 </script>
 </body>
 </html>
+
 
