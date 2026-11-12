@@ -268,12 +268,12 @@
   @media (prefers-reduced-motion: reduce) { .wave-layer, .prep-chart.settle svg { animation: none; } }
   .top { z-index: 20; }               /* the header and its buttons sit above the water */
   .dock { z-index: 16 !important; }   /* the water runs under the ask bar */
-  .rail-slot, .rail-knob { pointer-events: auto; position: absolute; right: 4px; padding: 0; font-family: inherit; font-size: 10.5px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; cursor: pointer; display: grid; place-items: center; }
+  .rail-slot, .rail-knob { pointer-events: auto; position: absolute; right: 4px; padding: 0; font-family: inherit; font-size: 12.5px; font-weight: 800; letter-spacing: 0; cursor: pointer; display: grid; place-items: center; }   /* Now diet: sentence case, bigger */
   .rail-slot span, .rail-knob span { pointer-events: none; white-space: nowrap; }
   .rail-slot { width: 58px; height: 44px; border: 0; border-radius: 22px; background: none; color: var(--navy); }
   .rail-slot:hover { background: rgba(22,89,208,.08); }
   .rail-slot[data-blocked] { color: #8A9BB8; }
-  .rail-knob { width: 60px; height: 40px; border: 0; border-radius: 20px; background: var(--royal); color: #fff; box-shadow: 0 6px 16px rgba(22,89,208,.35); cursor: grab; touch-action: none; }
+  .rail-knob { width: 60px; height: 48px; border: 0; border-radius: 24px; background: var(--royal); color: #fff; box-shadow: 0 6px 16px rgba(22,89,208,.35); cursor: grab; touch-action: none; }
   .rail-knob.dragging { cursor: grabbing; }
   .rail-knob[data-blocked] { background: #9DB5DE; box-shadow: none; cursor: default; }
   .left .rail-slot, .left .rail-knob { right: auto; left: 4px; }
@@ -307,6 +307,24 @@
   .row-card { background: var(--white); border: 1px solid var(--line); border-radius: 20px; padding: 0 14px; }
   .row-card .line-item .lead { display: flex; align-items: center; gap: 12px; min-width: 0; text-align: left; }
   .row-card .line-item .end { display: flex; align-items: center; gap: 8px; flex: none; }
+  .hero-tap { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+  .hero-tap:focus-visible { outline: 3px solid var(--royal); outline-offset: 4px; border-radius: 12px; }
+  .now-diet .hero-sub { font-size: 18px; font-weight: 600; color: var(--navy); }
+  .now-diet .status-pill { font-size: 16px; padding: 7px 16px 7px 7px; }
+  .now-wave { position: relative; }
+  .sea-key { margin: 8px 0 0; font-size: 15px; line-height: 1.45; color: var(--muted-2); }
+  .now-diet .why-line { font-size: 15px; }
+  .now-diet .why-card > span:first-child { font-size: 15px !important; }
+  .now-wave-dates { display: flex; justify-content: space-between; font-size: 15px; font-weight: 600; color: var(--muted-2); margin-top: 6px; }
+  .next-wrap { display: flex; flex-direction: column; gap: 10px; }
+  .next-head { font-size: 20px; font-weight: 800; color: var(--navy); }
+  .next-name { font-size: 18px; font-weight: 700; color: var(--navy); line-height: 1.3; }
+  .next-when { font-size: 16px; font-weight: 600; color: var(--muted-2); }
+  .now-main { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; min-height: 56px; font-size: 18px; }
+  .next-row { display: flex; align-items: center; gap: 12px; padding: 14px 0; border-top: 1px solid var(--line); }
+  .next-btns { display: flex; flex-direction: column; gap: 8px; }
+  .next-btns button { min-height: 48px; padding: 0 16px; font-size: 16px; }
+  .toast-undo { margin-left: 10px; padding: 6px 12px; min-height: 36px; border-radius: 10px; border: 1px solid rgba(255,255,255,.5); background: none; color: #fff; font: inherit; font-weight: 800; cursor: pointer; }
   .next-up { display: flex; align-items: center; gap: 12px; width: 100%; padding: 14px; border-radius: 20px; background: var(--white); border: 1px solid var(--line); text-align: left; cursor: pointer; }
   .next-up .stack { flex: 1; min-width: 0; }
   .purpose { margin: 0; font-size: 15px; color: var(--muted-2); line-height: 1.5; }
@@ -949,6 +967,21 @@ function sourceActive(s, t) {
   return true;
 }
 
+/* Different income sources, one financial picture (Nov 12, principle 17).
+   Income that arrives in a window ("rent usually comes around the 1st, give or take 5 days") is counted on
+   its latest likely day, so Alon never counts money before it's likely there. */
+function incomeDates(s, from, to) {
+  const sp = Math.max(0, Number(s.spread) || 0);
+  if (!sp) return occurrences(s, from, to);
+  return occurrences(s, addDays(from, -sp), addDays(to, -sp)).map(t => addDays(t, sp));
+}
+/* "Set some aside when it arrives": part of each deposit is kept for taxes, the property or the business.
+   The person picks the percent or amount; Alon never suggests a tax rate. Kept money is set aside, not available. */
+const keepOf = s => s && s.keep && (Number(s.keep.pct) > 0 || Number(s.keep.amt) > 0) ? { pct: Number(s.keep.pct) || 0, amt: Number(s.keep.amt) || 0, label: s.keep.for || 'taxes' } : null;
+const keptFrom = (s, amount) => { const k = keepOf(s); if (!k || !(amount > 0)) return 0; return Math.min(amount, k.pct ? Math.round(amount * k.pct) / 100 : k.amt); };
+const KEEP_FOR = { taxes: 'taxes', property: 'the property', business: 'the business' };
+const keepWord = l => KEEP_FOR[l] || l;
+
 /* ---------- the main income: the reliable source the person lives on ---------- */
 function primarySource() {
   const all = state.sources.filter(s => !s.mobilizedOnly);
@@ -964,7 +997,7 @@ function primarySource() {
 function windowStarts(limitT, maxCount) {
   const out = [currentStart()], prim = primarySource(), cap = maxCount || 520;
   const end = limitT != null ? addDays(limitT, 1) : addDays(TODAY, 3650);
-  if (prim) out.push(...occurrences(prim, addDays(TODAY, 1), end).slice(0, cap));
+  if (prim) out.push(...incomeDates(prim, addDays(TODAY, 1), end).slice(0, cap));
   const step = persona().unit === 'week' ? 7 : 14;
   while (out.length < cap && addDays(out[out.length - 1], step) < end && (limitT != null || out.length < 260)) out.push(addDays(out[out.length - 1], step));
   return out;
@@ -1037,7 +1070,7 @@ function currentStart() {
   if (state.onHand != null && state.onHandDate === iso(TODAY)) return TODAY;
   const prim = primarySource();
   if (!prim || prim.perWeek || persona().unit === 'week' || prim.certainty === 'uncertain') return TODAY;
-  if (occurrences(prim, TODAY, addDays(TODAY, 1)).length) return TODAY;          // payday today
+  if (incomeDates(prim, TODAY, addDays(TODAY, 1)).length) return TODAY;          // payday today
   const lp = lastPayday();
   return lp != null && TODAY - lp <= 35 * DAY && sourceActive(prim, lp) ? lp : TODAY;
 }
@@ -1045,7 +1078,7 @@ function boundaries(count) {
   const N = count || WINDOW_COUNT;
   const out = [currentStart()];
   const prim = primarySource();
-  if (prim) out.push(...occurrences(prim, addDays(TODAY, 1), addDays(TODAY, 900)).slice(0, N));
+  if (prim) out.push(...incomeDates(prim, addDays(TODAY, 1), addDays(TODAY, 900)).slice(0, N));
   const step = persona().unit === 'week' ? 7 : 14;           // fallback if the income doesn't repeat
   while (out.length < N + 1) out.push(addDays(out[out.length - 1], step));
   return out;
@@ -1065,7 +1098,7 @@ function computeWindows(reserves, count) {
 
     const income = [];
     const primR = primarySource();
-    state.sources.forEach(s => occurrences(i === 0 && start < TODAY && s === primR ? projectedRule(s) : s, start, end).forEach(t => {
+    state.sources.forEach(s => incomeDates(i === 0 && start < TODAY && s === primR ? projectedRule(s) : s, start, end).forEach(t => {
       if (!sourceActive(s, t)) return;
       const key = s.id + '|' + t;
       let low = s.certainty === 'uncertain' ? 0 : s.low;
@@ -1121,6 +1154,20 @@ function computeWindows(reserves, count) {
      their paycheck; the pool then covers any paycheck that would come up short, earliest first.
      Money already confirmed is in the balance; uses already confirmed are recorded so they
      aren't drawn twice. The surprise fund is separate and never used here. */
+  /* Set some aside when it arrives: what's kept from a deposit isn't part of that paycheck's room; a bill
+     paid from it (estimated taxes) uses it, up to what's been kept so far. */
+  const keepRun = Object.assign({}, state.keptSoFar || {});
+  list.forEach(w => {
+    w.keptOut = 0; w.keptIn = 0; w.keptList = [];
+    let typOut = 0;
+    w.income.forEach(x => { const k = keepOf(x.source); if (!k) return;
+      const a = keptFrom(x.source, x.low), at = keptFrom(x.source, x.typ);
+      if (a > 0) { w.keptOut += a; keepRun[k.label] = (Number(keepRun[k.label]) || 0) + a; w.keptList.push({ label: k.label, amount: a, source: x.source }); }
+      typOut += at; });
+    w.items.filter(x => x.bill.fromKeep && !x.paidAlready).forEach(x => { const l = x.bill.fromKeep, r = Math.min(Number(keepRun[l]) || 0, x.amount);
+      if (r > 0) { w.keptIn += r; keepRun[l] -= r; } });
+    if (w.keptOut || w.keptIn) { w.spoken += w.keptOut; w.roomLow += w.keptIn - w.keptOut; w.roomTyp += w.keptIn - typOut; w.status = statusOf(w.roomLow); }
+  });
   const pool = state.pool || { balance: 0, adds: [], uses: [] };
   let running = Math.max(0, Number(pool.balance) || 0);
   list.forEach(w => {
@@ -1153,7 +1200,7 @@ function computeWindows(reserves, count) {
 function lastPayday() {
   const prim = primarySource();
   if (!prim || prim.perWeek) return null;
-  const back = occurrences(projectedRule(prim), addDays(TODAY, -40), TODAY);
+  const back = incomeDates(projectedRule(prim), addDays(TODAY, -40), TODAY);
   return back.length ? back[back.length - 1] : null;
 }
 const knownShort = w => !w.cashUnknown && w.roomLow < 0;
@@ -1190,8 +1237,8 @@ function paycheckDates(count) {
   const prim = primarySource();
   if (!prim || prim.perWeek || prim.certainty === 'uncertain') return [];
   const rule = projectedRule(prim);
-  const back = occurrences(rule, addDays(TODAY, -40), addDays(TODAY, 1)).filter(t => sourceActive(prim, t));
-  const ahead = occurrences(rule, addDays(TODAY, 1), addDays(TODAY, 900)).filter(t => sourceActive(prim, t));
+  const back = incomeDates(rule, addDays(TODAY, -40), addDays(TODAY, 1)).filter(t => sourceActive(prim, t));
+  const ahead = incomeDates(rule, addDays(TODAY, 1), addDays(TODAY, 900)).filter(t => sourceActive(prim, t));
   return (back.length ? [back[back.length - 1]] : []).concat(ahead).slice(0, (count || WINDOW_COUNT) + 1);
 }
 /* The day a bill's occurrence actually comes out (after any "Not yet, moved to…"). */
@@ -1223,6 +1270,23 @@ function reservedEvents(from, until) {
     Object.keys(gp.map).forEach(k => { const t = parse(k); if (t >= from && t < until && !(k in (g.hist || {}))) add(t, gp.map[k], `Toward ${g.name}`, 'reserve'); });
   });
   (state.draws || []).forEach(d => { const t = parse(d.date); if (t >= from && t < until) add(t, d.amount, `From ${d.name || 'savings'}`, 'release', { draw: true }); });
+  // set some aside when it arrives (taxes, the property, the business); a bill marked "paid from it" uses it
+  const kept = {};
+  state.sources.forEach(s => { const k = keepOf(s); if (!k) return;
+    incomeDates(s, from, until).forEach(t => { if (!sourceActive(s, t)) return;
+      const a = state.actuals[s.id + '|' + t], amt = a != null ? a : (s.certainty === 'uncertain' ? 0 : s.low), kc = keptFrom(s, amt);
+      if (kc > 0) (kept[k.label] = kept[k.label] || []).push({ t, amt: kc, src: s }); }); });
+  const keepBills = state.bills.filter(b => b.fromKeep);
+  Object.keys(kept).concat(keepBills.map(b => b.fromKeep)).filter((l, i, a) => a.indexOf(l) === i).forEach(label => {
+    const ins = (kept[label] || []).map(x => ({ t: x.t, d: 'in', amt: x.amt, src: x.src }));
+    const outs = [].concat(...keepBills.filter(b => b.fromKeep === label).map(b => billEvents(b, from, until).map(x => ({ t: x.date, d: 'out', amt: x.amount, b }))));
+    let run = Math.max(0, Number((state.keptSoFar || {})[label]) || 0);
+    if (run > 0) existing.push({ name: `Set aside for ${keepWord(label)}`, amount: run });
+    ins.concat(outs).sort((a, c) => a.t - c.t || (a.d === 'in' ? -1 : 1)).forEach(e => {
+      if (e.d === 'in') { add(e.t, e.amt, `Set aside for ${keepWord(label)}`, 'reserve', { keep: e.src.id, keepFor: label }); run += e.amt; }
+      else { const r = Math.min(run, e.amt); if (r > 0) { add(e.t, r, `Set aside for ${keepWord(label)}`, 'release', { billId: e.b.id, keepFor: label }); run -= r; } }
+    });
+  });
   const pool = state.pool || {};
   if (pool.balance > 0) existing.push({ name: 'Tide pool', amount: Number(pool.balance) });
   (pool.adds || []).filter(a => a.done == null).forEach(a => { const t = parse(a.from); if (t >= from && t < until) add(t, a.amount, 'Tide pool', 'reserve'); });
@@ -1238,7 +1302,7 @@ function paycheckRemainders(count) {
   for (let k = 0; k + 1 < days.length; k++) {
     const start = days[k], end = days[k + 1];
     const deposits = [];
-    state.sources.forEach(s => occurrences(s === prim ? projectedRule(s) : s, start, end).forEach(t => {
+    state.sources.forEach(s => incomeDates(s === prim ? projectedRule(s) : s, start, end).forEach(t => {
       if (!sourceActive(s, t)) return;
       const a = state.actuals[s.id + '|' + t];
       deposits.push({ name: s.name, date: iso(t), amount: a != null ? a : (s.certainty === 'uncertain' ? 0 : s.low), typical: a != null ? a : s.typical, main: s === prim && t === start });
@@ -1249,7 +1313,7 @@ function paycheckRemainders(count) {
       part: x.part || 0, parts: x.parts || 0, paid: x.orig != null && !!(b.paid || {})[payKey(x.orig, x.part)], dateRange: !!x.range })));
     obligations.sort((a, c) => a.date.localeCompare(c.date) || a.name.localeCompare(c.name));
     const rv = reservedEvents(start, end);
-    const coveredEarlier = rv.ev.filter(e => e.dir === 'release' && (e.billId || e.draw)), setAsideHere = rv.ev.filter(e => e.dir === 'reserve' && parse(e.date) < addDays(start, 1));
+    const coveredEarlier = rv.ev.filter(e => e.dir === 'release' && (e.billId || e.draw)), setAsideHere = rv.ev.filter(e => e.dir === 'reserve' && (parse(e.date) < addDays(start, 1) || e.keep));
     const knownC = centsSum(deposits, x => x.amount) - centsSum(obligations, x => x.amount) + centsSum(coveredEarlier, x => x.amount) - centsSum(setAsideHere, x => x.amount);
     const ed = everydayC(Math.round((end - start) / DAY));
     out.push({ payday: iso(start), nextPayday: iso(end), deposits, obligations, coveredEarlier, setAsideHere,
@@ -1266,7 +1330,7 @@ function paycheckRemainders(count) {
    that balance?" (reservedInBalance): yes → reserved comes out of spendable; no → it's elsewhere, and
    moving it in or out shows as a transfer. Unknown with money set aside → incomplete. A bill with a
    date range sits whole on its earliest day. Bills already marked paid are already out. */
-function projectedBalance(count) {
+function projectedBalance(count, opts) {
   const missing = [], uncertain = [];
   const prim = primarySource(), pays = paycheckDates(count);
   // a balance counts from the day it's entered until the next paycheck lands; after that Alon asks again
@@ -1278,7 +1342,7 @@ function projectedBalance(count) {
   const asOf = hasBal ? parse(state.onHandDate) : TODAY;
   const until = pays.length ? pays[pays.length - 1] : addDays(TODAY, 14 * (count || WINDOW_COUNT));
   const ev = [];
-  state.sources.forEach(s => occurrences(s === prim ? projectedRule(s) : s, asOf, until).forEach(t => {
+  state.sources.forEach(s => incomeDates(s === prim ? projectedRule(s) : s, asOf, until).forEach(t => {
     if (!sourceActive(s, t)) return;
     const a = state.actuals[s.id + '|' + t], amt = a != null ? a : (s.certainty === 'uncertain' ? 0 : s.low);
     if (s.certainty === 'uncertain' && a == null) { uncertain.push({ key: 'deposit', name: s.name, date: iso(t) }); return; }
@@ -1286,14 +1350,22 @@ function projectedBalance(count) {
   }));
   // a bill with a date range is placed whole on its earliest day, so read past the horizon and keep what starts inside it
   state.bills.forEach(b => billEvents(b, asOf, addDays(until, 31)).filter(x => x.date < until).forEach(x => {
-    if (x.orig != null && (b.paid || {})[payKey(x.orig, x.part)]) return;
+    if (x.orig != null && (b.paid || {})[payKey(x.orig, x.part)]) {
+      // paid after the balance was entered: the money came out of that balance, so count it today
+      const at = (b.paidAt || {})[payKey(x.orig, x.part)];
+      if (!(hasBal && at && at > (state.onHandAt || 0))) return;
+      const when = x.date <= TODAY ? (x.date < asOf ? asOf : x.date) : TODAY;
+      ev.push({ date: iso(when), dir: 'out', name: eventName(x), billId: b.id, amount: x.amount, paid: true });
+      return;
+    }
     if (x.range) uncertain.push({ key: 'date', name: b.name, date: iso(x.date), latest: iso(x.range[1]) });
     ev.push({ date: iso(x.date), dir: 'out', name: eventName(x), billId: b.id, amount: x.amount, dateRange: !!x.range, early: !!b.clearsEarly });
   }));
   const rv = reservedEvents(asOf, until);
   ev.push(...rv.ev);
-  const inBal = state.reservedInBalance;
-  if (rv.existingC > 0 && inBal == null) missing.push({ key: 'reserved', ask: `Is the ${money(toD(rv.existingC))} you’ve set aside part of the ${hasBal ? money(state.onHand) : 'balance'} in your account?` });
+  // opts.assumeReservedIn: count set-aside money as part of the balance until they say (the safer guess)
+  const inBal = state.reservedInBalance == null && opts && opts.assumeReservedIn ? true : state.reservedInBalance;
+  if (rv.existingC > 0 && state.reservedInBalance == null && !(opts && opts.assumeReservedIn)) missing.push({ key: 'reserved', ask: `Is the ${money(toD(rv.existingC))} you’ve set aside part of the ${hasBal ? money(state.onHand) : 'balance'} in your account?` });
   const rank = e => e.dir === 'out' && e.early ? 0 : e.dir === 'in' ? 1 : e.dir === 'reserve' ? 2 : 3;
   ev.sort((a, c) => a.date.localeCompare(c.date) || rank(a) - rank(c) || (a.billId && a.billId === c.billId ? (a.dir === 'release' ? -1 : 1) : 0) || a.name.localeCompare(c.name));
   const known = hasBal && !(rv.existingC > 0 && inBal == null);
@@ -1355,13 +1427,34 @@ function heroFacts(rems, pb) {
       likelyC = Math.min(likelyC, lastC - everydayC(Math.round((next - parse(pb.asOf)) / DAY)));
     }
     return { basis: 'spendable', until: nx, amount: toD(lowC), likely: likelyC == null ? null : toD(likelyC), status: statusFromC(lowC),
-      likelyBelowZero: likelyC != null && lowC >= 0 && likelyC < 0, buffer: toD(bufferC()), estimate: pb.asOf < td,
+      likelyBelowZero: likelyC != null && lowC >= 0 && likelyC < 0, buffer: toD(bufferC()), estimate: pb.asOf < td || !!pb.assumed, assumed: pb.assumed || null,
       now: { cash: last ? last.cash : pb.start.cash, reserved: last ? last.reserved : pb.start.reserved, spendable: nowSp } };
   }
   const cur = rems.find(r => parse(r.payday) <= TODAY && TODAY < parse(r.nextPayday));
   if (!cur) return { basis: 'unknown', status: 'Unknown', asks: pb.missing.map(m => m.ask) };
   return { basis: 'remainder', until: cur.nextPayday, amount: cur.remainder, likely: cur.likely, status: cur.status,
     likelyBelowZero: cur.likely != null && cur.remainder >= 0 && cur.likely < 0, buffer: toD(bufferC()), estimate: true, asks: pb.missing.map(m => m.ask) };
+}
+
+/* No dependable income (Nov 12): the answer is how long what you have lasts. What's available now (cash
+   minus set-aside money), and the last day it still covers the bills and everyday spending if no new
+   payment comes in. Income that isn't certain is never counted; it shows on the wave as a dashed maybe. */
+function runwayFacts(pb) {
+  const td = iso(TODAY), asOf = parse(pb.asOf), rows = pb.rows, end = parse(pb.until);
+  let k = 0, spC = toC(pb.start.spendable), resC = toC(pb.start.reserved), cash = pb.start.cash;
+  while (k < rows.length && rows[k].date < td) { spC = toC(rows[k].spendable); resC = toC(rows[k].reserved); cash = rows[k].cash; k++; }
+  const nowC = spC, now = { cash, reserved: toD(resC), spendable: toD(nowC) };
+  let through = null, lowC = nowC, likC = null;
+  for (let t = TODAY; t < end; t = addDays(t, 1)) {
+    const day = iso(t);
+    while (k < rows.length && rows[k].date === day) { spC = toC(rows[k].spendable); lowC = Math.min(lowC, spC); k++; }
+    const lik = spC - (everydayC(Math.round((t - asOf) / DAY)) || 0);
+    likC = likC == null ? lik : Math.min(likC, lik);
+    if (lik < 0 && through == null) through = iso(addDays(t, -1));
+  }
+  const soon = iso(addDays(TODAY, 21));
+  return { basis: 'runway', amount: toD(nowC), likely: likC == null ? null : toD(likC), until: through || pb.until, through, past: through ? null : iso(addDays(end, -1)),
+    status: nowC < 0 ? 'Short' : through && through < soon ? 'Tight' : 'Covered', buffer: toD(bufferC()), estimate: pb.asOf < td || !!pb.assumed, assumed: pb.assumed || null, now };
 }
 
 /* F6. The money state, from the numbers only (never from who someone is). Internal: the screen, the
@@ -1379,6 +1472,11 @@ function moneyState(remainders, pb, hero, sf) {
   const prim = primarySource(), typical = prim && prim.certainty !== 'uncertain' ? (prim.typical || prim.low || 0) : 0;
   const buf = toD(bufferC()), td = iso(TODAY);
   if (hero.basis === 'unknown') return { state: 'UNKNOWN', needs: pb.missing.map(m => m.key), asks: pb.missing.map(m => m.ask) };
+  if (hero.basis === 'runway') {   // never "room": nothing ahead is certain enough to call extra
+    const through = hero.through || hero.past;
+    if (hero.status !== 'Covered') return { state: 'PRESSURE', when: 'now', short: hero.amount < 0 || !!hero.through && hero.through < td, until: through, through, runway: true };
+    return { state: 'STEADY', through, basis: 'runway', runway: true, past: !hero.through };
+  }
   const lastR = remainders[remainders.length - 1], through = lastR ? iso(addDays(parse(lastR.nextPayday), -1)) : hero.until;
   const nowLow = hero.likely != null ? Math.min(hero.amount, hero.likely) : hero.amount;
   const nowPressure = hero.amount < 0 || nowLow < buf;
@@ -1417,8 +1515,16 @@ function forecastFacts(count) {
     : { kind: 'gap', date: shortfall.date, amount: shortfall.shortBy, recovers: null });
   if (!balance.complete) findings.push({ kind: 'missing', needs: balance.missing.map(m => m.key) });
   if (!findings.length) findings.push({ kind: 'none' });
-  const hero = heroFacts(remainders, balance);
-  return { today: iso(TODAY), hero, remainders, balance, shortfall, findings, money: moneyState(remainders, balance, hero, shortfall) };
+  // One number, one meaning (Nov 12): if the only thing missing is whether set-aside money is in the account,
+  // Alon still shows available money, counting it as in there (the safer guess), marked "about" and asked.
+  const onlyRes = !balance.complete && balance.missing.length > 0 && balance.missing.every(m => m.key === 'reserved');
+  // no income Alon can count on (only freelance, commission or "not sure" income): how long the money lasts
+  const noDependable = !balance.complete && balance.missing.some(m => m.key === 'income') && balance.missing.every(m => m.key === 'income' || m.key === 'reserved');
+  const resMissing = balance.missing.some(m => m.key === 'reserved');
+  const heroBalance = (onlyRes || (noDependable && resMissing)) ? Object.assign(projectedBalance(count, { assumeReservedIn: true }), { assumed: 'reserved' }) : balance;
+  const runway = noDependable && heroBalance.start ? runwayFacts(heroBalance) : null;
+  const hero = runway || heroFacts(remainders, heroBalance), heroShortfall = onlyRes || runway ? projectedShortfall(heroBalance) : shortfall;
+  return { today: iso(TODAY), hero, remainders, balance, heroBalance, shortfall, heroShortfall, findings, money: moneyState(remainders, heroBalance, hero, heroShortfall) };
 }
 
 /* One forecast per render: the Now screen, the wave and Ask Alon all read this same result. */
@@ -1433,7 +1539,7 @@ function facts() {
    it doesn't break. Returns what it needs from earlier, or null. */
 function carried(w) {
   if (!w || w.i === 0 || w.cashUnknown || !(w.roomLow < 0) || persona().unit !== 'paycheck') return null;
-  const pb = facts().balance;
+  const pb = facts().heroBalance;
   if (!pb.complete || !pb.start) return null;
   const a = iso(w.start), b = iso(w.end), val = r => r.likely != null ? r.likely : r.spendable;
   const before = pb.rows.filter(r => r.date < a), inside = pb.rows.filter(r => r.date >= a && r.date < b);
@@ -1445,6 +1551,53 @@ function carried(w) {
 }
 const breaks = w => knownShort(w) && !carried(w);
 
+/* One number, one meaning (Nov 12). What's available in one stretch between paydays, by the same rule as
+   Now's big number, so Now, What's ahead, What if? and What's in it never disagree:
+     with a known balance  the lowest available (cash minus set-aside) in that stretch, from the running
+                           balance (F2): money left from earlier stretches carries forward
+     without one           that paycheck's own leftover after its bills (F1), labeled as such
+   `likely` is the same after the everyday estimate; status comes from the lower of the two. */
+let FCL = null;
+function factsLong() {   // the same forecast, read far enough for What's ahead (about six months)
+  if (!FCL || FCL.n !== RENDER_N || FCL.st !== state || FCL.t !== TODAY) FCL = { n: RENDER_N, st: state, t: TODAY, f: forecastFacts(carouselCount()) };
+  return FCL.f;
+}
+/* "your rent", "your car payment", and a goal's contribution as "what you set aside for your emergency fund" */
+const causeName = n => /^Toward /.test(n || '') ? `what you set aside for your ${inSentence(n.slice(7))}` : `your ${inSentence(n)}`;
+const stretchStatus = (a, l) => statusFromC(toC(l != null ? Math.min(a, l) : a));
+function stretchFor(w) {
+  if (!w || persona().unit !== 'paycheck' || w.cashUnknown) return null;
+  const h = facts().hero;
+  if (h.basis === 'spendable' || h.basis === 'runway') {
+    if (w.i === 0 && h.basis === 'spendable') return { basis: 'spendable', i: 0, available: h.amount, likely: h.likely, status: stretchStatus(h.amount, h.likely), from: iso(TODAY), until: h.until };
+    const pb = factsLong().heroBalance, a = iso(w.i === 0 ? TODAY : w.start), b = iso(w.end);
+    // early bills on a payday count before that paycheck lands, as on Now
+    const rows = pb.rows.filter(r => (r.date > a || (r.date === a && !(r.dir === 'out' && r.early))) && (r.date < b || (r.date === b && r.dir === 'out' && r.early)));
+    if (!rows.length || rows.some(r => r.spendable == null)) return null;
+    // money carried in from earlier stretches has had their everyday spending by then (not this stretch's)
+    const edBefore = everydayC(Math.round((parse(a) - parse(pb.asOf)) / DAY)) || 0;
+    let lowC = Infinity, likC = null;
+    rows.forEach(r => { lowC = Math.min(lowC, toC(r.spendable) - edBefore); if (r.likely != null) likC = likC == null ? toC(r.likely) : Math.min(likC, toC(r.likely)); });
+    if (likC != null && everydayC(0) != null) likC = Math.min(likC, toC(rows[rows.length - 1].spendable) - everydayC(Math.round((parse(b) - parse(pb.asOf)) / DAY)));
+    const idx = pb.rows.indexOf(rows[0]), prev = idx > 0 ? pb.rows[idx - 1] : null;
+    return { basis: h.basis, i: w.i, available: toD(lowC), likely: likC == null ? null : toD(likC), status: stretchStatus(toD(lowC), likC == null ? null : toD(likC)),
+      from: a, until: b, rows, carriedIn: toD(toC(prev ? prev.spendable : pb.start.spendable) - edBefore), everydayBefore: toD(edBefore) };
+  }
+  if (h.basis === 'remainder') {
+    const r = factsLong().remainders.find(x => x.payday === iso(w.start));
+    if (!r) return null;
+    return { basis: 'remainder', i: w.i, available: r.remainder, likely: r.likely, status: stretchStatus(r.remainder, r.likely), from: r.payday, until: r.nextPayday };
+  }
+  return null;
+}
+/* A window with its numbers swapped for the stretch's, for the wave (heights after the everyday estimate). */
+function stretchWindow(w) {
+  const st = stretchFor(w);
+  if (!st) return w;
+  const v = st.likely != null ? st.likely : st.available;
+  return Object.assign({}, w, { roomLow: v, roomTyp: v, stretch: st });
+}
+
 /* The state Now speaks from: the engine's, when Now shows the forecast's own hero. */
 function nowState(w0) { const hm = heroModel(w0); return hm ? facts().money : null; }
 /* What lands before the next paycheck, in words: "your car payment and the rest of your rent". */
@@ -1452,7 +1605,7 @@ function stretchCause(f) {
   const h = f.hero, td = iso(TODAY);
   const obs = [].concat(...f.remainders.map(r => r.obligations));
   const list = h.basis === 'spendable'
-    ? f.balance.rows.filter(r => r.dir === 'out' && r.date >= td && r.date < h.until).map(r => { const o = obs.find(x => x.billId === r.billId && x.date === r.date) || {}; return { name: r.name, amount: r.amount, last: o.parts > 1 && o.part === o.parts }; })
+    ? f.heroBalance.rows.filter(r => r.dir === 'out' && r.date >= td && r.date < h.until).map(r => { const o = obs.find(x => x.billId === r.billId && x.date === r.date) || {}; return { name: r.name, amount: r.amount, last: o.parts > 1 && o.part === o.parts }; })
     : (f.remainders.find(r => parse(r.payday) <= TODAY && TODAY < parse(r.nextPayday)) || { obligations: [] }).obligations.filter(o => o.date >= td && !o.paid).map(o => ({ name: o.name, amount: o.amount, last: o.parts > 1 && o.part === o.parts, b: state.bills.find(x => x.id === o.billId) }));
   const big = list.sort((a, b) => b.amount - a.amount).slice(0, 3);
   return big.map(x => x.last ? `the rest of your ${inSentence(x.name)}` : `your ${inSentence(x.name)}`);
@@ -1461,9 +1614,13 @@ function stretchCause(f) {
 function stateSentence(f) {
   const m = f.money, h = f.hero, until = h.until ? long(parse(h.until)) : '';
   if (!m || m.state === 'UNKNOWN') return 'Alon needs what’s in your account now to see this stretch.';
+  if (h.basis === 'runway') return h.amount < 0 ? `Your bills already take more than you have, by about ${money(-h.amount)}.`
+    : h.through ? `${money(h.amount)} is available now. It covers your bills and everyday spending through ${long(parse(h.through))}, even if no new payment comes in.`
+    : `${money(h.amount)} is available now. It covers your bills and everyday spending past ${long(parse(h.past))}, even if no new payment comes in.`;
   const cause = stretchCause(f), causeLine = cause.length ? `${capFirst(listJoin(cause))} ${cause.length > 1 ? 'land' : 'lands'} before your ${short(parse(h.until))} paycheck.` : '';
   if (m.state === 'PRESSURE' && m.when === 'now') {
-    if (h.amount < 0 && f.shortfall.status === 'short') return `You’re projected to dip below zero on ${long(parse(f.shortfall.date))}, by ${money(f.shortfall.shortBy)}, because ${listJoin(f.shortfall.behind.map(x => `${inSentence(x.name)} (${money(x.amount)})`))} ${f.shortfall.behind.length > 1 ? 'come' : 'comes'} out first.${f.shortfall.recovers ? ` Your ${short(parse(f.shortfall.recovers.date))} paycheck brings it back.` : ''}`;
+    const sf = f.heroShortfall || f.shortfall;
+    if (h.amount < 0 && sf.status === 'short') return `You’re projected to dip below zero on ${long(parse(sf.date))}, by ${money(sf.shortBy)}, because ${listJoin(sf.behind.map(x => `${inSentence(x.name)} (${money(x.amount)})`))} ${sf.behind.length > 1 ? 'come' : 'comes'} out first.${sf.recovers ? ` Your ${short(parse(sf.recovers.date))} paycheck brings it back.` : ''}`;
     return `This stretch looks tight. ${causeLine} ${h.likely != null ? `About ${money(h.likely)} is left after your usual everyday spending, under your ${money(m.through ? bufferAmt() : 250)} buffer.` : ''}`.trim();
   }
   if (m.state === 'PRESSURE') return `Something ahead may not be covered${m.date ? `, starting ${long(parse(m.date))}` : ''}. Tap the wave there to see why.`;
@@ -1827,7 +1984,8 @@ function header(backTo, backLabel) {
   const menu = state.menuOpen ? `
     <nav class="menu" aria-label="Go to">
       <button data-go="now">Now</button>
-      <button data-go="waves">Upcoming</button>
+      <button data-go="waves">What’s ahead</button>
+      <button data-go="add">Add a bill</button>
       <button data-action="tour-start">How Alon works</button>
       <button data-go="income">Your income</button>
       <button data-go="bills">Your bills</button>
@@ -1877,9 +2035,11 @@ function incomeRow(x) {
   if (x.actual != null) label = 'Confirmed';
   else if (s.certainty === 'variable') { dot = 'range'; label = s.perWeek ? 'Expected this week' : 'Changes with hours'; }
   else if (s.certainty === 'uncertain') { dot = 'est'; cls = 'est-t'; }
-  const when = s.perWeek ? 'As you earn' : short(x.date);
+  const sp = Number(s.spread) || 0;
+  const when = s.perWeek ? 'As you earn' : sp ? `Around ${short(addDays(x.date, -sp))}–${parts(x.date)[2]}` : short(x.date);
   const amt = x.actual != null ? money(x.actual) : s.certainty === 'uncertain' ? `$0 to ${money(s.typical)}` : range(x.low, x.typ);
-  return `<button class="line-item tap" data-editincome="${s.id}"><span><span class="name">${esc(s.name)}</span><span class="meta ${cls}"><span class="dot ${dot}"></span>${when} · ${label} · Tap to edit</span></span><span class="amt ${cls}">${amt}</span></button>`;
+  const k = keepOf(s), kept = k ? keptFrom(s, x.actual != null ? x.actual : x.low) : 0;
+  return `<button class="line-item tap" data-editincome="${s.id}"><span><span class="name">${esc(s.name)}</span><span class="meta ${cls}"><span class="dot ${dot}"></span>${when} · ${label}${kept > 0 ? ` · ${money(kept)} set aside for ${keepWord(k.label)}` : ''} · Tap to edit</span></span><span class="amt ${cls}">${amt}</span></button>`;
 }
 function drawRow(d) {
   const s = (state.surprises || []).find(x => x.id === d.surprise);
@@ -1987,10 +2147,123 @@ function waveChart(ws, opts) {
   </svg>`;
 }
 
-const CONTEXT = { outcome: 'Done', data: 'Your data', pool: 'Tide pool', plan: 'Bills', options: 'Answer', surprise: 'Came up', goals: 'Goals', 'goal-edit': 'Goals', 'income-edit': 'Income', check: 'What if', year: 'Year', now: 'Now', detail: 'Now', waves: 'Ahead', why: 'Ahead', add: 'Bills', bills: 'Bills', payday: 'Payday', income: 'Income' };
+/* ---------- Step 2 (Nov 12): the wave is the water level of your available money ----------
+   It rises on payday, drops for a bill (a big bill is the sea pulling back before the wave), and slopes
+   gently down with everyday spending. Below $0 the sea floor shows, in amber. The dashed line is your
+   buffer. Every paycheck stretch gets the same width, so the dates line up with What's ahead, and a tap
+   on a stretch opens what moved it. The same drawing on Now, What's ahead, What if? and after a change.
+     with a balance   the running balance (F2): what's available, after the everyday estimate
+     without one      each paycheck on its own (F1), starting again on each payday
+   Income that isn't certain is never part of the water: it's drawn as a dashed "maybe" rise. */
+function seaSeries(ws, purchase) {
+  const f = facts(), h = f.hero, n = ws.length;
+  if (!n || persona().unit !== 'paycheck' || !['spendable', 'remainder', 'runway'].includes(h.basis)) return null;
+  const buy = purchase || 0, pts = [], maybe = [];
+  const edC = days => state.everydayUnknown ? 0 : Math.round(toC(state.everydayPerWeek || 0) * Math.max(0, days) / 7);
+  const startOf = (w, i) => i === 0 ? TODAY : w.start;
+  const xAt = (i, t, w) => { const a = startOf(w, i), b = w.end, span = Math.max(1, b - a); return i + Math.min(1, Math.max(0, (t - a) / span)); };
+  if (h.basis === 'spendable' || h.basis === 'runway') {
+    const pb = factsLong().heroBalance, asOf = parse(pb.asOf), rows = pb.rows;
+    let k = 0, spC = toC((h.now || pb.start).spendable);
+    const td = iso(TODAY);
+    while (k < rows.length && rows[k].date < td) { spC = toC(rows[k].spendable); k++; }
+    const lvl = (c, t) => c - edC(Math.round((t - asOf) / DAY)) - toC(buy);
+    ws.forEach((w, i) => {
+      const a = startOf(w, i), b = w.end;
+      for (let t = a; t < b; t = addDays(t, 1)) {
+        const day = iso(t);
+        let lowC = Infinity, had = false;   // the lowest moment inside the day (a bill that clears before the deposit)
+        while (k < rows.length && rows[k].date === day) { spC = toC(rows[k].spendable); lowC = Math.min(lowC, spC); had = true; k++; }
+        const x = xAt(i, t, w);
+        const dx = 1 / Math.max(1, (b - a) / DAY);
+        if (had && lowC < spC) pts.push({ x: x + 0.45 * dx, v: lvl(lowC, t), t });   // a dip before money lands the same day
+        pts.push({ x: x + (had ? 0.95 : 0) * dx, v: lvl(spC, t), t, ev: had });
+      }
+    });
+    const last = ws[n - 1]; pts.push({ x: n, v: lvl(spC, last.end), t: last.end });
+  } else {
+    const rems = factsLong().remainders;
+    ws.forEach((w, i) => {
+      const r = rems.find(x => x.payday === iso(w.start));
+      if (!r) return;
+      const pay = parse(r.payday), a = startOf(w, i), b = w.end;
+      const baseC = centsSum(r.deposits, x => x.amount) + centsSum(r.coveredEarlier, x => x.amount) - centsSum(r.setAsideHere, x => x.amount);
+      if (i > 0) pts.push({ x: i, v: pts.length ? pts[pts.length - 1].v : baseC, t: a, gap: true });   // a new paycheck: the water starts again
+      for (let t = a; t <= b; t = addDays(t, 1)) {
+        const day = iso(t);
+        const outC = centsSum(r.obligations.filter(o => o.date <= day && (t < b || o.date < day)), o => o.amount);
+        pts.push({ x: xAt(i, t, w), v: baseC - outC - edC(Math.round((t - pay) / DAY)) - (i === 0 ? toC(buy) : 0), t });
+        if (t >= b) break;
+      }
+    });
+  }
+  // income that isn't certain: a dashed "maybe" rise where it could land (never counted as available)
+  ws.forEach((w, i) => state.sources.filter(s => s.certainty === 'uncertain' && !s.perWeek).forEach(s =>
+    occurrences(s, startOf(w, i), w.end).forEach(t => { if (state.actuals[s.id + '|' + t] == null) maybe.push({ x: xAt(i, t, w), amount: toC(s.typical || s.low || 0), name: s.name, t }); })));
+  return { pts: pts.map(p => Object.assign(p, { v: p.v / 100 })), maybe: maybe.map(m => Object.assign(m, { amount: m.amount / 100 })), basis: h.basis === 'runway' ? 'spendable' : h.basis };
+}
+/* A smooth line that never overshoots (monotone cubic), so a dip near $0 never looks deeper or shallower. */
+function smoothPath(P) {
+  if (P.length < 2) return '';
+  const n = P.length, d = [], m = [];
+  for (let i = 0; i < n - 1; i++) d.push((P[i + 1][1] - P[i][1]) / Math.max(1e-6, P[i + 1][0] - P[i][0]));
+  m.push(d[0]); for (let i = 1; i < n - 1; i++) m.push(d[i - 1] * d[i] <= 0 ? 0 : (d[i - 1] + d[i]) / 2); m.push(d[n - 2]);
+  let out = `M${P[0][0].toFixed(1)},${P[0][1].toFixed(1)}`;
+  for (let i = 0; i < n - 1; i++) {
+    const h = P[i + 1][0] - P[i][0];
+    out += ` C${(P[i][0] + h / 3).toFixed(1)},${(P[i][1] + m[i] * h / 3).toFixed(1)} ${(P[i + 1][0] - h / 3).toFixed(1)},${(P[i + 1][1] - m[i + 1] * h / 3).toFixed(1)} ${P[i + 1][0].toFixed(1)},${P[i + 1][1].toFixed(1)}`;
+  }
+  return out;
+}
+function seaLine(ws, opts) {
+  opts = opts || {};
+  const S = seaSeries(ws, opts.purchase);
+  if (!S || S.pts.length < 2) return null;
+  const n = ws.length, W = 60 * n, H = opts.height || 112, top = 10, bottom = H - 8, buf = bufferAmt();
+  const vals = S.pts.map(p => p.v), maxV = Math.max(buf * 1.5, ...vals, 100), minV = Math.min(0, ...vals);
+  /* Each band keeps its order and stays linear inside: below $0 gets at least a fifth of the height when
+     it happens, $0 to the buffer at least a sixth, so a dip near the floor is never too small to see. */
+  const Hh = bottom - top, negH = minV < 0 ? Math.max(0.2, -minV / (maxV - minV)) * Hh : 0;
+  const bufH = buf > 0 ? Math.max(Hh / 6, buf / Math.max(1, maxV - minV) * Hh) : 0, upH = Hh - negH - bufH;
+  const y = v => v < 0 ? bottom - negH + (-v / Math.max(1, -minV)) * negH
+    : v < buf ? bottom - negH - (v / Math.max(1, buf)) * bufH
+    : top + (maxV - v) / Math.max(1, maxV - buf) * upH;
+  const span = Math.max(1, maxV - minV);
+  const X = x => x * 60, y0 = y(0);
+  const segs = [];   // without a balance, each paycheck is its own stretch of water
+  S.pts.forEach(p => { if (p.gap || !segs.length) segs.push([]); if (!p.gap) segs[segs.length - 1].push([X(p.x), y(p.v)]); });
+  const lines = segs.filter(g => g.length > 1).map(smoothPath);
+  const bodies = segs.filter(g => g.length > 1).map((g, k) => `${lines[k]} L${g[g.length - 1][0].toFixed(1)},${y0.toFixed(1)} L${g[0][0].toFixed(1)},${y0.toFixed(1)} Z`);
+  const uid = 'sea' + Math.round(Math.random() * 1e6);
+  let low = S.pts[0];
+  S.pts.forEach(p => { if (!p.gap && p.v < low.v) low = p; });
+  const short_ = low.v < 0;
+  const lowMark = opts.markLow ? `<circle cx="${X(low.x).toFixed(1)}" cy="${y(low.v).toFixed(1)}" r="4" fill="#fff" stroke="${short_ ? '#B4690E' : '#1659D0'}" stroke-width="2"/>` : '';
+  const maybeMarks = S.maybe.map(m => { const x = X(m.x), y1 = y(Math.max(0, low.v)), y2 = Math.max(top, y1 - Math.min(bottom - top, m.amount / span * (bottom - top))); return `<path d="M${x.toFixed(1)},${(y1).toFixed(1)} L${x.toFixed(1)},${y2.toFixed(1)}" stroke="#7FAEEE" stroke-width="2" stroke-dasharray="3 3" fill="none"/><circle cx="${x.toFixed(1)}" cy="${y2.toFixed(1)}" r="3" fill="#fff" stroke="#7FAEEE" stroke-width="1.5"/>`; }).join('');
+  const lowWord = `${short_ ? 'could come up short' : 'lowest point'}: about ${money(Math.abs(low.v))}${short_ ? '' : ''} around ${short(low.t)}`;
+  const label = `${S.basis === 'spendable' ? 'Your available money' : 'What each paycheck has left'} over the next ${n} ${unitWord2()}s. It rises on payday and dips for bills. ${capFirst(lowWord)}.${S.maybe.length ? ` Income that isn’t certain is shown as a dashed maybe and isn’t counted.` : ''}`;
+  const svg = `<svg class="sea-line" width="100%" viewBox="-6 0 ${W + 12} ${H}" preserveAspectRatio="none" role="img" aria-label="${esc(label)}" style="display:block;overflow:visible">
+    <defs>
+      <linearGradient id="${uid}-w" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5C93E6"/><stop offset="1" stop-color="#B9D1F4"/></linearGradient>
+      <clipPath id="${uid}-up"><rect x="-4" y="-40" width="${W + 8}" height="${(y0 + 40).toFixed(1)}"/></clipPath>
+      <clipPath id="${uid}-dn"><rect x="-4" y="${y0.toFixed(1)}" width="${W + 8}" height="${(H - y0 + 40).toFixed(1)}"/></clipPath>
+    </defs>
+    ${bodies.map(d => `<path d="${d}" fill="url(#${uid}-w)" opacity=".8" clip-path="url(#${uid}-up)"/><path d="${d}" fill="#F3C98B" clip-path="url(#${uid}-dn)"/>`).join('')}
+    <line x1="0" y1="${y0.toFixed(1)}" x2="${W}" y2="${y0.toFixed(1)}" stroke="#D9C4A0" stroke-width="1.5"/>
+    ${buf > 0 && y(buf) > top + 2 ? `<line class="sea-buffer" x1="0" y1="${y(buf).toFixed(1)}" x2="${W}" y2="${y(buf).toFixed(1)}" stroke="#7C8CA6" stroke-width="1" stroke-dasharray="4 5" opacity=".7"/>` : ''}
+    ${lines.map(d => `<path d="${d}" fill="none" stroke="${short_ ? '#1659D0' : '#1659D0'}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`).join('')}
+    ${maybeMarks}
+    <circle cx="${X(S.pts[0].x).toFixed(1)}" cy="${y(S.pts[0].v).toFixed(1)}" r="4.5" fill="#fff" stroke="#1659D0" stroke-width="2"/>
+    ${lowMark}
+    ${opts.tap ? ws.map((w, i) => `<rect class="wave-hit" x="${i * 60}" y="-20" width="60" height="${H + 20}" fill="transparent" data-action="why-window" data-window="${w.i}" aria-hidden="true"/>`).join('') : ''}
+  </svg>`;
+  return { svg, low: { v: low.v, t: low.t, short: short_ }, basis: S.basis, maybe: S.maybe };
+}
+
+const CONTEXT = { outcome: 'Done', data: 'Your data', pool: 'Tide pool', plan: 'Bills', options: 'Answer', surprise: 'Came up', goals: 'Goals', 'goal-edit': 'Goals', 'income-edit': 'Income', check: 'What if', year: 'Year', now: '', detail: 'Now', waves: 'Ahead', why: 'Ahead', add: 'Bills', bills: 'Bills', payday: 'Payday', income: 'Income' };
 const DOCK_HINT = { outcome: 'Ask about what changed', data: 'Ask about your data', pool: 'Ask about your tide pool', add: 'Ask about this bill', plan: 'Ask about paying in parts', 'goal-edit': 'Ask about this goal', goals: 'Ask about saving', surprise: 'Ask what you can do', 'income-edit': 'Ask about this income', income: 'Ask about your income', check: 'Ask before you buy', why: 'Ask why it’s short', payday: 'Ask about this paycheck', bills: 'Ask about your bills', options: 'Ask a follow-up', detail: 'Ask about this paycheck' };
 function dock() {
-  const sug = askSuggestions();
+  const sug = state.screen === 'now' ? [] : askSuggestions();   // Now diet: no suggested questions under Now
   return `<div class="dock">
     ${sug.length ? `<div class="ask-chips" aria-label="Questions you could ask">${sug.map(q => `<button type="button" class="ask-chip" data-askq="${esc(q)}">${esc(q)}</button>`).join('')}</div>` : ''}
     <form class="ask" data-form="ask">
@@ -2064,15 +2337,9 @@ function railActions() {
   const act = (label, action, extra) => Object.assign({ label, attrs: `data-action="${action}"` }, extra || {});
   switch (state.screen) {
     case 'now': {
-      const ms = p.unit === 'paycheck' ? nowState(computeWindows()[0]) : null;
-      if (ms && ms.state === 'PRESSURE') {
-        const later = ms.when === 'ahead' && !!smoothing(computeWindows());
-        return [act('Why', 'why-sheet', { aria: 'Why this looks tight' }), later ? go('Prepare', 'why') : act('Options', 'options-now', { aria: 'What you can do' }), Object.assign(go('What if?', 'check'), { aria: 'What can I spend?' })];
-      }
-      if (ms && ms.state === 'OPPORTUNITY') return [go('Ahead', 'waves'), act('Explore', 'explore', { aria: 'Explore what this room could do' }), go('Add', 'add')];
-      const top = computeWindows().some(breaks) ? act('Why', 'why-sheet', { aria: 'Why a paycheck is short' }) : go('Ahead', 'waves');
-      return p.unit === 'week' ? [top, act('Log', 'log', { aria: 'Log earnings' }), Object.assign(go('What if?', 'check'), { aria: 'What can I spend?' })]
-                               : [top, Object.assign(go('What if?', 'check'), { aria: 'What can I spend?' }), go('Add', 'add')];
+      // Now diet: the main button carries the state's action; the knob is "can I spend this?"
+      const wif = Object.assign(go('What if?', 'check'), { aria: 'What can I spend?' });
+      return p.unit === 'week' ? [null, act('Log', 'log', { aria: 'Log earnings' }), wif] : [null, wif, null];
     }
     case 'detail': return [go('Back', 'now'), Object.assign(go('What if?', 'check'), { aria: 'What can I spend?' }), go('Add', 'add')];
     case 'waves': return [go('Now', 'now'), go('Prepare', 'why'), go('Add', 'add')];
@@ -2135,7 +2402,7 @@ function railHtml() {
       <svg class="shape" width="${RAIL_W}" height="${RAIL.h}" viewBox="0 0 ${RAIL_W} ${RAIL.h}"><path id="rail-path" d="${railPath(S[1])}" fill="#E8EFFB"/><path id="rail-line" d="${railLine(S[1])}" fill="none" stroke="#C9D6EC" stroke-width="1"/></svg>
     </div>
     ${slot(t, 0)}${slot(b, 2)}
-    ${c ? `<button class="rail-knob" id="rail-knob" data-slot="1" data-label="${esc(c.label)}" style="top:${S[1] - 20}px" ${c.attrs} ${c.disabled ? 'aria-disabled="true" data-blocked="1"' : ''} data-hint="${esc(c.hint || '')}" aria-label="${esc(c.aria || c.label)}"><span>${c.label}</span></button>` : ''}
+    ${c ? `<button class="rail-knob" id="rail-knob" data-slot="1" data-label="${esc(c.label)}" style="top:${S[1] - 24}px" ${c.attrs} ${c.disabled ? 'aria-disabled="true" data-blocked="1"' : ''} data-hint="${esc(c.hint || '')}" aria-label="${esc(c.aria || c.label)}"><span>${c.label}</span></button>` : ''}
     ${hint}
   </div>`;
 }
@@ -2149,7 +2416,7 @@ function setKnob(ky, label) {
   const path = document.getElementById('rail-path'), knob = document.getElementById('rail-knob');
   if (path) path.setAttribute('d', railPath(ky));
   const line = document.getElementById('rail-line'); if (line) line.setAttribute('d', railLine(ky));
-  if (knob) { knob.style.top = (ky - 20) + 'px'; const sp = knob.querySelector('span'); if (label != null && sp) sp.textContent = label; }
+  if (knob) { knob.style.top = (ky - 24) + 'px'; const sp = knob.querySelector('span'); if (label != null && sp) sp.textContent = label; }
 }
 function animateKnob(from, to, label, done) {
   if (railAnim) cancelAnimationFrame(railAnim);
@@ -2265,15 +2532,15 @@ function waveEdges() {
 function waveStrip() {
   const ws = computeWindows(null, carouselCount()), n = ws.length, u = unitWord();
   const extras = extraPaychecks(400);
-  const hm0 = heroModel(ws[0]), h0 = hm0 && hm0.h.basis === 'spendable' ? (hm0.h.likely != null ? hm0.h.likely : hm0.h.amount) : null;
-  if (h0 != null) ws[0] = Object.assign({}, ws[0], { roomLow: h0, roomTyp: h0 });   // the hero's own number, so they never disagree
+  const sts = ws.map(stretchFor);   // one number, one meaning: labels show available, heights the everyday-adjusted level
+  ws.forEach((w, k) => { if (sts[k]) ws[k] = stretchWindow(w); });
   const labels = ws.map(w => {
     const far = w.start > addDays(TODAY, 92), { ex } = windowBadges(w, extras);
     if (w.cashUnknown) return `<button data-window="${w.i}" aria-label="${windowEyebrow(w)}: not known yet. Add what’s in your account"><span class="d" style="font-weight:700">${windowShortName(w)}</span><strong>?</strong></button>`;
-    return `<button data-window="${w.i}" class="${far ? 'far' : ''}" aria-label="${windowEyebrow(w)}: ${range(w.roomLow, w.roomTyp)}${w.roomLow < 0 ? (carried(w) ? ' from this paycheck, carried by earlier ones' : ' short') : ' left'}${ex ? `, ${ordinal(ex.count)} paycheck this month` : ''}${far ? ', a rough look' : ''}"><span class="d" style="${w.i === 0 ? 'font-weight:700' : ''}">${windowShortName(w)}</span><strong class="${w.roomLow < 0 && !carried(w) ? 'short' : ''}">${compact(w.roomLow)}</strong>${w.roomTyp !== w.roomLow ? `<span class="t">to ${compact(w.roomTyp)}</span>` : ''}${ex ? `<span class="x">${ordinal(ex.count)}</span>` : ''}</button>`;
+    return `<button data-window="${w.i}" class="${far ? 'far' : ''}" aria-label="${windowEyebrow(w)}: ${w.stretch ? money(w.stretch.available) + (w.stretch.available < 0 ? ' short' : ' available') : range(w.roomLow, w.roomTyp) + (w.roomLow < 0 ? (carried(w) ? ' from this paycheck, carried by earlier ones' : ' short') : ' left')}${ex ? `, ${ordinal(ex.count)} paycheck this month` : ''}${far ? ', a rough look' : ''}"><span class="d" style="${w.i === 0 ? 'font-weight:700' : ''}">${windowShortName(w)}</span><strong class="${(w.stretch ? w.stretch.available < 0 : w.roomLow < 0 && !carried(w)) ? 'short' : ''}">${w.stretch ? money(w.stretch.available) : compact(w.roomLow)}</strong>${!w.stretch && w.roomTyp !== w.roomLow ? `<span class="t">to ${compact(w.roomTyp)}</span>` : ''}${ex ? `<span class="x">${ordinal(ex.count)}</span>` : ''}</button>`;
   }).join('');
   return `<div class="wave-scroll" id="wave-scroll" tabindex="0" aria-label="${u === 'week' ? 'Weeks' : 'Paychecks'} ahead. Swipe for more">
-      <div class="wave-strip" style="width:${(n / 6 * 100).toFixed(2)}%;--n:${n}">${waveChart(ws, { tap: true })}<div class="wave-labels">${labels}</div></div>
+      <div class="wave-strip" style="width:${(n / 6 * 100).toFixed(2)}%;--n:${n}">${(seaLine(computeWindows(null, carouselCount()), { tap: true, height: 120 }) || {}).svg || waveChart(ws, { tap: true })}<div class="wave-labels">${labels}</div></div>
     </div>
     ${extraLine(extras, ws.some(w => w.start > addDays(TODAY, 92)) ? ` ${term('Grey dates', 'rough')} are a rough look.` : '')}`;
 }
@@ -2288,6 +2555,11 @@ function extraLine(extras, tail) {
 /* Between paydays, before Alon knows what's in the account: ask, right where the number would be. */
 function cashUnknownHero(w0) {
   const lp = w0.lastPay, due = w0.billsTotal + w0.everyday;
+  const prim = primarySource();
+  if (!prim || prim.certainty === 'uncertain') return `<span class="hero-q">What’s in your account now?</span>
+    <span class="hero-sub" style="font-weight:500;color:var(--muted-2);line-height:1.45">Without a regular paycheck, the answer is how long your money lasts. Alon needs one number for that: what’s in your account now.</span>
+    <button class="primary mt8" data-action="onhand">Add what’s in your account</button>
+    <span class="small">A rough number from your bank app is fine.</span>`;
   return `<span class="hero-q">What’s left from ${lp ? `your ${short(lp)} paycheck` : 'your last paycheck'}?</span>
     <span class="hero-sub" style="font-weight:500;color:var(--muted-2);line-height:1.45">Alon needs one number to see this stretch: what’s in your account now. Until ${long(w0.end)}, ${money(w0.billsTotal)} in bills and about ${money(w0.everyday)} of everyday spending are still to come.</span>
     <button class="primary mt8" data-action="onhand">Add what’s in your account</button>
@@ -2378,17 +2650,33 @@ function screenNow() {
   ask_('pooloffer', poolOffer(w0));
   const later = state.askLater || {};
   const open = checks.filter(c => later[c.id] !== iso(TODAY));
-  const slot = open.length ? `<section class="checkin mt20" aria-label="A quick question from Alon">
-      <div class="checkin-head"><span>${open.length > 1 ? `A quick question · 1 of ${open.length}` : 'A quick question'}</span><button class="linkish" data-later="${esc(open[0].id)}">Ask me later</button></div>
+  // one question per visit, after the answer; the rest wait their turn (no "1 of 3" to-do list)
+  const slot = open.length ? `<section class="checkin mt24" aria-label="A quick question from Alon">
+      <div class="checkin-head"><span>A quick question</span><button class="linkish" data-later="${esc(open[0].id)}">Ask me later</button></div>
       ${open[0].html}
     </section>` : '';
   const covering = planGroups().find(g => parse(g.to) >= w0.start && parse(g.to) < w0.end && g.planned > 0);
   const wsC = whyWindows();
-  const ns = (() => { const i = nextShort(wsC); return i >= 0 && i < ws.length ? i : -1; })();
+  // one number, one meaning: with a balance, "short ahead" and "a big bill ahead" come from the same stretches as What's ahead
+  const balBasis = !!(hm && (hm.h.basis === 'spendable' || hm.h.basis === 'runway')), runwayB = !!(hm && hm.h.basis === 'runway');
+  const stS = balBasis ? wsC.slice(0, ws.length).map(w => w.i > 0 ? stretchFor(w) : null) : [];
+  const stLow = st => Math.min(st.available, st.likely != null ? st.likely : st.available);
+  const ns = balBasis ? stS.findIndex((st, i) => st && st.status === 'Short' && !decided(wsC[i]))
+    : (() => { const i = nextShort(wsC); return i >= 0 && i < ws.length ? i : -1; })();
+  const bigI = balBasis && !runwayB ? stS.findIndex((st, i) => st && st.status !== 'Short' && wsC[i].roomLow < 0) : -1;
   const ackI = wsC.slice(0, ws.length).findIndex(w => w.roomLow < 0 && decided(w));
 
   let notice;
-  if (covering && !eb) {
+  if (runwayB) {
+    // no dependable income: how long it lasts is the answer; the maybe-income is named, never counted
+    const maybeSrc = state.sources.filter(x => x.certainty === 'uncertain' && !x.perWeek);
+    const nx = maybeSrc.map(x => ({ x, t: incomeDates(x, TODAY, addDays(TODAY, 120))[0] })).filter(o => o.t).sort((a, b) => a.t - b.t)[0];
+    const h = hm.h, tight = h.status !== 'Covered';
+    notice = `<button class="${tight ? 'warn' : 'tint'} tap stack gap6 mt14 why-card" style="${tight ? '' : 'border:1px solid #C9D6EC;'}text-align:left" data-whysheet="0">
+      <span style="font-size:17px;font-weight:700">${h.amount < 0 ? 'Your bills already take more than you have' : h.through ? `That’s even if no new payment comes in` : 'Even if no new payment comes in'}</span>
+      ${nx ? `<span class="why-line" style="${tight ? '' : 'color:var(--muted-2)'}">${esc(nx.x.name)} could add ${nx.x.low !== nx.x.typical ? `${money(nx.x.low)}–${money(nx.x.typical)}` : money(nx.x.typical)} around ${short(addDays(nx.t, -(Number(nx.x.spread) || 0)))}${Number(nx.x.spread) ? `–${parts(nx.t)[2]}` : ''}. Alon counts it once it arrives.</span>` : ''}
+      <span class="why-line"><span class="see" style="${tight ? '' : 'color:var(--royal)'}">See how long it lasts</span></span></button>`;
+  } else if (covering && !eb) {
     const rare = w0.items.filter(x => LONG_FREQS.includes(x.bill.freq) && x.bill.freq !== 'once').map(x => x.bill.name.toLowerCase());
     const what = rare.length ? (rare.length === 1 ? rare[0] : rare.slice(0, -1).join(', ') + ' and ' + rare[rare.length - 1]) : 'the big bills';
     const all = covering.ready >= covering.planned;
@@ -2406,10 +2694,11 @@ function screenNow() {
       <span class="small">${money(Math.min(eb.have, eb.due))} of ${money(eb.due)} covered. Log what you make on the wave.</span>
     </div>`;
   } else if (hm && hm.h.basis === 'spendable' && hm.h.amount < 0) {
-    const sf = hm.f.shortfall;
+    const sf = hm.f.heroShortfall || hm.f.shortfall;
+    // the number already says how short; the card says when and what (amounts are on Next and in the sheet)
     notice = `<button class="warn tap stack gap6 mt14 why-card" data-whysheet="0">
-      <span style="font-size:16px;font-weight:700">Could come up ${money(-hm.h.amount)} short ${sf.date ? `on ${long(parse(sf.date))}` : `before ${long(parse(hm.h.until))}`}</span>
-      <span class="why-line"><strong>Behind it:</strong> ${sf.behind ? listJoin(sf.behind.map(x => `${inSentence(x.name)} ${money(x.amount)}`)) : 'the bills due before your paycheck'}.</span>
+      <span style="font-size:17px;font-weight:700">Could come up short ${sf.date ? `on ${long(parse(sf.date))}` : `before ${long(parse(hm.h.until))}`}</span>
+      <span class="why-line"><strong>Behind it:</strong> ${sf.behind ? listJoin([...new Set(sf.behind.slice().sort((p, q) => q.amount - p.amount).map(x => causeName(x.name)))]) : 'the bills due before your paycheck'}.</span>
       <span class="why-line">${sf.recovers ? `Your ${short(parse(sf.recovers.date))} paycheck brings it back. ` : ''}${sf.dipsIntoSetAside ? 'Your account stays above $0: it would use money you set aside. ' : ''}<span class="see">See why</span></span></button>`;
   } else if (hm && facts().money.state === 'PRESSURE' && facts().money.when === 'now' && hm.h.amount >= 0) {
     const f = facts(), cause = stretchCause(f);
@@ -2427,10 +2716,18 @@ function screenNow() {
     const t = wsC[ns], r = windowReasons(wsC, ns), mp = monthPaycheck(t), left = Math.max(1, ns - 1);
     notice = `<button class="warn tap stack gap6 mt14 why-card" data-whysheet="${ns}">
       <span style="font-size:13px;font-weight:700;color:var(--amber-body)">${mp ? `${mp} · ` : ''}${long(t.start)}</span>
-      <span style="font-size:16px;font-weight:700">Could come up about ${money(-t.roomLow)} short</span>
+      <span style="font-size:16px;font-weight:700">Could come up about ${money(balBasis ? -stLow(stS[ns]) : -t.roomLow)} short</span>
       <span class="why-line"><strong>Main reason:</strong> ${r.headline}</span>
       <span class="why-line">You have ${left} ${p.unit}${left > 1 ? 's' : ''} to prepare. <span class="see">See why</span></span></button>`;
-  } else if (nextCarried(wsC) >= 0 && nextCarried(wsC) < ws.length) {
+  } else if (bigI >= 0) {
+    // a big bill the money you already have carries: the sea pulls back, and you can see it coming
+    const t = wsC[bigI], st = stS[bigI], r = windowReasons(wsC, t.i), mp = monthPaycheck(t);
+    notice = `<button class="tint tap stack gap6 mt14 why-card" style="border:1px solid #C9D6EC;text-align:left" data-whysheet="${t.i}">
+      <span style="font-size:15px;font-weight:700;color:var(--royal)">${mp ? `${mp} · ` : ''}${long(t.start)}</span>
+      <span style="font-size:17px;font-weight:700">A big bill ahead, and you’re covered</span>
+      <span class="why-line">${r.headline}</span>
+      <span class="why-line" style="color:var(--muted-2)">Your money dips to about ${money(stLow(st))} then. Keep what’s left from earlier paychecks and it stays covered. <span class="see" style="color:var(--royal)">See it</span></span></button>`;
+  } else if (!balBasis && nextCarried(wsC) >= 0 && nextCarried(wsC) < ws.length) {
     const t = wsC[nextCarried(wsC)], r = windowReasons(wsC, t.i), mp = monthPaycheck(t);
     notice = `<button class="tint tap stack gap6 mt14 why-card" style="border:1px solid #C9D6EC;text-align:left" data-whysheet="${t.i}">
       <span style="font-size:13px;font-weight:700;color:var(--royal)">${mp ? `${mp} · ` : ''}${long(t.start)}</span>
@@ -2453,43 +2750,34 @@ function screenNow() {
     notice = reliefCard();
   } else if (hm && facts().money.state === 'OPPORTUNITY') {
     const m = facts().money;
-    notice = `<div class="tint stack gap8 mt14 room-card" style="border:1px solid #C9D6EC">
-      <span style="font-size:13px;font-weight:800;letter-spacing:.06em;color:var(--royal);text-transform:uppercase">Room ahead</span>
-      <span style="font-size:17px;font-weight:700;line-height:1.35">You have some room ahead</span>
-      <span style="font-size:14px;color:var(--muted-2);line-height:1.5">Your planned bills are covered through ${short(parse(m.through))}. About ${money(m.freeRoom)} is more than you need, after your ${money(m.buffer)} buffer.</span>
-      <button class="secondary" style="min-height:44px" data-action="explore">Explore what this room could do</button>
+    // opportunity: one line, no second button (the main button below is Explore)
+    notice = `<div class="tint stack gap4 mt14 room-card" style="border:1px solid #C9D6EC">
+      <span style="font-size:17px;font-weight:700;line-height:1.35">About ${money(facts().money.freeRoom)} more than you need</span>
+      <span style="font-size:15px;color:var(--muted-2);line-height:1.5">That’s after your bills through ${short(parse(facts().money.through))} and your ${money(facts().money.buffer)} buffer.</span>
     </div>`;
-  } else if (hm) {
-    // steady: say it once, plainly, and stop
-    const m = facts().money;
-    notice = `<div class="ok-state mt14" role="status"><span class="ok-ic" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M3 7.2 5.8 10 11 4.2" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-      <span class="stack gap4"><span style="font-size:16px;font-weight:700">Nothing needs your attention right now.</span>
-      <span class="small">${m.basis === 'paychecks' ? `Each paycheck covers its own bills through ${short(parse(m.through))}.` : `Everything you’ve entered is covered through ${short(parse(m.through))}.`}</span></span></div>`;
   } else {
-    // nothing needs doing: a successful state, not an empty one. No invented advice.
-    notice = `<div class="ok-state mt14" role="status"><span class="ok-ic" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M3 7.2 5.8 10 11 4.2" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-      <span class="stack gap4"><span style="font-size:16px;font-weight:700">Nothing needs your attention right now.</span>
-      <span class="small">You’re covered for the next ${ws.length} ${p.unit}s${ws.some(w => w.roomLow !== w.roomTyp) ? ', even on the lighter side' : ''}.</span></span></div>`;
+    // steady: the pill already says it ("Covered through Jan 28"). Nothing else to add.
+    notice = '';
   }
-  const calm = !/class="warn/.test(notice);   // next up only when nothing else is asking for attention
-
+  /* Now diet (Nov 12): the number, one status line, the wave, the next bill, one main button.
+     Everything else lives one tap away or on another screen. */
+  const wide = isWide();
   return `${header()}
-  <main class="now-grid">
+  <main class="now-grid now-diet">
     <div class="pad now-a">
       <section class="stack gap8 mt24">
         <span class="hello">${greeting()}</span>
-        ${w0.cashUnknown ? cashUnknownHero(w0) : `${hm ? heroHtml(hm, w0) : `${w0.backfilled && !w0.workingOk ? '<span class="hero-about">about</span>' : ''}<span class="hero big ${isRange ? 'range' : ''} ${w0.roomLow < 0 ? 'short' : ''}" style="margin-top:4px;white-space:nowrap;font-size:${heroSize(range(w0.roomLow, w0.roomTyp))}px">${range(w0.roomLow, w0.roomTyp)}</span>
-        <span class="hero-sub">${leftLine(w0)}${isRange && p.rangeNote ? `<span class="small" style="display:block;font-weight:500;font-size:14px">${p.rangeNote.charAt(0).toUpperCase() + p.rangeNote.slice(1)}</span>` : ''}</span>`}
-        ${eb ? '' : statusPill(ws, hm)}
-        ${hm ? heroFactsLine(hm, w0) : nowFacts(w0)}`}
-        <div class="quick-row">
-          <button class="quick" data-window="0">What’s in it</button>
-          <button class="quick" data-action="surprise">Something came up?</button>
-        </div>
+        ${w0.cashUnknown ? cashUnknownHero(w0) : `${hm ? heroHtml(hm, w0) : `<button class="hero-tap" data-whysheet="0" aria-label="${range(w0.roomLow, w0.roomTyp)}. Tap to see how it adds up">${w0.backfilled && !w0.workingOk ? '<span class="hero-about">about</span>' : ''}<span class="hero big ${isRange ? 'range' : ''} ${w0.roomLow < 0 ? 'short' : ''}" style="margin-top:4px;white-space:nowrap;font-size:${heroSize(range(w0.roomLow, w0.roomTyp))}px">${range(w0.roomLow, w0.roomTyp)}</span>
+        <span class="hero-sub">${leftLine(w0)}${isRange && p.rangeNote ? `<span class="small" style="display:block;font-weight:500;font-size:15px">${p.rangeNote.charAt(0).toUpperCase() + p.rangeNote.slice(1)}</span>` : ''}</span></button>`}
+        ${eb ? '' : statusPill(ws, hm)}`}
+        ${notice}
       </section>
+      ${w0.cashUnknown || wide ? '' : nowWave()}
+      ${nextUpCard(ws)}
+      ${w0.cashUnknown ? '' : nowMainButton(ws)}
       ${slot}
     </div>
-    <section class="pad now-b mt20">
+    ${wide ? `<section class="pad now-b mt20">
       <div class="stack gap12">
         <div class="quiet-head"><span class="eyebrow" style="font-size:11px;letter-spacing:.09em;text-transform:uppercase;font-weight:700">${p.unit === 'month' ? 'Months' : p.unit === 'week' ? 'Weeks' : 'Paychecks'} ahead</span>
           <span class="pc-nav"><button class="linkish" data-go="waves" style="margin-right:4px">See all</button>
@@ -2499,8 +2787,7 @@ function screenNow() {
         <div class="legend-row"><span><svg width="18" height="8" viewBox="0 0 18 8" aria-hidden="true"><path d="M1,4 Q5.5,1 10,4 T19,4" fill="none" stroke="#1659D0" stroke-width="2"/></svg>Covered</span><span><span style="width:14px;height:10px;border-radius:7px 7px 2px 2px;background:linear-gradient(#3D7BE0,#A9C5F0)"></span>Tight</span>${ws.some(breaks) ? `<span><span style="width:14px;height:10px;border-radius:7px 7px 2px 2px;background:#fff;border:1.5px solid var(--royal)"></span>Short</span>` : ''}${ws.some(w => w.roomTyp !== w.roomLow) ? `<span><span style="width:16px;border-top:2px dashed #8FB0EA"></span>Typical</span>` : ''}${term('What these mean', 'status')}</div>
         <div class="wide-only stack mt8">${ws.map(w => `<button class="line-item tap" data-window="${w.i}"><span><span class="name">${windowEyebrow(w)}</span><span class="meta ${w.roomLow < 0 ? 'warn-t' : ''}">${w.status}${w.roomTyp !== w.roomLow ? ' on a lighter ' + p.unit : ''} · ${w.items.length} bills</span></span><span class="amt" style="${w.roomLow < 0 ? 'color:var(--amber-text)' : ''}">${range(w.roomLow, w.roomTyp)}</span></button>`).join('')}</div>
       </div>
-    </section>
-    <div class="pad now-c">${notice}${calm ? nextUpCard(ws) : ''}</div>
+    </section>` : ''}
   </main>
   ${dock()}`;
 }
@@ -2579,7 +2866,7 @@ const unitWord2 = () => { const u = persona().unit; return u === 'month' ? 'wind
 function heroModel(w0) {
   if (persona().unit !== 'paycheck' || w0.cashUnknown) return null;
   const f = facts(), h = f.hero;
-  if (h.basis === 'spendable') return { f, h };
+  if (h.basis === 'spendable' || h.basis === 'runway') return { f, h };
   if (h.basis === 'remainder') {
     const cur = f.remainders.find(r => r.payday === iso(w0.start));
     if (cur && w0.income.length && !w0.onHand) return { f, h, cur };
@@ -2588,26 +2875,25 @@ function heroModel(w0) {
 }
 function heroHtml(hm, w0) {
   const { h } = hm, neg = h.amount < 0, until = parse(h.until);
-  const about = (h.basis === 'remainder' && w0.backfilled && !w0.workingOk) || (h.basis === 'spendable' && h.estimate);
-  const big = neg ? money(h.amount) : money(h.amount);
-  const lead = h.basis === 'spendable'
-    ? `${neg ? 'short before' : term('room', 'room') + ' until'} ${long(until)}`
-    : `${neg ? 'short' : term('left', 'left')} from ${w0.start.valueOf() === TODAY.valueOf() ? 'today’s' : `your ${short(w0.start)}`} paycheck after bills`;
-  const layer = state.everydayUnknown ? 'Before everyday spending (not set yet)'
-    : !(state.everydayPerWeek > 0) || h.likely == null ? (h.basis === 'remainder' ? `Until ${long(until)}` : '')
-    : `${h.likely < 0 ? `About ${money(-h.likely)} short` : `About ${money(h.likely)}`} after your usual everyday spending${h.basis === 'remainder' ? `, until ${long(until)}` : ''}`;
-  const notes = [layer, about ? (h.basis === 'spendable' ? `From the ${money(state.onHand)} you entered ${short(parse(state.onHandDate))}. Update it anytime` : `An estimate until you confirm your ${short(w0.start)} paycheck`) : ''].filter(Boolean);
-  return `${about ? '<span class="hero-about">about</span>' : ''}<span class="hero big ${neg ? 'short' : ''}" style="margin-top:4px;white-space:nowrap;font-size:${heroSize(big)}px">${big}</span>
-        <span class="hero-sub">${lead}${notes.map(n => `<span class="small hero-layer" style="display:block;font-weight:500;font-size:14px">${n}</span>`).join('')}</span>`;
+  const about = (h.basis === 'remainder' && w0.backfilled && !w0.workingOk) || ((h.basis === 'spendable' || h.basis === 'runway') && h.estimate);
+  const big = money(h.amount);
+  /* Now diet (Nov 12): one number and one plain line under it. The everyday estimate, the balance
+     it came from and the bills behind it are one tap away, in the sheet the number opens. */
+  const lead = h.basis === 'runway' ? (neg ? 'Short now' : 'Available now')
+    : h.basis === 'spendable'
+    ? `${neg ? 'Short before' : 'Available until'} ${long(until)}`
+    : `${neg ? 'Short' : 'Left'} from ${w0.start.valueOf() === TODAY.valueOf() ? 'today’s' : `your ${short(w0.start)}`} paycheck after bills`;
+  return `<button class="hero-tap" data-whysheet="0" aria-label="${about ? 'About ' : ''}${neg ? money(-h.amount) + ' short' : big}, ${lead.toLowerCase()}. Tap to see how it adds up">${about ? '<span class="hero-about">about</span>' : ''}<span class="hero big ${neg ? 'short' : ''}" style="margin-top:4px;white-space:nowrap;font-size:${heroSize(big)}px">${big}</span>
+        <span class="hero-sub">${lead}</span></button>`;
 }
 /* The facts behind the big number, in one line (R3): cash, set aside, available; or the paycheck and its bills. */
 function heroFactsLine(hm, w0) {
   const { f, h } = hm, bits = [];
   const link = (v, label, attr) => `<button class="spec-link" ${attr} aria-label="${label}: ${v}. Tap to see why">${v}</button> ${label}`;
   if (h.basis === 'spendable') {
-    const st = h.now || f.balance.start, nx = h.until, td = iso(TODAY);
-    const billsC = f.balance.rows.filter(r => r.dir === 'out' && r.date >= td && r.date < nx).reduce((n, r) => n + Math.round(r.amount * 100), 0) / 100;
-    if (st.reserved > 0 && f.balance.reservedInBalance !== false) {
+    const st = h.now || f.heroBalance.start, nx = h.until, td = iso(TODAY);
+    const billsC = f.heroBalance.rows.filter(r => r.dir === 'out' && r.date >= td && r.date < nx).reduce((n, r) => n + Math.round(r.amount * 100), 0) / 100;
+    if (st.reserved > 0 && f.heroBalance.reservedInBalance !== false) {
       bits.push(link(money(st.cash), 'cash', 'data-action="onhand"'));
       bits.push(`${money(st.reserved)} ${term('set aside', 'reserved')}`);
       bits.push(link(money(st.spendable), 'available', 'data-window="0"'));
@@ -2629,13 +2915,19 @@ function statusPill(ws, hm) {
   const wave = c => `<svg width="16" height="8" viewBox="0 0 28 14" aria-hidden="true"><path d="M1 9 C5 9 5 3 9 3 C13 3 13 11 17 11 C21 11 21 5 27 5" fill="none" stroke="${c}" stroke-width="3" stroke-linecap="round"/></svg>`;
   const pill = (cls, ic, text) => `<span class="status-pill ${cls}" role="status"><span class="ic">${ic}</span>${text}</span>`;
   if (w0.cashUnknown) return '';
+  if (hm && hm.h.basis === 'runway') {
+    const h = hm.h;
+    if (h.amount < 0) return '';
+    if (!h.through) return pill('ok', check, `Covers your bills past ${short(parse(h.past))}`);
+    return pill(h.status === 'Covered' ? 'ok' : 'tight', h.status === 'Covered' ? check : wave('#1659D0'), `Covers your bills through ${short(parse(h.through))}`);
+  }
   if (hm) {
     const h = hm.h, until = short(parse(h.until));
-    if (h.amount < 0) return pill('short', wave('#fff'), `${money(-h.amount)} short before ${until}`);
+    if (h.amount < 0) return '';   // the number already says "short before"; the notice says why
     if (h.status === 'Tight') return pill('tight', wave('#1659D0'), `Tight until ${until}`);
     if (h.likelyBelowZero || (h.likely != null && h.likely < bufferAmt())) return pill('tight', wave('#1659D0'), `Tight after everyday spending`);
   } else {
-    if (w0.roomLow < 0) return pill('short', wave('#fff'), `This ${u} is ${money(-w0.roomLow)} short`);
+    if (w0.roomLow < 0) return '';
     if (w0.status === 'Tight') return pill('tight', wave('#1659D0'), `Tight until ${short(w0.end)}`);
   }
   if (k > 0) return pill('ok', check, `Covered until ${short(ws[k].start)}`);
@@ -2660,17 +2952,158 @@ function leftLine(w0) {
     return `${w0.roomLow < 0 ? 'short before' : 'left until'} ${next ? esc(next.name) + ' on ' : ''}${long(w0.end)}`;
   }
   const notes = [w0.backfilled && !w0.workingOk ? `An estimate until you confirm your ${short(w0.start)} paycheck` : '', state.everydayUnknown ? 'Before everyday spending' : ''].filter(Boolean);
-  return `${w0.roomLow < 0 ? 'short before' : term('left', 'left') + ' until'} ${long(w0.end)}${notes.length ? `<span class="small" style="display:block;font-weight:500;font-size:14px">${notes.join(' · ')}</span>` : ''}`;
+  return `${w0.roomLow < 0 ? 'Short before' : 'Left until'} ${long(w0.end)}${notes.length ? `<span class="small" style="display:block;font-weight:500;font-size:14px">${notes.join(' · ')}</span>` : ''}`;
 }
 /* The next thing that happens, so nobody has to read a list to find it. */
-function nextUpCard(ws) {
-  const all = [].concat(...ws.map(w => w.items)).filter(x => x.date >= TODAY && x.amount > 0 && x.bill && !x.fee && !x.membership).sort((a, b) => a.date - b.date);
+/* The next bill, or every bill due that same day ("Rent and car payment · Sun, Nov 15 · $1,711"). */
+function nextUpItems(ws) {
+  const paid = x => x.orig != null && !!(x.bill.paid || {})[payKey(x.orig, x.part || 0)];
+  const all = [].concat(...ws.map(w => w.items)).filter(x => x.date >= TODAY && x.amount > 0 && x.bill && !x.fee && !x.membership && !paid(x)).sort((a, b) => a.date - b.date);
   const x = all[0];
-  if (!x) return '';
-  const when = x.range ? (x.bill.when === 'unsure' ? 'Date not set' : `Around ${short(x.range[0])}–${parts(x.range[1])[2]}`) : x.date === TODAY ? 'Today' : Math.round((x.date - TODAY) / 864e5) === 1 ? 'Tomorrow' : long(x.date);
-  return `<button class="next-up tap mt14" data-editbill="${x.bill.id}">${tileHtml(x.bill)}
-    <span class="stack gap2"><span class="eyebrow" style="font-size:12px">Next up · ${when}</span><span style="font-size:16px;font-weight:700">${esc(eventName(x))}</span></span>
-    <span style="font-size:17px;font-weight:700;white-space:nowrap">${x.bill.status === 'estimate' ? '~' : ''}${moneyExact(x.range ? x.bill.amount : x.amount)}</span>${CHEV}</button>`;
+  if (!x) return [];
+  if (x.range) return [x];
+  return all.filter(y => !y.range && y.date.valueOf() === x.date.valueOf()).sort((p, q) => q.amount - p.amount);
+}
+const dayWord = d => d.valueOf() === TODAY.valueOf() ? 'Today' : Math.round((d - TODAY) / 864e5) === 1 ? 'Tomorrow' : long(d);
+const nextWhen = x => x.range ? (x.bill.when === 'unsure' ? 'Date not set' : `Around ${short(x.range[0])}–${parts(x.range[1])[2]}`) : dayWord(x.date);
+const nextAmt = x => x.range ? x.bill.amount : x.amount;
+function nextUpCard(ws) {
+  const g = nextUpItems(ws);
+  if (!g.length) return '';
+  const x = g[0], total = g.reduce((n, y) => n + toC(nextAmt(y)), 0) / 100;
+  const names = g.length === 1 ? esc(eventName(x)) : esc(capFirst(listJoin([...new Set(g.map(y => inSentence(eventName(y))))])));
+  const est = g.some(y => y.bill.status === 'estimate');
+  return `<section class="next-wrap mt24" aria-label="Next bill">
+    <span class="next-head">Next</span>
+    <button class="next-up tap" data-action="next-sheet" aria-label="Next: ${names}, ${nextWhen(x)}, ${est ? 'about ' : ''}${moneyExact(total)}. Tap to mark paid or change it">${tileHtml(x.bill)}
+      <span class="stack gap2"><span class="next-name">${names}</span><span class="next-when">${nextWhen(x)} · ${est ? 'about ' : ''}${moneyExact(total)}</span></span>${CHEV}</button>
+  </section>`;
+}
+/* Tap the next bill: mark it paid (Alon only knows when you say so), or change it. */
+function nextSheetHtml() {
+  if (!state.nextSheet || state.screen !== 'now') return '';
+  const g = nextUpItems(computeWindows());
+  if (!g.length) return '';
+  const x = g[0];
+  const title = g.length === 1 ? `${esc(eventName(x))} · ${nextWhen(x)}` : `${g.length} bills on ${nextWhen(x)}`;
+  const rows = g.map(y => {
+    const id = `${y.bill.id}|${payKey(y.orig, y.part || 0)}`;
+    const sub = [y.part && y.parts ? `Part ${y.part} of ${y.parts}` : '', y.bill.status === 'estimate' ? 'An estimate' : ''].filter(Boolean).join(' · ');
+    return `<div class="next-row">
+      <span class="stack gap2" style="flex:1;min-width:0"><span class="next-name">${esc(eventName(y))}</span><span class="next-when">${y.bill.status === 'estimate' ? 'about ' : ''}${moneyExact(nextAmt(y))}${sub ? ' · ' + sub : ''}</span></span>
+      <span class="next-btns"><button class="primary next-paid" data-nxpaid="${esc(id)}">Mark paid</button><button class="secondary next-edit" data-editbill="${y.bill.id}">Change</button></span>
+    </div>`;
+  }).join('');
+  return `<div class="scrim" data-action="close-next"><div class="sheet next-sheet" role="dialog" aria-modal="true" aria-labelledby="next-title" data-stop>
+    <span class="grab" aria-hidden="true"></span>
+    <h2 id="next-title" class="h2" style="font-size:22px;line-height:1.25">${title}</h2>
+    <p class="body" style="margin:0">Paid it already? Tell Alon so it stops counting it. Alon only knows a bill is paid when you say so.</p>
+    ${rows}
+    <button class="linkish" style="text-align:center" data-action="close-next">Done</button>
+  </div></div>`;
+}
+/* Paying a bill after the balance was entered: it came out of that balance, so it still counts (today). */
+function markPaidNow(b, key) {
+  const r = markPaid(b, key);
+  if (r.created) { state.seq = (state.seq || 0) + 1; (b.paidAt = b.paidAt || {})[key] = state.seq; }
+  return r;
+}
+function unmarkPaid(b, key) {
+  if (b.paid) delete b.paid[key];
+  if (b.paidAt) delete b.paidAt[key];
+}
+/* The sea ahead, small: calm means covered, a swell is a bill wave coming, a breaking wave is short.
+   Tap a stretch to see why. No numbers on it: the numbers are one tap away. */
+function nowWave() {
+  const ws = computeWindows(), n = ws.length;
+  if (!n) return '';
+  const last = ws[n - 1];
+  const sea = seaLine(ws, { tap: true, height: 96 });   // the water level of your available money
+  let svg;
+  if (sea) svg = sea.svg;
+  else {   // weekly and monthly people keep the older picture for now
+    const ws2 = ws.map(stretchWindow), buf = bufferAmt(), rough = v => Math.max(0, buf - v);
+    const lows = ws2.map(w => w.cashUnknown ? buf : w.roomLow), den = Math.max(500, ...lows.map(rough));
+    const crestY = Math.min(...lows.map(v => 100 - rough(v) / den * 78)), short_ = lows.some(v => v < 0);
+    const top = Math.max(-10, Math.min(64, Math.floor(crestY - (short_ ? 34 : 14))));
+    svg = waveChart(ws2, { tap: true }).replace(/viewBox="0 0 (\d+) (\d+)"/, (m, W, H) => `viewBox="0 ${top} ${W} ${H - top}"`);
+  }
+  return `<section class="now-wave mt20" aria-label="The ${n} ${unitWord2()}s ahead. Tap a stretch to see why">
+    ${svg}
+    <div class="now-wave-dates" aria-hidden="true"><span>Today</span><span>${short(last.last || last.end)}</span></div>
+  </section>`;
+}
+/* One main button, and it says what this moment needs. */
+function nowMainButton(ws) {
+  const ms = persona().unit === 'paycheck' ? nowState(ws[0]) : null;
+  const arrow = '<svg width="18" height="18" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const b = (attrs, label) => `<button class="primary now-main mt20" ${attrs}>${label}${arrow}</button>`;
+  if (ms && ms.state === 'PRESSURE') {
+    const later = ms.when === 'ahead' && !!smoothing(computeWindows());
+    return later ? b('data-go="why"', `Prepare for ${ms.date ? short(parse(ms.date)) : 'it'}`) : b('data-action="options-now"', 'See your options');
+  }
+  if (ms && ms.state === 'OPPORTUNITY') return b('data-action="explore"', 'Explore what you could do');
+  if (!ms && knownShort(ws[0])) return b('data-action="options-now"', 'See your options');
+  return b('data-go="waves"', 'See what’s ahead');
+}
+/* The big number, opened: what's in the account, minus what's set aside and the bills before the
+   next paycheck. Same numbers as the hero, so they always agree. */
+/* The big number, opened (and any stretch on What's ahead): what's in the account, minus what's set
+   aside and the bills, by date. Same numbers as the row it came from, so they always agree. */
+function balanceSheetHtml(hm, st0) {
+  const { f, h } = hm, td = iso(TODAY), pb = f.heroBalance;
+  const st = st0 || stretchFor(computeWindows()[0]);
+  const runway = h.basis === 'runway';
+  const first = (!st0 || st0.i === 0) && !runway, until = parse(st.until), from = first || (runway && st.i === 0) ? TODAY : parse(st.from);
+  const row = (label, v, sub, cls) => `<div class="rc-row ${cls || ''}"><span>${label}${sub ? `<span class="rc-sub">${sub}</span>` : ''}</span><span>${v}</span></div>`;
+  const now = h.now || pb.start;
+  const rows = first ? pb.rows.filter(r => r.date >= td && r.date < h.until) : st.rows;
+  const named = r => r.dir === 'reserve' ? (/^Toward /.test(r.name || '') ? `Set aside for ${esc(r.name.slice(7))}` : `Set aside${r.name ? ' for ' + esc(inSentence(r.name)) : ''}`) : r.dir === 'release' ? `Already set aside${r.name ? ' for ' + esc(inSentence(r.name.replace(/^Set aside for /, ''))) : ''}` : esc(r.name);
+  const sign = r => r.dir === 'in' || r.dir === 'release' ? '+' : '−';
+  let html, startC;
+  if (first) {
+    const entered = `You entered ${money(state.onHand)} on ${short(parse(state.onHandDate))}`;
+    html = row('In your account', money(now.cash), Math.abs(now.cash - state.onHand) > 0.004 ? `${entered}, minus what’s come out since` : entered);
+    const resIn = now.reserved > 0 && pb.reservedInBalance !== false;
+    if (resIn) html += row('Set aside', `−${money(now.reserved)}`, pb.assumed ? 'Counted as part of your account until you say' : 'Still yours, just not for spending');
+    startC = toC(now.cash) - (resIn ? toC(now.reserved) : 0);
+  } else {
+    html = runway && st.i === 0 ? row('Available now', money(st.carriedIn), `${money(now.cash)} in your account${now.reserved > 0 ? `, ${money(now.reserved)} of it set aside` : ''}`)
+      : row(`Available going into ${short(parse(st.from))}`, money(st.carriedIn), st.everydayBefore ? `What’s left from before, after about ${money(st.everydayBefore)} of everyday spending` : 'What’s left from before, if it isn’t spent');
+    startC = toC(st.carriedIn);
+  }
+  let runC = startC;
+  rows.filter(r => r.dir !== 'reserve' || r.amount > 0).forEach(r => {
+    const c = toC(r.amount);
+    if (r.dir === 'in' || r.dir === 'release') runC += c; else runC -= c;   // available goes up with a deposit or a release, down otherwise
+    html += row(named(r), `${sign(r)}${money(r.amount)}`, `${short(parse(r.date))}${r.paid ? ' · paid' : ''}`);
+  });
+  const neg = st.available < 0;
+  const lowest = runC !== toC(st.available);   // money comes in partway: the number is the lowest point
+  html += `<div class="rc-total ${neg ? 'short' : ''}"><span>${neg ? `Short before ${short(until)}` : lowest ? `Lowest point before ${short(until)}` : `Available until ${short(until)}`}</span><span>${money(neg ? -st.available : st.available)}</span></div>`;
+  const ed = st.likely != null ? Math.max(0, st.available - st.likely) : 0;
+  const layer = state.everydayUnknown ? 'Everyday spending isn’t set yet, so it isn’t counted here.'
+    : !(state.everydayPerWeek > 0) || st.likely == null ? ''
+    : `${first ? 'Your everyday spending is about' : 'With your everyday spending up to then, about'} ${money(ed)}${first ? ` until ${short(until)}` : ''}. ${st.likely < 0 ? `That would leave you about ${money(-st.likely)} short.` : `After that, about ${money(st.likely)} is left${st.likely < bufferAmt() ? `, under your ${money(bufferAmt())} buffer` : ''}.`}`;
+  const title = runway && st.i === 0 ? `How long ${money(h.amount)} lasts`
+    : first ? (neg ? `Why you could come up ${money(-st.available)} short` : `How ${money(st.available)} adds up`)
+    : neg || (st.likely != null && st.likely < 0) ? `Why ${short(parse(st.from))} could come up short` : `${short(parse(st.from))}: ${money(st.available)} available`;
+  const lead = runway && st.i === 0 ? `What’s in your account, minus set-aside money, your bills and your everyday spending. Income that isn’t certain isn’t counted until it arrives. ${h.through ? `At this pace it covers your bills through ${long(parse(h.through))}.` : `It covers your bills past ${long(parse(h.past))}.`}`
+    : first ? `What’s in your account, minus the bills due before your ${short(until)} paycheck.`
+    : `Counting from what’s in your account now. Money left from earlier carries into this stretch unless it’s spent.`;
+  const tight = st.status !== 'Covered' && !first;
+  return `<div class="scrim" data-action="close-why"><div class="sheet why-sheet" role="dialog" aria-modal="true" aria-labelledby="why-title" data-stop>
+    <span class="grab" aria-hidden="true"></span>
+    <span class="eyebrow" style="font-size:13px">${first ? 'Today' : short(from)} – ${short(addDays(until, -1))}</span>
+    <h2 id="why-title" class="h2" style="font-size:22px;line-height:1.25">${title}</h2>
+    <p class="body" style="margin:0">${lead}</p>
+    <div class="receipt" aria-label="How it adds up">${html}</div>
+    ${layer ? `<p class="body" style="margin:0">${layer}</p>` : ''}
+    ${first && h.estimate ? `<p class="small" style="margin:0">${pb.assumed ? `Alon is counting the ${money(now.reserved)} you set aside as part of your account until you answer on Now.` : `Is ${money(state.onHand)} still about right? A new number from your bank app makes this exact.`}</p>` : ''}
+    ${tight && smoothing(computeWindows()) ? '<button class="primary" data-go="why">Explore options</button>' : '<button class="primary" data-action="close-why">Got it</button>'}
+    ${first ? '<button class="secondary" data-action="onhand">Update what’s in your account</button>' : ''}
+    <button class="linkish" style="text-align:center" data-action="why-all">See everything in this paycheck</button>
+  </div></div>`;
 }
 /* After a decision: what it did, honestly. Better and worse both shown. */
 function snapWindows() { return computeWindows().map(w => ({ i: w.i, name: windowShortName(w), room: w.roomLow, start: w.start })); }
@@ -2706,7 +3139,7 @@ function screenOutcome() {
         return `<div class="change-row"><span style="font-weight:600">${r.b.name}</span><span><span style="color:var(--muted)">${fmt(r.b.room)}</span> → <strong style="color:${r.w.roomLow < 0 ? 'var(--amber-text)' : 'var(--navy)'}">${fmt(r.w.roomLow)}</strong> <span class="small" style="font-weight:700;color:${better ? '#1F6B50' : 'var(--amber-text)'}">${better ? 'better' : 'tighter'}</span></span></div>`;
       }).join('') : '<p class="small">No paycheck in the next six changed.</p>'}
     </div></section>
-    <section class="pad mt20 stack gap12">${waveChart(ws)}
+    <section class="pad mt20 stack gap12">${(seaLine(ws) || {}).svg || waveChart(ws)}
       <button class="primary" data-go="waves">See my ${u}s</button>
       <button class="secondary" data-action="outcome-done">Back to Now</button>
     </section>
@@ -2740,14 +3173,19 @@ function screenDetail() {
   const p = persona();
   const w0 = computeWindows()[0];
   const pct = Math.min(100, Math.round(w0.spoken / Math.max(1, w0.incomeLow) * 100));
+  const st = stretchFor(w0), hh = st && facts().hero;   // one number, one meaning: the same as Now
+  const lead = !st ? '' : st.basis === 'spendable'
+    ? `${money((hh.now || facts().heroBalance.start).cash)} in your account. After set-aside money and the bills before ${short(parse(st.until))}, ${st.available < 0 ? `<strong>you could come up ${money(-st.available)} short</strong>` : `<strong>${money(st.available)} is available</strong>`}.${st.likely != null && st.available >= 0 ? ` About ${st.likely < 0 ? money(-st.likely) + ' short' : money(st.likely)} after your everyday estimate.` : ''}`
+    : `${money(w0.incomeLow)} from your ${short(w0.start)} paycheck. After its bills, ${st.available < 0 ? `<strong>it’s ${money(-st.available)} short</strong>` : `<strong>${money(st.available)} is left</strong>`}.${st.likely != null && st.available >= 0 ? ` About ${st.likely < 0 ? money(-st.likely) + ' short' : money(st.likely)} after your everyday estimate.` : ''}${w0.drawn ? ` ${money(w0.drawn)} comes from your savings to help pay for something that came up.` : ''}`;
   return `${header('now', 'Now')}
   <main>
     <section class="pad stack gap8 mt8">
       <span class="eyebrow">${windowEyebrow(w0)}</span>
       <h1 class="h1">What's in it</h1>
-      <p class="body">${range(w0.incomeLow, w0.incomeTyp)} ${w0.onHand ? 'available' : 'coming in'}, ${money(w0.spoken)} spoken for, ${range(w0.roomLow, w0.roomTyp)} left.</p>
-      <p class="small">Spoken for = bills ${money(w0.billsTotal)} + everyday ~${money(w0.everyday)}${w0.out ? ` + set aside ${money(w0.out)}` : ''}${w0.goalTotal ? ` + goals ${money(w0.goalTotal)}` : ''}${w0.poolOut ? ` + tide pool ${money(w0.poolOut)}` : ''}.${w0.poolIn + w0.poolUsed ? ` Your tide pool adds ${money(w0.poolIn + w0.poolUsed)}.` : ''}${w0.drawn ? ` ${money(w0.drawn)} comes from your savings to help pay for something that came up.` : ''} Tap anything below to change it.</p>
-      <div class="bar mt8" role="img" aria-label="${money(w0.spoken)} spoken for out of ${range(w0.incomeLow, w0.incomeTyp)}"><div style="width:${pct}%"></div></div>
+      ${st ? `<p class="body">${lead}</p><p class="small">Tap anything below to change it.</p>`
+        : `<p class="body">${range(w0.incomeLow, w0.incomeTyp)} ${w0.onHand ? 'available' : 'coming in'}. After bills and your everyday estimate, ${range(w0.roomLow, w0.roomTyp)} is left.</p>
+      <p class="small">Bills ${money(w0.billsTotal)} + everyday ~${money(w0.everyday)}${w0.out ? ` + set aside ${money(w0.out)}` : ''}${w0.goalTotal ? ` + goals ${money(w0.goalTotal)}` : ''}${w0.poolOut ? ` + tide pool ${money(w0.poolOut)}` : ''}.${w0.poolIn + w0.poolUsed ? ` Your tide pool adds ${money(w0.poolIn + w0.poolUsed)}.` : ''}${w0.drawn ? ` ${money(w0.drawn)} comes from your savings to help pay for something that came up.` : ''} Tap anything below to change it.</p>
+      <div class="bar mt8" role="img" aria-label="${money(w0.spoken)} of ${range(w0.incomeLow, w0.incomeTyp)} goes to bills and everyday spending"><div style="width:${pct}%"></div></div>`}
     </section>
     <section class="pad stack mt24">
       <h2 class="h2" style="font-size:16px;margin-bottom:6px">Coming in</h2>
@@ -2779,13 +3217,16 @@ function screenWaves() {
   const p = persona();
   const ws = computeWindows(null, carouselCount());
   UP_EXTRAS = extraPaychecks(400);
+  const sts = ws.map(stretchFor), anySt = sts.some(Boolean), basis = anySt ? sts.find(Boolean).basis : null;
   const cards = ws.map(w => {
     const open = !!state.openWindows[w.i];
-    const isShort = w.roomLow < 0;
+    const st = sts[w.i] || null;   // one number, one meaning: the same rule as Now's big number
+    const isShort = st ? st.status === 'Short' : w.roomLow < 0;
+    const needsLook = st ? st.status !== 'Covered' : w.roomLow < bufferAmt();
     const pct = Math.min(100, Math.round(w.spoken / Math.max(1, w.incomeLow) * 100));
     const top = [...w.items].sort((a, b) => b.amount - a.amount);
     const summary = top.slice(0, 3).map(x => eventName(x) + (x.part && !x.bill.standalone ? ` (${x.part} of ${x.parts})` : '')).join(', ') + (top.length > 3 ? `, +${top.length - 3} more` : '');
-    const pace = w.days > 14 && w.roomLow > 0 ? ` · about ${money(w.roomLow / (w.days / 7))} a week` : '';
+    const pace = !st && w.days > 14 && w.roomLow > 0 ? ` · about ${money(w.roomLow / (w.days / 7))} a week` : '';
     const items = onHandRow(w) + w.income.map(incomeRow).join('') +
       w.items.map(x => itemRow(x, { static: true })).join('') +
       (w.out ? `<div class="line-item"><span class="name">Set aside for later</span><span class="amt">−${money(w.out)}</span></div>` : '') +
@@ -2800,27 +3241,34 @@ function screenWaves() {
       <button class="linkish" style="text-align:left" data-action="onhand">Add what’s in your account</button></div>`;
     return `<div class="${isShort ? 'warn' : 'card'} window-card ${open ? 'open' : ''} stack gap10">
       <button class="tap row" style="background:none;border:0;padding:0;align-items:flex-start" data-toggle="${w.i}" aria-expanded="${open}">
-        <span class="stack gap4"><span style="font-size:16px;font-weight:700">${windowEyebrow(w)}</span><span style="font-size:13px;color:${isShort ? 'var(--amber-body)' : 'var(--muted)'}">${range(w.incomeLow, w.incomeTyp)} ${w.onHand ? 'available' : 'coming in'}${pace}</span></span>
-        <span class="stack gap4" style="align-items:flex-end"><span style="font-size:20px;font-weight:800;white-space:nowrap;${isShort ? 'color:var(--amber-text)' : ''}">${range(w.roomLow, w.roomTyp)}</span><span style="font-size:12px;font-weight:700;color:${isShort ? 'var(--amber-text)' : 'var(--muted-2)'}">${w.status}${w.roomTyp !== w.roomLow ? ' on a lighter ' + p.unit : ''}</span></span>
+        <span class="stack gap4"><span style="font-size:16px;font-weight:700">${windowEyebrow(w)}</span><span style="font-size:13px;color:${isShort ? 'var(--amber-body)' : 'var(--muted)'}">${w.onHand ? `${money(w.incomeLow)} in your account` : `${range(w.incomeLow, w.incomeTyp)} coming in`}${pace}</span></span>
+        <span class="stack gap4" style="align-items:flex-end"><span style="font-size:20px;font-weight:800;white-space:nowrap;${isShort ? 'color:var(--amber-text)' : ''}">${st ? money(st.available) : range(w.roomLow, w.roomTyp)}</span><span style="font-size:12px;font-weight:700;color:${isShort ? 'var(--amber-text)' : 'var(--muted-2)'}">${st ? (st.status === 'Covered' ? (st.basis === 'spendable' ? 'Available' : 'Left') : st.status === 'Short' && st.available >= 0 ? 'Short after everyday' : st.status) : w.status + (w.roomTyp !== w.roomLow ? ' on a lighter ' + p.unit : '')}</span></span>
       </button>
       <div class="bar thin ${isShort ? 'amber' : ''}"><div style="width:${pct}%"></div></div>
       ${(() => { const bs = windowBadges(w, UP_EXTRAS).badges; return bs.length ? `<span class="pc-badges">${bs.map(([k, t]) => `<span class="pc-badge ${k}">${esc(t)}</span>`).join('')}</span>` : ''; })()}
       <span style="font-size:14px;color:${isShort ? 'var(--amber-body)' : 'var(--muted)'};line-height:1.45">${open ? '' : esc(summary)}</span>
       ${w.items.filter(x => x.part && x.part === x.parts && (x.bill.freq === 'once' || x.bill.count)).map(x => `<span style="font-size:14px;font-weight:600;color:var(--royal)">Last payment for ${esc(x.bill.name)}. After this, it’s done.</span>`).join('')}
       <div class="items">${items}</div>
-      ${w.roomLow < bufferAmt() ? (() => { const r = windowReasons(ws, w.i); return `<span class="why-line" style="${isShort ? '' : 'color:var(--muted-2)'}"><strong>Main reason:</strong> ${r.headline}</span>`; })() : ''}
+      ${needsLook && !(st && st.basis === 'spendable') ? (() => { const r = windowReasons(ws, w.i); return `<span class="why-line" style="${isShort ? '' : 'color:var(--muted-2)'}"><strong>Main reason:</strong> ${r.headline}</span>`; })() : ''}
       ${decided(w) ? `<span class="small" style="color:var(--muted-2)">${decisionLine(decisionFor(w))}</span>` : ''}
-      ${w.roomLow < 250 ? `<button class="linkish" style="text-align:left;${isShort ? 'color:#6E4710' : ''}" data-whysheet="${w.i}">${isShort ? 'Why, and what you could do' : 'Why it’s tight'}</button>` : ''}
+      ${needsLook ? `<button class="linkish" style="text-align:left;${isShort ? 'color:#6E4710' : ''}" data-whysheet="${w.i}">${isShort ? 'Why, and what you could do' : 'Why it’s tight'}</button>` : ''}
     </div>`;
   }).join('');
   return `${header('now', 'Now')}
   <main class="wide-main">
     <section class="pad stack gap8 mt8">
-      <h1 class="h1" style="font-size:32px">Upcoming ${p.unit}s</h1>
-      <p class="body">Each ${p.unit === 'month' ? 'window runs from one income to the next' : p.unit} covers what's due in it. The number is what's left after bills and your everyday estimate${ws.some(w => w.roomLow !== w.roomTyp) ? ', from a lighter to a typical ' + p.unit : ''}. Tap one to see everything in it. ${term(`Why ${p.unit === 'month' ? 'windows' : p.unit + 's'}, not months?`, 'paycheck')}</p>
+      <h1 class="h1" style="font-size:32px">${anySt ? 'What’s ahead' : `Upcoming ${p.unit}s`}</h1>
+      ${basis === 'runway' ? `<p class="body">What you’ll have available in each stretch, counting from what’s in your account and only income that’s certain. Tap one to see how it adds up.</p>`
+        : basis === 'spendable' ? `<p class="body">What you’ll have available in each stretch between paydays, counting from what’s in your account. Tap one to see how it adds up.</p>`
+        : basis === 'remainder' ? `<p class="body">Counting each paycheck on its own: what it leaves after its bills. <button class="linkish" style="padding:0" data-action="onhand">Add what’s in your account</button> to see it all together.</p>`
+        : `<p class="body">Each ${p.unit === 'month' ? 'window runs from one income to the next' : p.unit} covers what's due in it. The number is what's left after bills and your everyday estimate${ws.some(w => w.roomLow !== w.roomTyp) ? ', from a lighter to a typical ' + p.unit : ''}. Tap one to see everything in it. ${term(`Why ${p.unit === 'month' ? 'windows' : p.unit + 's'}, not months?`, 'paycheck')}</p>`}
     </section>
+    ${(() => { const sw = computeWindows(), sea = anySt ? seaLine(sw, { tap: true, height: 120 }) : null; if (!sea) return '';
+      return `<section class="pad mt20 now-wave" aria-label="The next ${sw.length} ${p.unit}s">${sea.svg}
+        <div class="now-wave-dates" aria-hidden="true"><span>Today</span><span>${short(sw[Math.floor(sw.length / 2)].start)}</span><span>${short(sw[sw.length - 1].last || sw[sw.length - 1].end)}</span></div>
+        <p class="sea-key">The water rises on payday and dips for bills.${bufferAmt() ? ` The dashed line is your ${money(bufferAmt())} buffer.` : ''}${sea.maybe.length ? ' A dashed rise is income that isn’t certain.' : ''} Tap it to see why.</p></section>`; })()}
     <div class="pad stack gap12 mt20 waves-list">${cards}</div>
-    <p class="small pad mt20">Status is based on the lighter case, so a good ${p.unit} is a bonus, not a plan.</p>
+    ${ws.some(w => w.roomLow !== w.roomTyp) ? `<p class="small pad mt20">Status is based on the lighter case, so a good ${p.unit} is a bonus, not a plan.</p>` : ''}
   </main>
   ${dock()}`;
 }
@@ -2967,6 +3415,11 @@ function screenCheck() {
   if (w0.cashUnknown) {
     headline = 'Add what’s in your account first';
     detail = `You’re between paydays, so Alon needs to know what’s left before it can say what’s free. <button class="linkish" style="padding:0" data-action="onhand">Add it now</button>`;
+  } else if (r.st) {
+    const lvl = r.st.likely != null ? Math.min(r.st.available, r.st.likely) : r.st.available;
+    headline = r.freeLow > 0 ? `You could spend up to ${money(r.freeLow)}` : lvl < 0 && !(r.freeTyp > 0) ? 'Nothing is free to spend right now' : 'Not much is free right now';
+    detail = r.st.available < 0 ? `The bills before ${long(parse(r.st.until))} already take more than is available: about ${money(-r.st.available)} short.`
+      : `${money(r.st.available)} is ${r.st.basis === 'spendable' ? 'available' : 'left from this paycheck'} until ${long(parse(r.st.until))}${r.st.likely != null ? `, about ${r.st.likely < 0 ? money(-r.st.likely) + ' short' : money(r.st.likely)} after your everyday estimate` : ''}. ${r.freeLow > 0 ? keeps : r.c && lvl >= 0 ? `That’s within your ${money(r.c)} buffer.` : ''}${r.typ && r.freeTyp > r.freeLow ? ` On a typical ${u}, up to ${money(r.freeTyp)} would be free.` : ''}`;
   } else if (w0.roomLow < 0) {
     headline = 'Nothing is free to spend right now';
     detail = `This ${u} could already come up ${money(-w0.roomLow)} short${w0.roomTyp >= 0 ? ` on a lighter ${u}` : ''}.` + (r.freeTyp > 0 ? ` On a typical one, up to ${money(r.freeTyp)} would be free.` : '');
@@ -2977,7 +3430,7 @@ function screenCheck() {
     headline = `You could spend up to ${money(r.freeLow)}`;
     detail = (r.freeTyp !== r.freeLow ? `That's on a lighter ${u}; on a typical one, up to ${money(r.freeTyp)}. ` : '') + keeps;
   }
-  const answer = `<h1 class="h1">${headline}</h1><p class="body">${detail} Every bill and your everyday estimate are already counted.</p>`;
+  const answer = `<h1 class="h1">${headline}</h1><p class="body">${detail}${r.st ? '' : ' Every bill and your everyday estimate are already counted.'}</p>`;
   return `${header('now', 'Now')}
   <main>
     <section class="pad stack gap10 mt8">
@@ -2988,22 +3441,23 @@ function screenCheck() {
         <div class="chips">${[0, 100, 250, 500].map(n => `<button class="chip ${r.c === n ? 'on' : ''}" aria-pressed="${r.c === n}" data-cushion="${n}" style="min-height:40px">$${n}</button>`).join('')}</div>
         <span class="small">One buffer for all of Alon: below it, a ${unitWord2()} shows as tight.</span>
       </div>
-      ${r.ahead ? `<button class="warn tap stack gap4 mt8" data-go="why"><span style="font-size:15px;font-weight:700">${windowShortName(r.ahead)} already looks ${money(-r.ahead.roomLow)} short</span><span style="font-size:14px;color:var(--amber-body);line-height:1.45">Money you don't spend now could help cover it. See your options.</span></button>` : ''}
+      ${r.ahead ? `<button class="warn tap stack gap4 mt8" data-go="why"><span style="font-size:15px;font-weight:700">${windowShortName(r.ahead)} already looks ${r.ahead.stretch ? `about ${money(-Math.min(r.ahead.stretch.available, r.ahead.stretch.likely != null ? r.ahead.stretch.likely : 0))}` : money(-r.ahead.roomLow)} short</span><span style="font-size:14px;color:var(--amber-body);line-height:1.45">Money you don't spend now could help cover it. See your options.</span></button>` : ''}
     </section>
     <section class="pad stack gap14 mt28">
       <h2 class="h2">Check something specific</h2>
       <label for="amount" class="legend">How much?</label>
       <div class="money"><span>$</span><input id="amount" inputmode="decimal" value="${esc(state.purchaseRaw != null ? state.purchaseRaw : (amt || ''))}" data-input="purchase" autocomplete="off"></div>
       <div class="chips">${[20, 50, 75, 100, 150].map(n => `<button class="chip ${amt === n ? 'on' : ''}" aria-pressed="${amt === n}" data-amount="${n}">$${n}</button>`).join('')}${r.freeLow > 0 && ![20, 50, 75, 100, 150].includes(r.freeLow) ? `<button class="chip ${amt === r.freeLow ? 'on' : ''}" aria-pressed="${amt === r.freeLow}" data-amount="${r.freeLow}">Up to $${r.freeLow.toLocaleString('en-US')}</button>` : ''}</div>
+      ${(() => { const sea = seaLine(ws, { purchase: amt, markLow: true, height: 104 }); return sea ? `<div class="now-wave" id="p-sea">${sea.svg}<p class="sea-key" id="p-low">${seaLowText(sea, amt)}</p></div>` : ''; })()}
       <div class="field"><label for="p-name">What is it? (optional)</label><input class="input" id="p-name" data-input="pname" value="${esc(state.purchaseName)}" placeholder="e.g. New work shoes" autocomplete="off"></div>
     </section>
     <section class="pad mt24"><div class="card stack gap12">
       <span class="eyebrow">${windowEyebrow(w0)}</span>
       <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px">
-        <div class="stack gap4"><span class="small">Not spoken for now</span><span style="font-size:22px;font-weight:800">${range(w0.roomLow, w0.roomTyp)}</span></div>
-        <div class="stack gap4"><span class="small">After this</span><span id="p-after" style="font-size:22px;font-weight:800;color:${aLow < 0 ? 'var(--amber-text)' : 'var(--navy)'}">${range(aLow, aTyp)}</span></div>
+        <div class="stack gap4"><span class="small">${r.st ? `${r.st.basis === 'spendable' ? 'Available' : 'Left'} until ${short(parse(r.st.until))}` : 'Left now'}</span><span style="font-size:22px;font-weight:800">${r.st ? money(r.st.available) : range(w0.roomLow, w0.roomTyp)}</span></div>
+        <div class="stack gap4"><span class="small">${r.st ? 'After this and everyday spending' : 'After this'}</span><span id="p-after" style="font-size:22px;font-weight:800;color:${aLow < 0 ? 'var(--amber-text)' : 'var(--navy)'}">${range(aLow, aTyp)}</span></div>
       </div>
-      <p class="small">Every bill due in this ${p.unit === 'month' ? 'window' : p.unit} and your ~${money(w0.everyday)} everyday estimate are already counted. Nothing is subtracted twice.</p>
+      <p class="small">${r.st ? `Every bill before ${short(parse(r.st.until))} and money you’ve set aside are already counted. Nothing is subtracted twice.` : `Every bill due in this ${p.unit === 'month' ? 'window' : p.unit} and your ~${money(w0.everyday)} everyday estimate are already counted. Nothing is subtracted twice.`}</p>
     </div></section>
     <section class="pad mt14"><div class="tint stack gap8">
       <p id="p-explain" role="status" style="margin:0;font-size:16px;line-height:1.55">${explain}</p>
@@ -3014,15 +3468,34 @@ function screenCheck() {
   ${dock()}`;
 }
 
+/* What if?'s one-line answer under the wave: the lowest point with this purchase in it. */
+function seaLowText(sea, amt) {
+  const l = sea.low, when = short(l.t);
+  const what = amt > 0 ? 'With it, your' : 'Your';
+  return l.short ? `${what} money could dip about ${money(-l.v)} below $0 around ${when}.` : `${what} lowest point ahead: about ${money(l.v)}, around ${when}${l.v < bufferAmt() ? `, under your ${money(bufferAmt())} buffer` : ''}.`;
+}
 /* "What can I spend?": room in this window, minus a cushion the person chooses, rounded down to $5.
    Planned on the lighter case; the typical case is shown beside it. */
 function spendRoom(ws) {
-  const w0 = ws[0], c = bufferAmt();
+  const w0 = ws[0], c = bufferAmt(), st = stretchFor(w0);
   const floor5 = n => Math.max(0, Math.floor(n / 5) * 5);
+  if (st) {   // one number, one meaning: free to spend = available, after the everyday estimate and the buffer
+    const lvl = st.likely != null ? Math.min(st.available, st.likely) : st.available, typ = Math.max(0, w0.roomTyp - w0.roomLow);   // a paycheck that varies: the typical case on top
+    const ahead = ws.slice(1).map(stretchWindow).find(w => w.stretch && w.stretch.status === 'Short') || null;
+    return { w0, c, st, lvl, typ, freeLow: floor5(lvl - c), freeTyp: floor5(lvl + typ - c), ahead };
+  }
   return { w0, c, freeLow: floor5(w0.roomLow - c), freeTyp: floor5(w0.roomTyp - c), ahead: ws.slice(1).find(w => w.roomLow < 0) || null };
 }
 function checkNumbers(w0, amt) {
-  const p = persona();
+  const p = persona(), st = stretchFor(w0);
+  if (st) {   // the same available number as Now; the sentence uses what's left after everyday spending
+    const lvl = st.likely != null ? Math.min(st.available, st.likely) : st.available, after = lvl - amt, until = short(parse(st.until)), typ = Math.max(0, w0.roomTyp - w0.roomLow);
+    const explain = lvl < 0 ? `This stretch could already come up ${money(-lvl)} short before this purchase.`
+      : after >= bufferAmt() ? `This fits. After it and your everyday spending, about ${money(after)} is left before ${until}.`
+      : after >= 0 ? `This fits, but after it and your everyday spending only about ${money(after)} is left before ${until}${bufferAmt() ? `, under your ${money(bufferAmt())} buffer` : ''}.`
+      : `This is about ${money(-after)} more than what’s free before ${until}. It would come from money for bills or everyday spending.`;
+    return { aLow: after, aTyp: after + typ, explain, st };
+  }
   const aLow = w0.roomLow - amt, aTyp = w0.roomTyp - amt;
   const until = p.unit === 'week' ? `the end of the week` : short(w0.end);
   let explain;
@@ -3044,6 +3517,8 @@ function refreshCheck() {
   after.textContent = range(aLow, aTyp);
   after.style.color = aLow < 0 ? 'var(--amber-text)' : 'var(--navy)';
   document.getElementById('p-explain').textContent = explain;
+  const seaBox = document.getElementById('p-sea');
+  if (seaBox) { const sea = seaLine(ws, { purchase: amt, markLow: true, height: 104 }); if (sea) seaBox.innerHTML = `${sea.svg}<p class="sea-key" id="p-low">${seaLowText(sea, amt)}</p>`; }
   document.getElementById('p-decision').innerHTML = purchaseDecision(ws, amt);
   updateRail();
   document.querySelectorAll('[data-amount]').forEach(b => {
@@ -3118,6 +3593,8 @@ function screenIncome() {
     let note = s.note ? ' · ' + s.note : '';
     if (state.mobilized && (s.id === 'civ' || s.id === 'drill')) note += ' · Stops after Dec 25';
     if (s.mobilizedOnly) note += ' · Starts Jan 1';
+    if (Number(s.spread) > 0) note += ' · Give or take a few days';
+    { const k = keepOf(s); if (k) note += ` · Keeps ${k.pct ? k.pct + '%' : money(k.amt)} for ${keepWord(k.label)}`; }
     const main = prim && prim.id === s.id ? '<span style="display:inline-block;margin-left:6px;font-size:10px;font-weight:800;letter-spacing:.06em;color:var(--royal);text-transform:uppercase">Main</span>' : '';
     return `<button class="line-item tap" data-editincome="${s.id}"><span><span class="name">${esc(s.name)}${main}</span><span class="meta">${s.perWeek ? 'Earned through the week' : freqLabel(s.freq)} · ${certaintyLabel(s)}${note}</span></span><span class="amt">${amt}${s.perWeek ? '<span class="small" style="display:block;text-align:right">a week</span>' : ''}</span></button>`;
   }).join('');
@@ -3129,7 +3606,7 @@ function screenIncome() {
     </div></section>` : '';
   return `${header('now', 'Now')}
   <main>
-    <section class="pad stack gap8 mt8"><h1 class="h1">Your income</h1><p class="body">Tap any income to change it, and the forecast updates. Your main income sets the dates of your ${p.unit === 'week' ? 'weeks' : 'windows'}.</p></section>
+    <section class="pad stack gap8 mt8"><h1 class="h1">Your income</h1><p class="body">Each kind of income on its own, in one forecast. Tap any to change it. Your most dependable income sets the dates of your ${p.unit === 'week' ? 'weeks' : 'paychecks'}.</p></section>
     <section class="pad stack mt20">${rows || '<p class="small">No income yet.</p>'}
       <button class="line-item tap" data-action="onhand"><span><span class="name">On hand now</span><span class="meta est-t"><span class="dot est"></span>${onHandToday ? `Your estimate for ${short(TODAY)} · counted in the current ${p.unit === 'month' ? 'window' : p.unit} only` : 'Not set · Tap to add what’s in your account'}</span></span><span class="amt est-t">${onHandToday ? '~' + money(state.onHand) : '—'}</span></button>
     </section>
@@ -3140,10 +3617,27 @@ function screenIncome() {
 }
 
 /* ---------- add or edit an income source ---------- */
-const INCOME_FREQS = ['weekly', 'biweekly', 'semimonthly', 'monthly', 'once'];
+const INCOME_FREQS = ['weekly', 'biweekly', 'semimonthly', 'monthly', 'quarterly', 'once'];
+/* Kinds of income. The kind picks sensible defaults and which questions to ask; the math only ever sees
+   amount (or range), date (or window) and how sure. [id, label, how sure, date spread, keep for, name hint] */
+const INCOME_KINDS = [
+  ['w2', 'Paycheck (W-2)', 'fixed', 0, null, 'Paycheck'],
+  ['hourly', 'Hourly or shifts', 'variable', 0, null, 'Paycheck'],
+  ['1099', 'Freelance or 1099', 'uncertain', 7, 'taxes', 'Consulting'],
+  ['rental', 'Rental property', 'fixed', 5, 'property', 'Rental income'],
+  ['business', 'Business', 'variable', 7, 'taxes', 'Business income'],
+  ['commission', 'Commission or bonus', 'uncertain', 7, null, 'Commission'],
+  ['military', 'Military or Reserve', 'fixed', 0, null, 'Drill pay'],
+  ['benefits', 'Pension or benefits', 'fixed', 0, null, 'Pension'],
+  ['gig', 'Gig or tips', 'variable', 0, null, 'Tips and gigs'],
+  ['other', 'Something else', 'fixed', 0, null, 'Income']];
+const incomeKind = id => INCOME_KINDS.find(k => k[0] === id) || null;
+const KEEP_KINDS = ['1099', 'rental', 'business'];
 function incomeFormFrom(src) {
-  if (!src) return { id: null, name: '', kind: 'fixed', amount: '', low: '', typical: '', freq: 'biweekly', start: iso(addDays(TODAY, 7)), day2: '', perWeek: false };
-  return { id: src.id, name: src.name, kind: src.certainty, amount: String(src.typical), low: String(src.low), typical: String(src.typical), freq: src.freq, start: src.start, day2: src.day2 ? String(src.day2) : '', perWeek: !!src.perWeek };
+  if (!src) return { id: null, name: '', kind: 'fixed', amount: '', low: '', typical: '', freq: 'biweekly', start: iso(addDays(TODAY, 7)), day2: '', perWeek: false, ikind: '', spread: 0, keepMode: 'none', keepVal: '', keepFor: 'taxes' };
+  const kp = src.keep || {};
+  return { id: src.id, name: src.name, kind: src.certainty, amount: String(src.typical), low: String(src.low), typical: String(src.typical), freq: src.freq, start: src.start, day2: src.day2 ? String(src.day2) : '', perWeek: !!src.perWeek,
+    ikind: src.ikind || '', spread: Number(src.spread) || 0, keepMode: kp.pct ? 'pct' : kp.amt ? 'amt' : 'none', keepVal: kp.pct ? String(kp.pct) : kp.amt ? String(kp.amt) : '', keepFor: kp.for || 'taxes' };
 }
 function incomeFromForm(f) {
   let low, typ;
@@ -3151,6 +3645,12 @@ function incomeFromForm(f) {
   else { low = typ = parseMoney(f.amount); }
   const base = f.id ? state.sources.find(x => x.id === f.id) : null;
   const src = Object.assign({}, base || { id: 'i' + Date.now(), type: 'Income' }, { name: f.name.trim(), certainty: f.kind, low, typical: typ });
+  if (f.ikind) { src.ikind = f.ikind; src.type = (incomeKind(f.ikind) || [])[1] || src.type; }
+  if (Number(f.spread) > 0 && !f.perWeek) src.spread = Number(f.spread); else delete src.spread;
+  const kv = parseMoney(f.keepVal);
+  if (f.keepMode === 'pct' && kv > 0 && kv < 100) src.keep = { pct: kv, for: f.keepFor || 'taxes' };
+  else if (f.keepMode === 'amt' && kv > 0) src.keep = { amt: kv, for: f.keepFor || 'taxes' };
+  else delete src.keep;
   if (!f.perWeek) {
     src.freq = f.freq; src.start = f.start;
     if (f.freq === 'semimonthly' && Number(f.day2) >= 1 && Number(f.day2) <= 31 && Number(f.day2) !== parts(parse(f.start))[2]) src.day2 = Number(f.day2); else delete src.day2;
@@ -3174,7 +3674,8 @@ function sourcesWith(f) {
 function incomePreview(f) {
   if (!incomeValid(f)) return { valid: false, dates: '', impact: 'Fill in a name and an amount to see what it changes.' };
   const src = incomeFromForm(f);
-  const dates = f.perWeek ? 'Counted per week, as you earn it.' : occurrences(src, TODAY, addDays(TODAY, 900)).slice(0, f.freq === 'once' ? 1 : 3).map(withYear).join(' · ') || 'No upcoming dates';
+  const sp = Number(src.spread) || 0;
+  const dates = f.perWeek ? 'Counted per week, as you earn it.' : occurrences(src, TODAY, addDays(TODAY, 900)).slice(0, f.freq === 'once' ? 1 : 3).map(t => sp ? `${short(t)}–${parts(addDays(t, sp))[2]}` : withYear(t)).join(' · ') + (sp ? ` (counted on the later day)` : '') || 'No upcoming dates';
   const before = computeWindows();
   const saved = state.sources;
   state.sources = sourcesWith(f);
@@ -3183,7 +3684,7 @@ function incomePreview(f) {
   const p = persona(), w0 = after[0];
   const worst = after.slice().sort((a, b) => a.roomLow - b.roomLow)[0];
   const changed = before[0].roomLow !== w0.roomLow || before[0].roomTyp !== w0.roomTyp;
-  const impact = `This ${p.unit === 'month' ? 'window' : p.unit}: ${range(w0.roomLow, w0.roomTyp)} not yet spoken for${changed ? `, instead of ${range(before[0].roomLow, before[0].roomTyp)}` : ''}. ` +
+  const impact = `This ${p.unit === 'month' ? 'window' : p.unit}: ${range(w0.roomLow, w0.roomTyp)} left after bills and everyday spending${changed ? `, instead of ${range(before[0].roomLow, before[0].roomTyp)}` : ''}. ` +
     (worst.roomLow < 0 ? `Tightest ahead: ${windowShortName(worst)}, ${money(worst.roomLow)}.` : 'Covered for the next six.') +
     (main ? ` This would be your main income, so your ${p.unit === 'week' ? 'weeks' : 'windows'} follow its dates.` : '');
   return { valid: true, dates, impact };
@@ -3208,17 +3709,36 @@ function screenIncomeEdit() {
         <div class="field"><label for="i-date">A date it comes</label><input class="input" id="i-date" type="date" data-ifield="start" value="${esc(f.start)}"></div>
         ${f.freq === 'semimonthly' ? `<div class="field"><label for="i-day2">Other day of the month</label><input class="input" id="i-day2" data-ifield="day2" inputmode="numeric" value="${esc(f.day2)}" placeholder="e.g. 15" autocomplete="off"></div>` : ''}
       </div>
-      <p class="small">Any payday works. Alon repeats it from there; a 31st moves to the last day in shorter months.</p>`;
+      <p class="small">Any payday works. Alon repeats it from there; a 31st moves to the last day in shorter months.</p>
+      <fieldset style="border:0;padding:0;margin:0" class="stack gap8"><legend class="legend" style="margin-bottom:8px">Does it come on that exact day?</legend>
+        <div class="seg" style="grid-template-columns:repeat(3,minmax(0,1fr))">${[[0, 'Yes, exactly'], [5, 'Give or take a few days'], [10, 'It varies more']].map(([v, l]) => `<button type="button" class="${Number(f.spread) === v ? 'on' : ''}" aria-pressed="${Number(f.spread) === v}" data-ispread="${v}">${l}</button>`).join('')}</div>
+        ${Number(f.spread) ? `<p class="small">Alon counts it on the later day, so nothing depends on it arriving early.</p>` : ''}
+      </fieldset>`;
+  const keepAsk = KEEP_KINDS.includes(f.ikind) || f.keepMode !== 'none';
+  const keepBlock = !keepAsk ? '' : `
+      <fieldset style="border:0;padding:0;margin:0" class="stack gap8"><legend class="legend" style="margin-bottom:8px">Set some aside when it arrives?</legend>
+        <p class="small" style="margin:0">${f.ikind === 'rental' ? 'Some rent usually goes back to the property: repairs, insurance, taxes.' : 'Freelance and business income usually arrives before taxes are taken out.'} Set-aside money stays yours, but Alon doesn’t count it as available.</p>
+        <div class="seg" style="grid-template-columns:repeat(3,minmax(0,1fr))">${[['none', 'No'], ['pct', 'A percent'], ['amt', 'An amount']].map(([v, l]) => `<button type="button" class="${f.keepMode === v ? 'on' : ''}" aria-pressed="${f.keepMode === v}" data-ikeep="${v}">${l}</button>`).join('')}</div>
+        ${f.keepMode !== 'none' ? `<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px">
+          <div class="field"><label for="i-keep">${f.keepMode === 'pct' ? 'Percent of each payment' : 'Amount each time'}</label><input class="input" id="i-keep" data-ifield="keepVal" inputmode="decimal" value="${esc(f.keepVal)}" placeholder="${f.keepMode === 'pct' ? 'e.g. 20' : '$0'}" autocomplete="off"></div>
+          <div class="field"><label for="i-keepfor">For</label><select class="input" id="i-keepfor" data-ifield="keepFor">${[['taxes', 'Taxes'], ['property', 'The property'], ['business', 'The business']].map(([v, l]) => `<option value="${v}" ${f.keepFor === v ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
+        </div>
+        ${f.keepFor === 'taxes' ? '<p class="small" style="margin:0">You choose the amount. Alon doesn’t suggest a tax rate; a tax professional can help you pick one. Mark your estimated tax bill “paid from money set aside for taxes” and Alon uses it there.</p>' : ''}` : ''}
+      </fieldset>`;
   return `${header('income', 'Income')}
   <main>
     <section class="pad stack gap14 mt8">
       <h1 class="h1">${f.id ? 'Edit income' : 'Add income'}</h1>
-      <div class="field"><label for="i-name">What is it?</label><input class="input" id="i-name" data-ifield="name" value="${esc(f.name)}" placeholder="e.g. Paycheck, Pension, Side gig" autocomplete="off"></div>
+      <fieldset style="border:0;padding:0;margin:0" class="stack gap8"><legend class="legend" style="margin-bottom:8px">What kind of income?</legend>
+        <div class="chips">${INCOME_KINDS.map(k => `<button type="button" class="chip ${f.ikind === k[0] ? 'on' : ''}" aria-pressed="${f.ikind === k[0]}" data-itype="${k[0]}">${k[1]}</button>`).join('')}</div>
+      </fieldset>
+      <div class="field"><label for="i-name">What do you call it?</label><input class="input" id="i-name" data-ifield="name" value="${esc(f.name)}" placeholder="e.g. ${esc((incomeKind(f.ikind) || [0, 0, 0, 0, 0, 'Paycheck, Pension, Side gig'])[5])}" autocomplete="off"></div>
       <fieldset style="border:0;padding:0;margin:0" class="stack gap8"><legend class="legend" style="margin-bottom:8px">Is it the same amount each time?</legend>
         <div class="seg" style="grid-template-columns:repeat(3,minmax(0,1fr))">${seg('fixed', 'Same')}${seg('variable', 'It changes')}${seg('uncertain', 'Not sure')}</div>
       </fieldset>
       ${amountFields}
       ${schedule}
+      ${keepBlock}
       <div class="card stack gap6">
         <span class="small" style="font-weight:600">${f.perWeek ? 'How Alon counts it' : 'Alon will expect it on'}</span>
         <span id="i-dates" style="font-size:16px;font-weight:700;line-height:1.45">${pv.dates || '—'}</span>
@@ -3476,6 +3996,7 @@ function saveBill() {
   const existingB = f.id && state.bills.find(b => b.id === f.id);
   if (existingB && isRanged(existingB) && fields.when === existingB.when) fields.start = existingB.start;   // same choice: keep its months
   if (isRentLike(f)) { fields.grace = Number(f.grace) > 0 ? Number(f.grace) : 0; fields.lateFee = parseMoney(f.lateFee) > 0 ? parseMoney(f.lateFee) : 0; }
+  fields.fromKeep = f.fromKeep || undefined;   // paid from money set aside when income arrived (estimated taxes)
   // money already set aside belongs to the next time this bill comes due
   const saved = !f.plan && LONG_FREQS.includes(f.freq) ? parseMoney(f.saved) : 0;
   if (saved > 0) { fields.prepared = Math.min(saved, amount); fields.preparedFor = iso(nextOcc(Object.assign({ id: 'x' }, fields), TODAY)); }
@@ -3498,13 +4019,22 @@ function saveBill() {
   toast(`${fields.name} ${existing ? 'updated' : 'added'}. Forecast updated.`);
   go(back);
 }
+/* A bill paid from money set aside when income arrived (only when some income keeps money aside). */
+function keepPayHtml(f) {
+  const labels = [...new Set(state.sources.map(keepOf).filter(Boolean).map(k => k.label))];
+  if (!labels.length && !f.fromKeep) return '';
+  return `<fieldset style="border:0;padding:0;margin:0" class="stack gap8"><legend class="legend" style="margin-bottom:8px">Pay it from money you set aside?</legend>
+    <div class="chips"><button type="button" class="chip ${!f.fromKeep ? 'on' : ''}" aria-pressed="${!f.fromKeep}" data-fromkeep="">No</button>${labels.map(l => `<button type="button" class="chip ${f.fromKeep === l ? 'on' : ''}" aria-pressed="${f.fromKeep === l}" data-fromkeep="${esc(l)}">For ${esc(keepWord(l))}</button>`).join('')}</div>
+    ${f.fromKeep ? `<p class="small" style="margin:0">Alon uses what you’ve set aside for ${esc(keepWord(f.fromKeep))} first, and counts only the rest against your available money.</p>` : ''}
+  </fieldset>`;
+}
 function blankBillForm() { return { id: null, name: '', amount: '', due: '', freq: 'monthly', kind: 'exact', when: null }; }
 function editBill(id) {
   const b = state.bills.find(x => x.id === id);
   if (!b) return;
   state.returnTo = state.screen === 'add' ? state.returnTo : state.screen;
   if (b.standalone) { state.planForm = planEditFrom(b); state.planBack = state.screen; return go('plan'); }
-  state.form = { id: b.id, name: b.name, amount: String(b.amount), due: isRanged(b) ? '' : b.start, month: isRanged(b) ? b.start.slice(0, 7) : '', when: isRanged(b) ? b.when : 'exact', grace: b.grace != null ? b.grace : null, lateFee: b.lateFee ? String(b.lateFee) : '', freq: b.freq, kind: b.status === 'estimate' ? 'estimate' : 'exact', unconfirmed: b.status === 'unconfirmed', plan: b.plan ? planFormFrom(b.plan, b) : null, saved: preparedLeft(b) ? String(preparedLeft(b).prepared) : '', _opening: true };
+  state.form = { fromKeep: b.fromKeep || '', id: b.id, name: b.name, amount: String(b.amount), due: isRanged(b) ? '' : b.start, month: isRanged(b) ? b.start.slice(0, 7) : '', when: isRanged(b) ? b.when : 'exact', grace: b.grace != null ? b.grace : null, lateFee: b.lateFee ? String(b.lateFee) : '', freq: b.freq, kind: b.status === 'estimate' ? 'estimate' : 'exact', unconfirmed: b.status === 'unconfirmed', plan: b.plan ? planFormFrom(b.plan, b) : null, saved: preparedLeft(b) ? String(preparedLeft(b).prepared) : '', _opening: true };
   go('add');
   delete state.form._opening;
 }
@@ -3563,6 +4093,7 @@ function addMarkup(f, preview, note, valid, quick) {
         <div class="seg"><button type="button" class="${f.plan ? '' : 'on'}" aria-pressed="${!f.plan}" data-paymode="once">All at once</button><button type="button" class="${f.plan ? 'on' : ''}" aria-pressed="${!!f.plan}" data-paymode="parts">In parts</button></div>
         ${f.plan ? planFields(f.plan, f.freq === 'once' ? 'Pay it in' : 'Each time, pay it in', { monthly: splitByPayday(f), due: f.due, amount: parseMoney(f.amount) }) : ''}
       </fieldset>
+      ${keepPayHtml(f)}
       <div id="bill-recent-wrap" data-keys="${esc(billRecentItems(f).map(x => x.key).join(','))}">${billRecentBlock(f)}</div>
       <div class="card stack gap6 preview-card">
         <span class="small" style="font-weight:600">${f.plan ? 'Alon will expect' : 'Alon will expect it on'}</span>
@@ -3911,7 +4442,7 @@ function goalPreview(f) {
   const a0 = after[0];
   const first = a0.roomTyp < 0
     ? `This ${u} would come up ${a0.roomLow === a0.roomTyp ? money(-a0.roomLow) : money(-a0.roomTyp) + '–' + money(-a0.roomLow)} short. `
-    : `This ${u} would keep ${range(a0.roomLow, a0.roomTyp)} not yet spoken for. `;
+    : `This ${u} would keep ${range(a0.roomLow, a0.roomTyp)} after bills and everyday spending. `;
   const laterShort = newShort.filter(w => w.i !== 0);
   const effect = first +
     (laterShort.length ? `It would also make ${laterShort.map(w => windowShortName(w)).join(', ')} come up short. ` : '') +
@@ -4501,13 +5032,14 @@ function poolLine(ws) {
 /* On a payday with extra: one quiet offer, once per paycheck. */
 function poolOffer(w0) {
   const P = poolState(), key = iso(w0.start);
+  if (persona().unit === 'paycheck' && facts().hero.basis === 'runway') return '';   // no paycheck to carry forward from
   if (w0.i !== 0 || w0.roomLow < 50 || P.adds.some(a => a.from === key) || (P.dismissed || {})[key]) return '';
   const e = extraOf(w0), q1 = floor5(e * .25), q2 = floor5(e * .5);
   return `<div class="card stack gap10">
     <span class="eyebrow" style="color:var(--royal)">Tide pool</span>
-    <span style="font-size:17px;font-weight:700;line-height:1.35">This ${unitWord()} has ${money(e)} left, ${extraPct(w0)}% of what comes in.</span>
-    <span class="small">${(() => { const ahead = computeWindows().find(w => w.i > 0 && w.roomLow < 0); return ahead ? `${windowShortName(ahead)} could come up ${money(-ahead.roomLow)} short. Carry some forward and your tide pool covers it automatically.` : `Carry some forward? Your tide pool covers a short ${unitWord()} later on its own.`; })()} The rest is yours to spend.</span>
-    <div class="chips">${q1 >= 5 ? `<button class="chip" data-pooladd="${q1}">25% · ${money(q1)}</button>` : ''}${q2 >= 5 && q2 !== q1 ? `<button class="chip" data-pooladd="${q2}">50% · ${money(q2)}</button>` : ''}<button class="chip" data-action="pool-other">Other amount</button></div>
+    <span style="font-size:17px;font-weight:700;line-height:1.35">Keep some of this ${unitWord()} for later?</span>
+    <span class="small">${(() => { const ahead = computeWindows().find(w => w.i > 0 && w.roomLow < 0); return ahead ? `${windowShortName(ahead)} could come up ${money(-ahead.roomLow)} short. What you keep in your tide pool covers it on its own.` : `Your tide pool is a cushion: what you keep there covers a short ${unitWord()} later, on its own.`; })()} The rest is yours to spend.</span>
+    <div class="chips">${q1 >= 5 ? `<button class="chip" data-pooladd="${q1}">Keep ${money(q1)}</button>` : ''}${q2 >= 5 && q2 !== q1 ? `<button class="chip" data-pooladd="${q2}">Keep ${money(q2)}</button>` : ''}<button class="chip" data-action="pool-other">Other amount</button></div>
     <button class="linkish" style="text-align:left;font-size:14px;color:var(--muted-2)" data-action="pool-dismiss">Not this time</button>
   </div>`;
 }
@@ -4613,15 +5145,15 @@ function screenPool() {
 /* Essentials first: only what's needed for a first honest picture. "What's in your account" is
    essential only when payday isn't today (otherwise the days until then would look empty).
    Everything else is optional, offered on the last screen, and each one returns there. */
-const OB_ESSENTIAL = ['way', 'income', 'onhand', 'home', 'homecosts', 'bills', 'style', 'recent', 'everyday', 'ready'];
+const OB_ESSENTIAL = ['way', 'income', 'others', 'onhand', 'home', 'homecosts', 'bills', 'style', 'recent', 'everyday', 'ready'];
 const OB_EXTRAS = [
   ['rare', 'Bills that come a few times a year', 'Car insurance, registration, taxes'],
   ['plans', 'Anything you’re paying in parts', 'Pay later, payment plans, advances'],
   ['cushion', 'Money set aside for surprises', 'Even a little helps Alon show options'],
   ['onhand', 'What’s in your account now', 'Counts toward the days until payday']
 ];
-const obSteps = () => OB_ESSENTIAL.filter(k => (k !== 'onhand' || (state.ob && state.ob.way && !obPaydayToday())) && (k !== 'recent' || (state.ob && obRecent(state.ob).length > 0))
-  && (k !== 'homecosts' || (state.ob && ['mortgage', 'own'].includes(state.ob.housing))));
+const obSteps = () => [].concat(...OB_ESSENTIAL.filter(k => (k !== 'onhand' || (state.ob && state.ob.way && (!obPaydayToday() || state.ob.way === 'free'))) && (k !== 'recent' || (state.ob && obRecent(state.ob).length > 0))
+  && (k !== 'homecosts' || (state.ob && ['mortgage', 'own'].includes(state.ob.housing)))).map(k => k === 'others' ? ((state.ob && state.ob.others) || []).map((x, i) => 'other:' + i) : [k]));
 /* Home: four paths. Only a mortgage asks what its payment includes; only an owned home asks about its other costs. */
 const OB_HOUSING = [
   ['rent', 'I rent', 'An apartment, a house or a room'],
@@ -4649,20 +5181,46 @@ function obEscrow(o) {
 }
 const obEscrowIn = (o, k) => o.housing === 'mortgage' && (o.escrow || []).includes(k);
 const obEscrowUnsure = o => o.housing === 'mortgage' && (!(o.escrow || []).length || (o.escrow || []).includes('unsure'));
+/* How money comes in: pick all that apply (Nov 12, principle 17). The most dependable one sets the
+   paycheck dates; each other one gets its own short screen. [id, title, examples, Your income kind] */
 const OB_WAYS = [
-  ['same', 'Same paycheck every time', 'Salary, or the same hours each week'],
-  ['changes', 'Regular paydays, but the amount changes', 'Hourly, shifts, tips on your paycheck'],
-  ['gig', 'No regular paychecks', 'Tips, gig apps, freelance, cash'],
-  ['benefit', 'Monthly benefits or a pension', 'Social Security, pension, disability'],
-  ['multi', 'More than one kind', 'Like a job plus drill pay or a side gig']
+  ['same', 'A paycheck that’s the same each time', 'Salary or W-2, the same hours each week', 'w2'],
+  ['changes', 'A paycheck that changes', 'Hourly, shifts, tips on your paycheck', 'hourly'],
+  ['benefit', 'Monthly benefits or a pension', 'Social Security, pension, disability', 'benefits'],
+  ['military', 'Military or Reserve pay', 'Drill pay or another military payment', 'military'],
+  ['rental', 'Rental property', 'Rent from a tenant', 'rental'],
+  ['1099', 'Freelance or 1099', 'Clients, contracts, invoices', '1099'],
+  ['business', 'Business income', 'Money from a business you own', 'business'],
+  ['commission', 'Commission or bonuses', 'Paid when you close or hit a target', 'commission'],
+  ['gig', 'Gig apps, tips or cash', 'No regular paychecks', 'gig']
 ];
+const OB_MAIN_ORDER = ['same', 'changes', 'benefit', 'military', 'rental', 'gig', '1099', 'business', 'commission'];
+const obKindOf = k => (OB_WAYS.find(w => w[0] === k) || [])[3];
+/* The main one: the most dependable kind picked. With only freelance, business or commission income
+   there's no paycheck to count on, so the main one is "free" and Alon answers with how long money lasts. */
+function obPickMain(o) {
+  const ws = o.ways || [];
+  const main = OB_MAIN_ORDER.find(k => ws.includes(k)) || null;
+  o.mainKind = main;
+  o.way = !main ? null : ['1099', 'business', 'commission'].includes(main) ? 'free' : main === 'military' || main === 'rental' ? 'same' : main;
+  if (main === 'benefit' || main === 'military' || main === 'rental' || o.way === 'free') o.freq = 'monthly';
+  // every other kind picked gets its own short screen, keeping anything already typed
+  const others = ws.filter(k => k !== main);
+  o.others = others.map(k => (o.others || []).find(x => x.kind === k) || obOtherBlank(o, k));
+}
+function obOtherBlank(o, k) {
+  const ik = incomeKind(obKindOf(k)) || [];
+  return { kind: k, name: ik[5] || 'Income', amount: '', low: '', typical: '', freq: k === 'same' || k === 'changes' ? 'biweekly' : 'monthly', next: o.today,
+    spread: ik[3] || 0, keepMode: 'none', keepVal: '', keepFor: ik[4] || 'taxes' };
+}
+const obVaries = k => ['changes', '1099', 'business', 'commission', 'gig'].includes(k);
 const OB_BILLS = [['Car payment', 3], ['Phone', 16], ['Utilities', 20, true], ['Internet', 5], ['Car insurance', 12], ['Student loan', 20], ['Credit card minimum', 21], ['Childcare', 1], ['Subscriptions', 15]];
 const OB_RARE = [['Car insurance', 'semiannual', 'Every 6 months'], ['Vehicle registration', 'yearly', 'Once a year'], ['Memberships', 'yearly', 'Once a year'], ['Estimated taxes', 'quarterly', 'Every 3 months'], ['Holiday gifts', 'once', 'One time'], ['School costs', 'once', 'One time']];
 
 function realToday() { const d = new Date(); return iso(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())); }
 function freshOb() {
   const today = realToday();
-  return { step: 0, today, way: null, name: '', amount: '', low: '', typical: '', freq: 'biweekly', next: today,
+  return { step: 0, today, way: null, ways: [], mainKind: null, others: [], spread: 0, keepMode: 'none', keepVal: '', keepFor: 'taxes', name: '', amount: '', low: '', typical: '', freq: 'biweekly', next: today,
            onHand: '', rent: '', rentDate: obNextOnDay(today, 1), bills: [], rare: [], everyday: '',
            fund: null, fundSaved: '', fundPer: '0',   // money set aside for surprises
            rentSplit: false, rentN: '2', rentMode: null, rentDue: '1', rentDays: ['1', '15', '', ''], rentAmts: ['', '', '', ''],
@@ -4689,8 +5247,14 @@ const obNum = v => { const n = parseMoney(v); return isNaN(n) ? null : n; };
 function obValid() {
   const o = state.ob, st = obStep();
   if (st === 'way') return !!o.way;
+  if (st.startsWith('other:')) {
+    const x = o.others[Number(st.slice(6))];
+    if (!x) return true;
+    if (obVaries(x.kind)) return obNum(x.typical) > 0 && (x.kind === 'gig' || !!x.next);
+    return obNum(x.amount) > 0 && !!x.next;
+  }
   if (st === 'income') {
-    if (o.way === 'gig' || o.way === 'changes') return obNum(o.low) > 0 && obNum(o.typical) > 0 && (o.way === 'gig' || !!o.next);
+    if (o.way === 'gig' || o.way === 'changes' || o.way === 'free') return obNum(o.low) > 0 && obNum(o.typical) > 0 && (o.way === 'gig' || !!o.next);
     return obNum(o.amount) > 0 && !!o.next;
   }
   if (st === 'onhand') return obNum(o.onHand) != null;
@@ -4706,7 +5270,7 @@ function obValid() {
   if (st === 'cushion') return o.fund === 'none' || (o.fund === 'some' && obNum(o.fundSaved) > 0);
   return true;
 }
-function obPaydayToday() { const o = state.ob; return o.way !== 'gig' && o.next === o.today; }
+function obPaydayToday() { const o = state.ob; return o.way !== 'gig' && o.way !== 'free' && o.next === o.today; }
 
 const dayOf = v => { const n = Math.round(Number(v)); return n >= 1 && n <= 31 ? n : null; };
 /* Splitting rent in setup: 2 to 4 payments, on paydays (the two common schedules shown with
@@ -4874,13 +5438,32 @@ function obNextPayday(o) {
   const d = rule ? paydaysBetween(rule, t, addDays(t, 40))[0] : null;
   return iso(d != null ? d : t);
 }
+/* Give or take a few days, and money set aside when it arrives, from a setup screen. */
+function obApplyWindowKeep(src, x) {
+  if (Number(x.spread) > 0 && !src.perWeek) src.spread = Number(x.spread);
+  const kv = obNum(x.keepVal);
+  if (x.keepMode === 'pct' && kv > 0 && kv < 100) src.keep = { pct: kv, for: x.keepFor || 'taxes' };
+  else if (x.keepMode === 'amt' && kv > 0) src.keep = { amt: kv, for: x.keepFor || 'taxes' };
+  return src;
+}
+function obOtherSource(x, i, o) {
+  const ik = incomeKind(obKindOf(x.kind)) || ['other', 'Income', 'fixed', 0, null, 'Income'];
+  const varies = obVaries(x.kind), lo = obNum(varies ? x.low : x.amount) || 0, ty = obNum(varies ? x.typical : x.amount) || 0;
+  const src = { id: 'o' + (i + 1), name: (x.name || '').trim() || ik[5], type: ik[1], ikind: ik[0], freq: x.kind === 'gig' ? 'weekly' : x.freq, start: x.kind === 'gig' ? o.today : x.next,
+    low: Math.min(lo || ty, ty), typical: Math.max(lo, ty), certainty: x.kind === 'gig' || x.kind === 'changes' || x.kind === 'business' ? 'variable' : ik[2] };
+  if (x.kind === 'gig') { src.perWeek = true; src.note = 'Earned through the week'; }
+  return obApplyWindowKeep(src, x);
+}
 function obSeed() {
   const o = state.ob, unit = o.way === 'gig' ? 'week' : o.way === 'benefit' ? 'month' : 'paycheck';
   let src;
   if (o.way === 'gig') src = { id: 'gig', name: o.name.trim() || 'Tips and gigs', type: 'Gig', freq: 'weekly', start: o.today, low: obNum(o.low), typical: obNum(o.typical), certainty: 'variable', perWeek: true, note: 'Earned through the week' };
   else if (o.way === 'changes') src = { id: 'job', name: o.name.trim() || 'Paycheck', type: 'Employment · hourly', freq: o.freq, start: o.next, low: Math.min(obNum(o.low), obNum(o.typical)), typical: Math.max(obNum(o.low), obNum(o.typical)), certainty: 'variable', note: 'Hours change' };
   else if (o.way === 'benefit') src = { id: 'ben', name: o.name.trim() || 'Monthly income', type: 'Benefit or pension', freq: 'monthly', start: o.next, low: obNum(o.amount), typical: obNum(o.amount), certainty: 'fixed' };
-  else src = { id: 'job', name: o.name.trim() || 'Paycheck', type: 'Employment', freq: o.freq, start: o.next, low: obNum(o.amount), typical: obNum(o.amount), certainty: 'fixed' };
+  else if (o.way === 'free') src = { id: 'free', name: o.name.trim() || (incomeKind(obKindOf(o.mainKind)) || [])[5] || 'Income', type: (incomeKind(obKindOf(o.mainKind)) || [])[1], ikind: obKindOf(o.mainKind), freq: o.freq, start: o.next, low: Math.min(obNum(o.low), obNum(o.typical)), typical: Math.max(obNum(o.low), obNum(o.typical)), certainty: 'uncertain' };
+  else src = { id: 'job', name: o.name.trim() || (o.mainKind === 'rental' ? 'Rental income' : o.mainKind === 'military' ? 'Drill pay' : 'Paycheck'), type: o.mainKind === 'rental' ? 'Rental property' : o.mainKind === 'military' ? 'Military or Reserve' : 'Employment', ikind: obKindOf(o.mainKind || 'same'), freq: o.freq, start: o.next, low: obNum(o.amount), typical: obNum(o.amount), certainty: 'fixed' };
+  obApplyWindowKeep(src, o);
+  const more = (o.others || []).map((x, i) => obOtherSource(x, i, o));
   const bills = obBills(o);
   // answers about recent payments: paid ones aren't counted again; not-yet ones move to their new date
   const items = obRecent(o), extra = [];
@@ -4899,7 +5482,7 @@ function obSeed() {
     fund = { id: 'fund', name: 'Surprise fund', fund: true, target, saved, mode: 'amount', per: per > 0 ? per : 25, paused: !(per > 0), skips: [], hist: {} };
   }
   return {
-    startDay: o.today, sources: [src], bills, home: o.housing ? { kind: o.housing, escrow: obEscrow(o) } : null, style: o.style || null,
+    startDay: o.today, sources: [src, ...more], bills, home: o.housing ? { kind: o.housing, escrow: obEscrow(o) } : null, style: o.style || null,
     reservedInBalance: bills.some(b => b.prepared > 0) ? false : null,   // setup says: don't count set-aside money in the balance too
     everyday: o.everyday === 'none' || o.everyday === 'unsure' ? 0 : obNum(o.everyday) || 0, everydayUnknown: o.everyday === 'unsure', fund,
     onHand: obNum(o.onHand) != null && !o.skippedOnHand ? obNum(o.onHand) : null,
@@ -4926,7 +5509,8 @@ function obClick(ds) {
   if (ds.obhcfreq) { const [i, f] = ds.obhcfreq.split('|'); const b = o.homecosts[Number(i)]; if (b) { b.freq = f; b.when = null; } return render(true); }
   if (ds.obhcparts) { const [i, v] = ds.obhcparts.split('|'); const b = o.homecosts[Number(i)]; if (b) b.parts = v === '1'; return render(true); }
   if (ds.obsaved) { const [list, i] = ds.obsaved.split('|'); const b = o[list][Number(i)]; if (b) b.savedOpen = true; render(true); const el = document.getElementById(`ob-${list}-${i}-s`); if (el) el.focus(); return; }
-  if (ds.obway) { o.way = ds.obway; if (ds.obway === 'benefit') { o.freq = 'monthly'; } return render(); }
+  if (ds.obway) { o.ways = (o.ways || []).includes(ds.obway) ? o.ways.filter(k => k !== ds.obway) : (o.ways || []).concat(ds.obway); obPickMain(o); return render(); }
+  if (ds.obset) { const [path, v] = ds.obset.split('='); obSet(path, /^-?\d+$/.test(v) ? Number(v) : v); return render(true); }
   if (ds.obfreq) { o.freq = ds.obfreq; return render(); }
   if (ds.obamt) { o.everyday = ds.obamt; return render(); }
   if (ds.obfund) { o.fund = ds.obfund; return render(); }
@@ -5032,11 +5616,18 @@ function screenOb() {
   const date_ = (id, path, label, val) => `<div class="field"><label for="${id}">${label}</label><input class="input" id="${id}" type="date" data-obf="${path}" value="${esc(val)}"></div>`;
   const foot = (extra) => `<div class="ob-foot stack gap10">${o.extra ? `<button class="secondary" data-ob="skip">Not now</button>` : extra || ''}<button class="primary" id="ob-next" data-ob="next" ${obValid() ? '' : 'disabled'}>${o.extra ? 'Done' : 'Continue'}</button></div>`;
   let body = '', footer = foot();
-  const payLabel = o.way === 'benefit' ? 'When does it arrive next?' : 'When is your next payday?';
+  const payLabel = o.way === 'benefit' ? 'When does it arrive next?' : o.way === 'free' || o.mainKind === 'rental' ? 'About when does the next one arrive?' : 'When is your next payday?';
+  const segRow = (path, cur, opts) => `<div class="seg" style="grid-template-columns:repeat(${opts.length},minmax(0,1fr))">${opts.map(([v, l]) => `<button type="button" class="${String(cur) === String(v) ? 'on' : ''}" aria-pressed="${String(cur) === String(v)}" data-obset="${path}=${v}">${l}</button>`).join('')}</div>`;
+  const spreadQ = (pre, x) => `<fieldset style="border:0;padding:0;margin:0" class="stack gap8"><legend class="legend" style="margin-bottom:8px">Does it come on that exact day?</legend>${segRow(pre + 'spread', Number(x.spread) || 0, [[0, 'Yes, exactly'], [5, 'Give or take a few days'], [10, 'It varies more']])}${Number(x.spread) ? '<p class="small" style="margin:0">Alon counts it on the later day, so nothing depends on it arriving early.</p>' : ''}</fieldset>`;
+  const keepQ = (pre, x, kind) => `<fieldset style="border:0;padding:0;margin:0" class="stack gap8"><legend class="legend" style="margin-bottom:8px">Set some aside when it arrives?</legend>
+      <p class="small" style="margin:0">${kind === 'rental' ? 'Some rent usually goes back to the property: repairs, insurance, taxes.' : 'This income usually arrives before taxes are taken out.'} Set-aside money stays yours, but Alon doesn’t count it as available.</p>
+      ${segRow(pre + 'keepMode', x.keepMode || 'none', [['none', 'No'], ['pct', 'A percent'], ['amt', 'An amount']])}
+      ${x.keepMode && x.keepMode !== 'none' ? `${money_(`ob-keep-${pre}`, pre + 'keepVal', x.keepMode === 'pct' ? `Percent of each payment, for ${keepWord(x.keepFor)}` : `Amount each time, for ${keepWord(x.keepFor)}`, x.keepVal, x.keepMode === 'pct' ? 'e.g. 20' : '$0')}
+      ${x.keepFor === 'taxes' ? '<p class="small" style="margin:0">You choose the amount. Alon doesn’t suggest a tax rate; a tax professional can help you pick one.</p>' : ''}` : ''}</fieldset>`;
 
   if (st === 'way') {
-    body = q('How does your money usually come in?', 'Pick the closest. Alon works with any kind of income, and you can change it later.') +
-      `<section class="stack gap10 mt20">${OB_WAYS.map(([k, t, d]) => `<button class="tap option ${o.way === k ? 'on' : ''}" aria-pressed="${o.way === k}" data-obway="${k}"><span class="radio"></span><span><span class="t">${t}</span><span class="d">${d}</span></span></button>`).join('')}</section>
+    body = q('How does your money come in?', 'Pick all that apply. Each one gets its own short question next, and they all go in one forecast.') +
+      `<section class="stack gap10 mt20">${OB_WAYS.map(([k, t, d]) => { const on = (o.ways || []).includes(k); return `<button class="tap option ${on ? 'on' : ''}" aria-pressed="${on}" data-obway="${k}"><span class="radio" style="border-radius:6px"></span><span><span class="t">${t}</span><span class="d">${d}</span></span></button>`; }).join('')}</section>
       ${ALPHA ? '' : '<button class="linkish mt14" style="text-align:left" data-go="arrival">Or try an example person first</button>'}`;
   } else if (st === 'income') {
     const freqChips = `<fieldset style="border:0;padding:0;margin:0" class="stack gap8"><legend class="legend" style="margin-bottom:8px">How often?</legend><div class="chips">${['weekly', 'biweekly', 'semimonthly', 'monthly'].map(f => `<button type="button" class="chip ${o.freq === f ? 'on' : ''}" aria-pressed="${o.freq === f}" data-obfreq="${f}">${freqLabel(f)}</button>`).join('')}</div></fieldset>`;
@@ -5046,15 +5637,35 @@ function screenOb() {
     } else if (o.way === 'changes') {
       body = q('What does a paycheck usually look like?', 'Think of a lighter one and a normal one. Alon plans on the lighter one.') +
         `<section class="stack gap14 mt20"><div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px">${money_('ob-low', 'low', 'A lighter paycheck', o.low)}${money_('ob-typ', 'typical', 'A normal one', o.typical)}</div>${freqChips}${date_('ob-next-date', 'next', payLabel, o.next)}</section>`;
+    } else if (o.way === 'free') {
+      const kn = (OB_WAYS.find(w => w[0] === o.mainKind) || [0, 'Your income'])[1];
+      body = q(`${kn}: what does it usually look like?`, 'Alon won’t count it until it arrives, so your bills never depend on it. It shows how long what you have lasts.') +
+        `<section class="stack gap14 mt20"><div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px">${money_('ob-low', 'low', 'A lighter payment', o.low)}${money_('ob-typ', 'typical', 'A typical one', o.typical)}</div>${freqChips}${date_('ob-next-date', 'next', payLabel, o.next)}${spreadQ('', o)}${keepQ('', o, o.mainKind)}</section>`;
     } else if (o.way === 'benefit') {
       body = q('How much comes in each month?', 'If you get more than one, start with the biggest. You can add the others after setup.') +
         `<section class="stack gap14 mt20"><div class="field"><label for="ob-name">What is it? (optional)</label><input class="input" id="ob-name" data-obf="name" value="${esc(o.name)}" placeholder="e.g. Social Security, pension" autocomplete="off"></div>${money_('ob-amt', 'amount', 'Amount each month', o.amount)}${date_('ob-next-date', 'next', payLabel, o.next)}</section>`;
     } else {
-      body = q(o.way === 'multi' ? 'Start with your main paycheck' : 'How much lands each payday?', o.way === 'multi' ? 'The one you rely on most. You can add drill pay, a side gig or anything else right after setup.' : 'What actually reaches your account, after taxes.') +
-        `<section class="stack gap14 mt20">${money_('ob-amt', 'amount', 'Amount each payday', o.amount)}${freqChips}${date_('ob-next-date', 'next', payLabel, o.next)}<p class="small">If it's today, pick today.</p></section>`;
+      const rental = o.mainKind === 'rental', mil = o.mainKind === 'military';
+      body = q(rental ? 'How much rent comes in?' : mil ? 'How much is your military or Reserve pay?' : 'How much lands each payday?', rental ? 'What reaches your account, after any property manager fees.' : (o.others || []).length ? 'Start with this one. The others come next.' : 'What actually reaches your account, after taxes.') +
+        `<section class="stack gap14 mt20">${money_('ob-amt', 'amount', rental ? 'Rent each time' : 'Amount each payday', o.amount)}${freqChips}${date_('ob-next-date', 'next', payLabel, o.next)}${rental ? spreadQ('', o) + keepQ('', o, 'rental') : `<p class="small">If it's today, pick today.</p>`}</section>`;
     }
+  } else if (st.startsWith('other:')) {
+    const i = Number(st.slice(6)), x = o.others[i], pre = `others.${i}.`;
+    const kt = (OB_WAYS.find(w => w[0] === x.kind) || [0, 'Other income'])[1], varies = obVaries(x.kind);
+    const unsure = ['1099', 'commission'].includes(x.kind);
+    const freqs = ['weekly', 'biweekly', 'semimonthly', 'monthly', 'quarterly'];
+    body = q(`${kt}`, unsure ? 'Alon won’t count it until it arrives, so your bills never depend on it.' : x.kind === 'gig' ? 'What you make in a week. Alon plans on the slow week.' : 'Counted on its own, in the same forecast.') +
+      `<section class="stack gap14 mt20">
+        <div class="field"><label for="ob-o-name">What do you call it?</label><input class="input" id="ob-o-name" data-obf="${pre}name" value="${esc(x.name)}" autocomplete="off"></div>
+        ${varies ? `<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px">${money_('ob-o-low', pre + 'low', x.kind === 'gig' ? 'A slow week' : 'A lighter payment', x.low)}${money_('ob-o-typ', pre + 'typical', x.kind === 'gig' ? 'A normal week' : 'A typical one', x.typical)}</div>`
+          : money_('ob-o-amt', pre + 'amount', 'Amount each time', x.amount)}
+        ${x.kind === 'gig' ? '' : `<fieldset style="border:0;padding:0;margin:0" class="stack gap8"><legend class="legend" style="margin-bottom:8px">How often?</legend><div class="chips">${freqs.map(f => `<button type="button" class="chip ${x.freq === f ? 'on' : ''}" aria-pressed="${x.freq === f}" data-obset="${pre}freq=${f}">${freqLabel(f)}</button>`).join('')}</div></fieldset>
+        ${date_('ob-o-next', pre + 'next', 'About when does the next one arrive?', x.next)}
+        ${spreadQ(pre, x)}`}
+        ${KEEP_KINDS.includes(obKindOf(x.kind)) ? keepQ(pre, x, x.kind) : ''}
+      </section>`;
   } else if (st === 'onhand') {
-    const until = o.way === 'gig' ? 'this week' : `until ${long(parse(o.next))}`;
+    const until = o.way === 'gig' ? 'this week' : o.way === 'free' ? 'the next few months' : `until ${long(parse(o.next))}`;
     body = q('What’s in your account right now?', obPaydayToday()
       ? 'Your paycheck lands today, so this is optional. If you add it, Alon counts it along with today’s pay.'
       : `Alon uses this to cover the days ${until}. A rough number is fine.`) +
@@ -5181,7 +5792,7 @@ function screenOb() {
         ${o.fund === 'some' ? money_('ob-fund', 'fundSaved', 'About how much? A rough number is fine.', o.fundSaved) : ''}
         <fieldset style="border:0;padding:0;margin:0" class="stack gap8"><legend class="legend" style="margin-bottom:8px">${o.fund === 'some' ? `Add to it each ${u}?` : `Start one with a little each ${u}?`}</legend>
           <div class="chips">${[0, 10, 25, 50].map(v => `<button type="button" class="chip ${String(o.fundPer) === String(v) ? 'on' : ''}" aria-pressed="${String(o.fundPer) === String(v)}" data-obfundper="${v}">${v ? '$' + v : 'Not right now'}</button>`).join('')}</div></fieldset>
-        <p class="small">${obNum(o.fundPer) > 0 ? `Alon counts ${money(obNum(o.fundPer))} as spoken for in each ${u}, so your forecast stays honest.` : 'Nothing is taken out of your forecast. You can change this anytime in Your goals.'}</p>
+        <p class="small">${obNum(o.fundPer) > 0 ? `Alon counts ${money(obNum(o.fundPer))} as set aside in each ${u}, so your forecast stays honest.` : 'Nothing is taken out of your forecast. You can change this anytime in Your goals.'}</p>
       </section>` : ''}`;
     footer = foot(`<button class="secondary" data-ob="skip">Skip this question</button>`);
   } else {
@@ -5191,7 +5802,7 @@ function screenOb() {
       <span style="width:10px;height:10px;border-radius:5px;background:var(--royal);box-shadow:0 0 0 6px var(--tint)"></span>
       <h1 class="h1" style="font-size:34px">I have enough to help you begin.</h1>
       <p class="body">${esc(inc.name)} (${inc.certainty === 'variable' ? range(inc.low, inc.typical) : money(inc.typical)}${inc.perWeek ? ' a week' : ', ' + freqLabel(inc.freq).toLowerCase()}), ${nb} bill${nb === 1 ? '' : 's'}, ${seed.everydayUnknown ? ', everyday spending not set yet' : seed.everyday ? ` and about ${money(seed.everyday)} a week for everyday things` : ', and nothing for everyday things'}${seed.bills.some(b => b.plan) ? `, ${seed.bills.filter(b => b.plan).length} paid in parts` : ''}${fd ? `, and a surprise fund${fd.saved ? ` with ${money(fd.saved)}` : ''}${fd.paused ? '' : ` getting ${money(fd.per)} each ${seed.meta.unit}`}` : ''}. Everything is an estimate you can change anytime.</p>
-      ${o.way === 'multi' ? '<p class="small">Add your other income from Your income next.</p>' : ''}
+      ${seed.sources.length > 1 ? `<p class="small">Plus ${listJoin(seed.sources.slice(1).map(x => esc(x.name)))}: each counted on its own, in one forecast.</p>` : ''}
       ${(() => { const c = sameDayCluster(seed.bills, o.clusterOk); return c ? clusterCard(c, 'ob') : ''; })()}
     </section>
     <section class="stack gap10 mt24">
@@ -5586,6 +6197,11 @@ function whySheetHtml() {
   if (!s) return '';
   const ws = whyWindows(), w = ws[s.i];
   if (!w) return '';
+  if (!w.cashUnknown && persona().unit === 'paycheck') {   // with a balance, every stretch opens on the running balance
+    const hm = heroModel(computeWindows()[0]);
+    if (hm && hm.h.basis === 'spendable') { const st = s.i === 0 ? null : stretchFor(w); if (s.i === 0 || st) return balanceSheetHtml(hm, st); }
+    if (hm && hm.h.basis === 'runway') { const st = stretchFor(w); if (st) return balanceSheetHtml(hm, st); }
+  }
   const u = unitWord2(), r = windowReasons(ws, s.i), d = decisionFor(w);
   const name = w.i === 0 ? `this ${u}` : short(w.start);
   const gap = Math.max(0, -w.roomLow);
@@ -5685,9 +6301,9 @@ function openWhy(i) { state.why = { i }; state.menuOpen = false; render(true); }
 /* ---------- the tutor's small helpers: words you can tap, a 60-second walkthrough ---------- */
 const TERMS = {
   state: ['Where things stand', () => `<p>${stateSentence(facts())}</p>`],
-  room: ['What “room” means', () => { const h = facts().hero; return `<p>The lowest your available money gets before your next paycheck lands: what’s in your account, minus money you’ve set aside, minus the bills due before then.</p><p>Everyday spending is shown under it, as an estimate, so you can see what’s certain and what isn’t.</p>${h.basis === 'spendable' ? `<p class="you"><strong>Right now:</strong> ${money(h.amount)} until ${long(parse(h.until))}.</p>` : ''}`; }],
+  room: ['What “available” means', () => { const h = facts().hero; return `<p>The lowest your available money gets before your next paycheck lands: what’s in your account, minus money you’ve set aside, minus the bills due before then.</p><p>Everyday spending is shown under it, as an estimate, so you can see what’s certain and what isn’t.</p>${h.basis === 'spendable' ? `<p class="you"><strong>Right now:</strong> ${money(h.amount)} until ${long(parse(h.until))}.</p>` : ''}`; }],
   reserved: ['Money set aside', () => `<p>Money you’ve put aside for something: a bill, a goal, the tide pool. It still exists and it’s still yours. Alon just doesn’t count it as available for anything else.</p>`],
-  left: ['What “left” means', () => { const w0 = computeWindows()[0]; return `<p>What a ${unitWord2()} has after the bills due before your next payday and your everyday spending estimate. It’s yours to spend, save or keep for later.</p><p class="you"><strong>Right now:</strong> ${range(w0.incomeLow, w0.incomeTyp)} coming in − ${money(w0.spoken)} spoken for = <strong>${range(w0.roomLow, w0.roomTyp)} left</strong>.</p>`; }],
+  left: ['What “left” means', () => { const w0 = computeWindows()[0]; return `<p>What a ${unitWord2()} has after the bills due before your next payday and your everyday spending estimate. It’s yours to spend, save or keep for later.</p><p class="you"><strong>Right now:</strong> ${range(w0.incomeLow, w0.incomeTyp)} coming in − ${money(w0.spoken)} for bills and everyday spending = <strong>${range(w0.roomLow, w0.roomTyp)} left</strong>.</p>`; }],
   spoken: ['What “spoken for” means', () => { const w0 = computeWindows()[0]; return `<p>Money that’s already promised: the bills due before your next payday, plus your everyday spending estimate${w0.goalTotal || w0.out ? ', plus what you’re setting aside' : ''}.</p><p class="you"><strong>Right now:</strong> bills ${money(w0.billsTotal)} + everyday ~${money(w0.everyday)}${w0.goalTotal ? ` + goals ${money(w0.goalTotal)}` : ''}${w0.out ? ` + set aside ${money(w0.out)}` : ''} = ${money(w0.spoken)}.</p>`; }],
   status: ['Covered, tight and short', () => `<p><strong>Covered:</strong> ${money(bufferAmt())} or more left after that ${unitWord2()}’s bills (your buffer).</p><p><strong>Tight:</strong> above $0 but under your ${money(bufferAmt())} buffer. Fine, but there’s not much room. You can change the buffer on “What if?”.</p><p><strong>Short:</strong> more going out than coming in. It’s usually timing, not overspending, and seeing it early is the point.</p><p>${state.sources.some(s => s.certainty !== 'fixed') ? 'Alon decides using your lighter pay, to be safe.' : 'Alon decides using your confirmed pay.'}</p>`],
   estimate: ['Estimates (~)', () => `<p>A number you told Alon is roughly right. A <strong>~</strong> marks it. Confirm it when the real bill comes and the forecast gets more accurate.</p><p>Everyday spending is always an estimate: about ${money(state.everydayPerWeek)} a week.</p>`],
@@ -5712,7 +6328,7 @@ function askSuggestions() {
   const whyQ = sh ? `Why is ${sh.i === 0 ? 'this ' + unitWord2() : short(sh.start)} short?` : tight ? (tight.roomLow < 0 ? `What’s coming ${short(tight.start)}?` : `Why is ${tight.i === 0 ? 'this ' + unitWord2() : short(tight.start)} tight?`) : null;
   if (state.screen === 'now') { const hm = heroModel(ws[0]), ms = hm ? facts().money : null; return [ms && ms.state === 'OPPORTUNITY' ? 'What could this room do?' : whyQ, hm && hm.h.basis === 'spendable' ? 'What does “room” mean?' : 'What does “left” mean?', 'How does Alon work?'].filter(Boolean); }
   if (state.screen === 'waves') return [whyQ, 'Why paychecks, not months?', 'What do the colors mean?'].filter(Boolean);
-  if (state.screen === 'detail') return ['What does “spoken for” mean?', 'What can I spend?'];
+  if (state.screen === 'detail') return ['What can I spend?'];
   return ['Why paychecks, not months?'];
 }
 /* The walkthrough: four steps on the person's own numbers, right after setup, and anytime from the menu. */
@@ -5723,13 +6339,13 @@ function tourSteps() {
     w0.cashUnknown ? { sel: '.hero-q', title: 'First, one number', text: `You’re between paydays. Tell Alon what’s in your account and it shows what’s really left until ${long(w0.end)}.` } : (() => { const hm = heroModel(computeWindows()[0]); if (!hm) return { sel: '.hero.big', title: `${range(w0.roomLow, w0.roomTyp)} is what’s left`, text: `${w0.roomLow < 0 ? 'This is how short this ' + u + ' could be' : 'This is what this ' + u + ' has'} after the bills due before ${long(w0.end)} and your everyday spending.` };
       const h = hm.h, until = long(parse(h.until));
       return h.basis === 'spendable'
-        ? { sel: '.hero.big', title: h.amount < 0 ? `${money(-h.amount)} short before ${until}` : `${money(h.amount)} of room`, text: `The lowest your available money gets before your paycheck on ${until}: what’s in your account, minus money set aside and the bills due before then. Your everyday spending estimate is the line under it.` }
-        : { sel: '.hero.big', title: `${money(h.amount)} is what’s left`, text: `What your ${short(w0.start)} paycheck has after the bills due before ${until}. Your everyday spending estimate is the line under it. Add what’s in your account and Alon shows your room instead.` }; })(),
-    { sel: '#wave-scroll', title: `Each wave is a ${u}`, text: `Small waves are covered. The number under each date is what that ${u} will have left. Swipe for about half a year.` }
+        ? { sel: '.hero.big', title: h.amount < 0 ? `${money(-h.amount)} short before ${until}` : `${money(h.amount)} available`, text: `What’s in your account, minus money set aside and the bills due before your paycheck on ${until}. Tap the number anytime to see how it adds up.` }
+        : { sel: '.hero.big', title: `${money(h.amount)} is what’s left`, text: `What your ${short(w0.start)} paycheck has after the bills due before ${until}. Tap the number anytime to see how it adds up.` }; })(),
+    { sel: '.now-wave', title: 'The water is your money', text: `It rises on payday and dips for bills. A deep dip is a big bill coming. Below the line, a ${u} could come up short. Tap it to see why.` }
   ];
   if (sh >= 0 && document.querySelector('.why-card')) steps.push({ sel: '.why-card', title: `${short(ws[sh].start)} could come up ${money(-ws[sh].roomLow)} short`, text: `Alon counts each ${u} on its own, so one big bill can make a ${u} short even when others have room. Tap it anytime to see why and what you can do.` });
   else steps.push({ sel: '.status-pill', title: sh >= 0 ? 'A wave is coming' : 'You can see ahead', text: `Alon shows when things are covered, when something looks tight, and when you have more room than usual.` });
-  steps.push({ sel: '#rail-knob', title: 'Actions live on the wave', text: 'Tap or slide the wave on the side. Ask Alon anything at the bottom.' });
+  steps.push({ sel: '#rail-knob', title: 'Can I spend this?', text: 'Tap “What if?” on the wave to check a purchase before you make it. Ask Alon anything at the bottom.' });
   return steps;
 }
 function tourHtml() {
@@ -5859,7 +6475,7 @@ function render(keepFocus, resetScroll) {
   app.classList.toggle('left', !!state.railLeft);
   let paper = '';
   if (state.screen === 'now' && state.persona) { const w0_ = computeWindows()[0]; paper = knownShort(w0_) ? 'paper-short' : 'paper-clear'; }
-  app.innerHTML = `<div class="scroller ${paper}" id="scroller">${screens[state.screen]()}</div><div id="rail-wrap">${rail}</div>` + tourHtml() + sheetHtml() + whySheetHtml() + exploreSheetHtml() + termSheetHtml() + reviewSheetHtml();
+  app.innerHTML = `<div class="scroller ${paper}" id="scroller">${screens[state.screen]()}</div><div id="rail-wrap">${rail}</div>` + tourHtml() + sheetHtml() + whySheetHtml() + nextSheetHtml() + exploreSheetHtml() + termSheetHtml() + reviewSheetHtml();
   const sc = document.getElementById('scroller'); if (sc) sc.scrollTop = scrollTop;
   waveEdges();
   placeTour();
@@ -5894,10 +6510,16 @@ function go(screen) {
   render(false, true);
 }
 let toastTimer;
-function toast(msg) {
+function toast(msg, undo) {
   const t = document.getElementById('toast');
   t.textContent = msg; t.hidden = false;
-  clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, 2600);
+  if (undo) {   // everything can be taken back: "Marked paid · Undo"
+    const u = document.createElement('button');
+    u.type = 'button'; u.className = 'toast-undo'; u.textContent = 'Undo';
+    u.onclick = () => { t.hidden = true; clearTimeout(toastTimer); undo(); toast('Undone.'); };
+    t.appendChild(document.createTextNode(' ')); t.appendChild(u);
+  }
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, undo ? 6000 : 2600);
 }
 function save() { try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {} }
 function load() {
@@ -5983,6 +6605,17 @@ app.addEventListener('click', e => {
   /* the Why sheet */
   if (ds.whysheet !== undefined) return openWhy(Number(ds.whysheet));
   if (ds.action === 'close-why') { state.why = null; return render(true); }
+  if (ds.action === 'next-sheet') { state.nextSheet = true; return render(true); }
+  if (ds.action === 'close-next') { state.nextSheet = false; return render(true); }
+  if (ds.nxpaid) {
+    const cut = ds.nxpaid.indexOf('|'), b = state.bills.find(x => x.id === ds.nxpaid.slice(0, cut)), key = ds.nxpaid.slice(cut + 1);
+    if (!b) return;
+    const before = nextUpItems(computeWindows()).length;
+    markPaidNow(b, key);
+    if (before <= 1) state.nextSheet = false;   // more bills that day: keep the sheet open for them
+    toast(`Marked ${inSentence(b.name)} as paid.`, () => { unmarkPaid(b, key); render(); });
+    return render();
+  }
   if (ds.action === 'explore') { state.explore = true; return render(true); }
   if (ds.action === 'close-explore') { state.explore = false; return render(true); }
   if (ds.action === 'options-now') { const ws = whyWindows(), i = Math.max(0, ws.findIndex(breaks)), w = ws[i]; const h = facts().hero; state.askAnswer = { q: `What can I do about ${w.i === 0 ? 'this ' + unitWord2() : short(w.start)}?`, amount: round5(Math.max(0, w.i === 0 && h.basis === 'spendable' ? Math.max(bufferAmt() - h.amount, -h.amount) : -w.roomLow)), quote: false }; state.askBack = 'now'; return go('options'); }
@@ -6020,7 +6653,7 @@ app.addEventListener('click', e => {
   }
   if (ds.spreadno) { state.spreadDismissed = Object.assign({}, state.spreadDismissed, { [ds.spreadno]: true }); return render(true); }
   if (ds.action === 'ob-start') { state.ob = freshOb(); state.menuOpen = false; return go('ob'); }
-  if (ds.ob || ds.obwhen || ds.obgrace !== undefined || ds.obway || ds.obfreq || ds.obadd || ds.obdel || ds.obamt || ds.obfund || ds.obfeekind || ds.obn || ds.obmode || ds.obextra || ds.obfees !== undefined || ds.obfundper !== undefined || ds.obhouse || ds.obescrow || ds.obstyle || ds.obhcfreq || ds.obhcparts || ds.obsaved) return obClick(ds);
+  if (ds.ob || ds.obwhen || ds.obgrace !== undefined || ds.obway || ds.obfreq || ds.obadd || ds.obdel || ds.obamt || ds.obfund || ds.obfeekind || ds.obn || ds.obmode || ds.obextra || ds.obfees !== undefined || ds.obfundper !== undefined || ds.obhouse || ds.obescrow || ds.obstyle || ds.obhcfreq || ds.obhcparts || ds.obsaved || ds.obset) return obClick(ds);
   if (ds.recent && ds.ans) {
     const A = recentAnswers(), a = A[ds.recent] = A[ds.recent] || {};
     a.ans = ds.ans;
@@ -6248,6 +6881,14 @@ app.addEventListener('click', e => {
   if (ds.editincome) { state.incomeForm = incomeFormFrom(state.sources.find(x => x.id === ds.editincome)); return go('income-edit'); }
   if (ds.ikind) { state.incomeForm.kind = ds.ikind; if (ds.ikind === 'variable' && !state.incomeForm.low) { state.incomeForm.low = state.incomeForm.amount; state.incomeForm.typical = state.incomeForm.amount; } if (ds.ikind !== 'variable' && !state.incomeForm.amount) state.incomeForm.amount = state.incomeForm.typical; return render(); }
   if (ds.ifreq) { state.incomeForm.freq = ds.ifreq; return render(); }
+  if (ds.fromkeep !== undefined && state.form) { state.form.fromKeep = ds.fromkeep; return render(true); }
+  if (ds.itype) {   // the kind picks the defaults; the person can change any of them
+    const f = state.incomeForm, k = incomeKind(ds.itype); f.ikind = ds.itype;
+    if (k && !f.id) { f.kind = k[2]; f.spread = k[3]; if (k[4]) { f.keepFor = k[4]; } if (!f.name.trim()) f.name = k[5]; if (k[0] === 'rental' || k[0] === 'benefits') f.freq = 'monthly'; if (k[0] === 'military') f.freq = 'monthly'; }
+    return render(true);
+  }
+  if (ds.ispread !== undefined) { state.incomeForm.spread = Number(ds.ispread); return render(true); }
+  if (ds.ikeep) { state.incomeForm.keepMode = ds.ikeep; return render(true); }
   if (ds.action === 'save-income') return saveIncome();
   if (ds.action === 'remove-income') {
     const f = state.incomeForm; if (!f || !f.id) return;
@@ -6288,7 +6929,7 @@ app.addEventListener('click', e => {
     const v = parseMoney(document.getElementById('sheet-amt').value);
     if (!(v >= 0)) return;
     if (state.sheet.kind === 'bill') { const b = state.bills.find(x => x.id === state.sheet.id); b.amount = v; b.status = 'confirmed'; toast(`${b.name} confirmed at ${money(v)}.`); }
-    else if (state.sheet.kind === 'onhand') { state.onHand = v; state.onHandDate = iso(TODAY); toast('On-hand amount saved. Forecast updated.'); }
+    else if (state.sheet.kind === 'onhand') { state.onHand = v; state.onHandDate = iso(TODAY); state.seq = (state.seq || 0) + 1; state.onHandAt = state.seq; toast('On-hand amount saved. Forecast updated.'); }
     else if (state.sheet.kind === 'pooladd') { if (v > 0) { poolState().adds.push({ id: 'pa' + Date.now(), from: state.sheet.from, amount: v, done: null }); toast(`${money(v)} planned for your tide pool from ${parse(state.sheet.from) === TODAY ? 'this ' + unitWord() : short(parse(state.sheet.from))}.`); } }
     else if (state.sheet.kind === 'poolbal') { poolState().balance = v; toast(`Tide pool set to ${money(v)}. Forecast updated.`); }
     else if (state.sheet.kind === 'log') { state.logged += v; toast(`${money(v)} added. ${money(state.logged)} logged this week.`); }
@@ -6356,7 +6997,7 @@ app.addEventListener('input', e => {
   if (el.dataset.gpause !== undefined) { state.goalForm.paused = el.checked; refreshGoalForm(); }
   if (el.dataset.ifield) {
     state.incomeForm[el.dataset.ifield] = el.value;
-    if (el.dataset.ifield === 'start') render(true); else refreshIncomeForm();
+    if (el.dataset.ifield === 'start' || el.dataset.ifield === 'keepFor') render(true); else refreshIncomeForm();
   }
   if (el.dataset.field) {
     state.form[el.dataset.field] = el.value;
