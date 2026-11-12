@@ -2362,10 +2362,7 @@ function railLine(ky) { return `M${railEdge(ky).join(' L')}`; }
    railSpec() still knows every action and when it isn't ready yet (the in-screen buttons use its hints). */
 const RAIL_KEEPS = { now: ['What if?', 'Log'], detail: ['What if?'], add: ['Remove'], 'goal-edit': ['Remove'], plan: ['Remove'], 'income-edit': ['Remove'], why: ['Leave'] };
 function railActions() {
-  const all = railSpec();
-  if (!all) return null;
-  const keep = RAIL_KEEPS[state.screen] || [];
-  return all.map(a => a && keep.includes(a.label) ? a : null);
+  return railSpec();
 }
 function railSpec() {
   const p = persona();
