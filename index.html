@@ -408,7 +408,7 @@ const FEEDBACK_EMAIL = '';      // optional fallback
    form = the .../formResponse address, fields = the entry.NNN id for each question.
    Until it's set, feedback waits on this device and goes out once it is. */
 const FEEDBACK_FORM = { url: '', fields: { screen: '', build: '', feedback: '' } };
-const BUILD = 'v7.2 · Nov 12';
+const BUILD = 'v7.3 · Nov 12';
 const STORE = ALPHA ? 'alon-alpha-v1' : 'alon-proto-v4';
 const DEMO_START = Date.UTC(2026, 9, 30);       // Fri, Oct 30, 2026
 let TODAY = DEMO_START;                         // moves forward with the demo's skip-ahead
@@ -5253,6 +5253,7 @@ function obValid() {
     if (o.housing === 'other' && !(obNum(o.rent) > 0)) return true;
     return obNum(o.rent) > 0 && (o.housing === 'rent' && o.rentSplit ? !obSplitProblem(o) : !!o.rentDate);
   }
+  if (st === 'bills') return o.bills.every(b => !(obNum(b.amount) > 0) || b.freq !== 'semiannual' || (b.when === 'exact' ? !!b.date : b.when === 'unsure' && !!b.month));
   if (st === 'style') return !!o.style;
   if (st === 'recent') return recentAnswered(obRecent(o), o.recent);
   if (st === 'everyday') return o.everyday === 'none' || o.everyday === 'unsure' || obNum(o.everyday) != null;
@@ -5343,7 +5344,7 @@ const obTyped = (bill, b) => (b.preset ? Object.assign(bill, { preset: b.preset 
 /* "When does it usually come out?" on a setup card. Monthly: five choices. A few times a year:
    the date, or "not sure of the day" plus the month. Nothing is pre-filled. */
 function obWhenHtml(st, i, b) {
-  const monthly = st === 'bills' || (st === 'homecosts' && b.freq === 'monthly');
+  const monthly = (st === 'bills' && b.freq !== 'semiannual') || (st === 'homecosts' && b.freq === 'monthly');
   const choices = monthly ? WHEN_CHOICES : [['exact', 'I know the date'], ['unsure', 'I’m not sure of the day']];
   return `<div class="stack gap8"><span class="small" style="font-weight:700;color:var(--navy)">When does it usually come out?</span>
     <div class="chips when-chips">${choices.map(([k, l]) => `<button type="button" class="chip ${b.when === k ? 'on' : ''}" aria-pressed="${b.when === k}" data-obwhen="${st}|${i}|${k}">${l}</button>`).join('')}</div>
@@ -5370,6 +5371,14 @@ function obBills(o) {
   // a monthly bill with no exact date counts as "I'm not sure": skipping the date isn't a guess
   o.bills.forEach((b, n) => {
     const nm = obBillName(o.bills, n); if (!(obNum(b.amount) > 0) || !nm) return;
+    if (b.freq === 'semiannual') {
+      const start = b.when === 'unsure' ? (b.month ? b.month + '-01' : '') : b.date;
+      if (!start) return;
+      const bill = obTyped({ id: 'ob' + n, name: nm, amount: obNum(b.amount), freq: 'semiannual', start, status: b.est ? 'estimate' : 'confirmed', when: b.when === 'unsure' ? 'unsure' : 'exact' }, b);
+      obPrepared(bill, b, o);
+      bills.push(bill);
+      return;
+    }
     const exact = (b.when === 'exact' || b.when == null) && b.date, when = exact ? 'exact' : (WHEN[b.when] ? b.when : 'unsure');   // a card saved before Nov 9 with a date is exact
     bills.push(obTyped({ id: 'ob' + n, name: nm, amount: obNum(b.amount), freq: 'monthly', start: exact ? b.date : whenStart(when, parse(o.today)), status: b.est ? 'estimate' : 'confirmed', when }, b));
   });
@@ -5492,6 +5501,13 @@ function obClick(ds) {
     const k = ds.obescrow, e = o.escrow || (o.escrow = []);
     if (k === 'none' || k === 'unsure') o.escrow = e.includes(k) ? [] : [k];   // these two stand alone
     else o.escrow = e.includes(k) ? e.filter(x => x !== k) : e.filter(x => x !== 'none' && x !== 'unsure').concat(k);
+    return render(true);
+  }
+  if (ds.obbillfreq) {
+    const [index, freq] = ds.obbillfreq.split('|'), b = o.bills[Number(index)];
+    if (b && ['monthly', 'semiannual'].includes(freq) && b.freq !== freq) {
+      b.freq = freq; b.when = null; b.date = ''; b.month = '';
+    }
     return render(true);
   }
   if (ds.obstyle) { o.style = ds.obstyle; return render(true); }
@@ -5739,14 +5755,15 @@ function screenOb() {
     const list = st === 'bills' ? o.bills : o.rare;
     const defs = st === 'bills' ? OB_BILLS.map(b => [b[0], '']) : OB_RARE.map(b => [b[0], b[2]]);
     body = (st === 'bills'
-      ? q('What other bills come every month?', 'Tap the ones you have, then add amounts. Estimates are fine; you can fix them anytime.')
+      ? q('What other bills do you have?', 'Tap the ones you have, then add amounts. Car insurance can be monthly or every 6 months.')
       : q('Any bills that only come a few times a year?', 'These cause most money surprises, so they’re worth a minute. Skip any you don’t have.')) +
       `<section class="mt20"><div class="chips">${defs.map(([nm, lab]) => `<button class="chip" data-obadd="${st}|${nm}">+ ${nm}${lab ? ` <span style="font-weight:500;opacity:.75">· ${lab}</span>` : ''}</button>`).join('')}<button class="chip" data-obadd="${st}|other">+ Something else</button></div></section>
       <section class="stack gap10 mt20">${list.map((b, i) => `<div class="card stack gap10">
         <div class="row">${b.custom ? `<input class="input" style="min-height:44px" data-obf="${st}.${i}.name" value="${esc(b.name)}" placeholder="${b.preset ? `Which one? e.g. ${obExample(b.preset)}` : 'What is it?'}" aria-label="Bill name" autocomplete="off">` : `<span style="font-size:16px;font-weight:700">${esc(b.name)}${st === 'rare' ? `<span class="small" style="display:block;font-weight:500">${freqLabel(b.freq)}</span>` : ''}</span>`}<button class="linkish" style="color:var(--muted);font-size:13px" data-obdel="${st}|${i}" aria-label="Remove ${esc(b.name || 'bill')}">Remove</button></div>
+        ${st === 'bills' && (b.preset === 'Car insurance' || b.name === 'Car insurance') ? `<fieldset class="stack gap8" style="border:0;padding:0;margin:0"><legend class="legend">How often do you pay it?</legend><div class="chips">${[['monthly','Monthly'],['semiannual','Every 6 months']].map(([f,label]) => `<button type="button" class="chip ${(b.freq || 'monthly') === f ? 'on' : ''}" aria-pressed="${(b.freq || 'monthly') === f}" data-obbillfreq="${i}|${f}">${label}</button>`).join('')}</div><span class="small">${b.freq === 'semiannual' ? 'Enter the full six-month bill amount.' : 'Enter your monthly payment.'}</span></fieldset>` : ''}
         <div class="field"><label for="ob-${st}-${i}-a">Amount</label><input class="input" id="ob-${st}-${i}-a" data-obf="${st}.${i}.amount" inputmode="decimal" value="${esc(b.amount)}" placeholder="$0" autocomplete="off"></div>
         ${obWhenHtml(st, i, b)}
-        ${st === 'rare' ? obSavedHtml(st, i, b) : ''}
+        ${st === 'rare' || b.freq === 'semiannual' ? obSavedHtml(st, i, b) : ''}
         ${st === 'rare' && b.custom ? `<div class="field"><label for="ob-r-${i}-f">How often?</label><select class="input" id="ob-r-${i}-f" data-obf="rare.${i}.freq">${['quarterly', 'semiannual', 'yearly', 'once'].map(f => `<option value="${f}" ${b.freq === f ? 'selected' : ''}>${freqLabel(f)}</option>`).join('')}</select></div>` : ''}
       </div>`).join('')}</section>
       ${list.length ? `<p class="small mt8">Bills without an amount are skipped.${st === 'rare' ? ' Ones without a date or a month are too.' : ' Not sure of a date? That’s fine: Alon spreads it over the month until you know.'}</p>` : ''}`;
@@ -6687,7 +6704,7 @@ app.addEventListener('click', e => {
   }
   if (ds.spreadno) { state.spreadDismissed = Object.assign({}, state.spreadDismissed, { [ds.spreadno]: true }); return render(true); }
   if (ds.action === 'ob-start') { state.ob = freshOb(); state.menuOpen = false; return go('ob'); }
-  if (ds.ob || ds.obwhen || ds.obgrace !== undefined || ds.obway || ds.obfreq || ds.obadd || ds.obdel || ds.obamt || ds.obfund || ds.obfeekind || ds.obn || ds.obmode || ds.obextra || ds.obfees !== undefined || ds.obfundper !== undefined || ds.obhouse || ds.obescrow || ds.obstyle || ds.obhcfreq || ds.obhcparts || ds.obsaved || ds.obset) return obClick(ds);
+  if (ds.obbillfreq || ds.ob || ds.obwhen || ds.obgrace !== undefined || ds.obway || ds.obfreq || ds.obadd || ds.obdel || ds.obamt || ds.obfund || ds.obfeekind || ds.obn || ds.obmode || ds.obextra || ds.obfees !== undefined || ds.obfundper !== undefined || ds.obhouse || ds.obescrow || ds.obstyle || ds.obhcfreq || ds.obhcparts || ds.obsaved || ds.obset) return obClick(ds);
   if (ds.recent && ds.ans) {
     const A = recentAnswers(), a = A[ds.recent] = A[ds.recent] || {};
     a.ans = ds.ans;
