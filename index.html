@@ -378,6 +378,11 @@
   .switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 26px; height: 26px; border-radius: 13px; background: #fff; box-shadow: 0 1px 2px rgba(14,36,64,.2); transition: left .15s; }
   .switch[aria-checked="true"] { background: var(--royal); }
   .switch[aria-checked="true"]::after { left: 23px; }
+
+  .menu { max-height:calc(100dvh - 130px); overflow-y:auto; overscroll-behavior:contain; }
+  button:disabled { opacity:.45; cursor:default; }
+  :focus-visible { outline:3px solid var(--royal); outline-offset:3px; }
+  @media (prefers-reduced-motion:reduce) { *, *::before, *::after { animation:none!important; transition:none!important; scroll-behavior:auto!important; } }
 </style>
 </head>
 <body>
@@ -403,7 +408,7 @@ const FEEDBACK_EMAIL = '';      // optional fallback
    form = the .../formResponse address, fields = the entry.NNN id for each question.
    Until it's set, feedback waits on this device and goes out once it is. */
 const FEEDBACK_FORM = { url: '', fields: { screen: '', build: '', feedback: '' } };
-const BUILD = 'v7.1 · Nov 12';
+const BUILD = 'v7.2 · Nov 12';
 const STORE = ALPHA ? 'alon-alpha-v1' : 'alon-proto-v4';
 const DEMO_START = Date.UTC(2026, 9, 30);       // Fri, Oct 30, 2026
 let TODAY = DEMO_START;                         // moves forward with the demo's skip-ahead
@@ -3551,10 +3556,14 @@ function purchaseDecision(ws, amt) {
   }
   return `<section class="pad stack gap10 mt24">
     <span class="decision">Your decision.</span>
-    <p class="decision-note">${state.purchaseLater ? `Pick a ${p.unit === 'month' ? 'window' : p.unit}, then Plan on the wave.` : 'Buy, Later, or Not now, on the wave.'} Alon only updates the forecast; you can remove it under Your bills.</p>
+    <p class="decision-note">Nothing changes until you choose to add it. You can remove it under Your bills.</p>
     ${amt > 0 ? `<button class="secondary" data-action="save-up">Save up for it instead</button>` : ''}
     <p class="small">Based on what you've entered. Education, not financial advice.</p>
     ${later}
+    <div class="stack gap10">
+      <button class="primary" data-action="${state.purchaseLater ? 'buy-later-confirm' : 'buy-now'}" ${!(amt > 0) || (state.purchaseLater && state.purchaseTarget == null) ? 'disabled' : ''}>${state.purchaseLater ? 'Add to that paycheck' : 'Add to my forecast'}</button>
+      <div class="row" style="justify-content:space-between"><button class="linkish" data-action="buy-later" ${amt > 0 ? '' : 'disabled'}>${state.purchaseLater ? 'Try today instead' : 'Try a later paycheck'}</button><button class="linkish" data-action="not-now">Not now</button></div>
+    </div>
   </section>`;
 }
 
@@ -3960,6 +3969,7 @@ function refreshBillForm() {
   const { preview, note, valid } = billPreview(state.form);
   const p = document.getElementById('bill-preview'), n = document.getElementById('bill-note');
   if (!p) return;
+  const saveButton = document.getElementById('bill-save'); if (saveButton) saveButton.disabled = !valid;
   p.textContent = preview || 'Pick a date';
   n.textContent = note;
   const f = state.form;
@@ -4102,7 +4112,7 @@ function addMarkup(f, preview, note, valid, quick) {
         <span id="bill-preview" style="font-size:16px;font-weight:700;line-height:1.45">${preview || (f.freq === 'monthly' ? 'Pick a date' : 'Pick the date or the month')}</span>
         <span id="bill-note" class="small">${note}</span>
       </div>
-      <button type="submit" class="primary" style="width:100%">Save bill</button>
+      <button type="button" data-action="save-bill" class="primary" id="bill-save" style="width:100%" ${valid ? '' : 'disabled'}>Save bill</button>
       <p class="small">Your forecast updates after saving. ${f.id ? "To remove this bill, use the side rail." : ""}</p>
     </form>
   </main>
