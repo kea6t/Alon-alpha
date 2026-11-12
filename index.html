@@ -403,7 +403,7 @@ const FEEDBACK_EMAIL = '';      // optional fallback
    form = the .../formResponse address, fields = the entry.NNN id for each question.
    Until it's set, feedback waits on this device and goes out once it is. */
 const FEEDBACK_FORM = { url: '', fields: { screen: '', build: '', feedback: '' } };
-const BUILD = 'v7 · Nov 12';
+const BUILD = 'v7.1 · Nov 12';
 const STORE = ALPHA ? 'alon-alpha-v1' : 'alon-proto-v4';
 const DEMO_START = Date.UTC(2026, 9, 30);       // Fri, Oct 30, 2026
 let TODAY = DEMO_START;                         // moves forward with the demo's skip-ahead
@@ -3203,7 +3203,7 @@ function screenDetail() {
       ${everydayRow(w0, true)}
       <button class="linkish mt8" style="text-align:left" data-go="add">+ Add a bill</button>
     </section>
-    <section class="pad mt14"><button class="secondary" data-go="setaside">View money set aside</button></section>
+    <section class="pad mt14" style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><button class="secondary" data-go="setaside">Set aside</button><button class="secondary" data-go="check">What if?</button></section>
     <section class="pad stack mt14">
       <button class="linkish" style="text-align:left" data-action="add-income">+ Add income</button>
     </section>
@@ -3453,9 +3453,10 @@ function screenCheck() {
       <div class="money"><span>$</span><input id="amount" inputmode="decimal" value="${esc(state.purchaseRaw != null ? state.purchaseRaw : (amt || ''))}" data-input="purchase" autocomplete="off"></div>
       <div class="chips">${[20, 50, 75, 100, 150].map(n => `<button class="chip ${amt === n ? 'on' : ''}" aria-pressed="${amt === n}" data-amount="${n}">$${n}</button>`).join('')}${r.freeLow > 0 && ![20, 50, 75, 100, 150].includes(r.freeLow) ? `<button class="chip ${amt === r.freeLow ? 'on' : ''}" aria-pressed="${amt === r.freeLow}" data-amount="${r.freeLow}">Up to $${r.freeLow.toLocaleString('en-US')}</button>` : ''}</div>
       ${(() => { const sea = seaLine(ws, { purchase: amt, markLow: true, height: 104 }); return sea ? `<div class="now-wave" id="p-sea">${sea.svg}<p class="sea-key" id="p-low">${seaLowText(sea, amt)}</p></div>` : ''; })()}
-      <div class="field"><label for="p-name">What is it? (optional)</label><input class="input" id="p-name" data-input="pname" value="${esc(state.purchaseName)}" placeholder="e.g. New work shoes" autocomplete="off"></div>
+      <button class="linkish" data-action="toggle-whatif-detail" aria-expanded="${!!state.showWhatifDetail}">${state.showWhatifDetail ? "Hide extra details" : "Add a name or see the breakdown"}</button>
+      ${state.showWhatifDetail ? `<div class="field"><label for="p-name">What is it? (optional)</label><input class="input" id="p-name" data-input="pname" value="${esc(state.purchaseName)}" placeholder="e.g. New work shoes" autocomplete="off"></div>` : ""}
     </section>
-    <section class="pad mt24"><div class="card stack gap12">
+    <section class="pad mt24" style="${state.showWhatifDetail ? "" : "display:none"}"><div class="card stack gap12">
       <span class="eyebrow">${windowEyebrow(w0)}</span>
       <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px">
         <div class="stack gap4"><span class="small">${r.st ? `${r.st.basis === 'spendable' ? 'Available' : 'Left'} until ${short(parse(r.st.until))}` : 'Left now'}</span><span style="font-size:22px;font-weight:800">${r.st ? money(r.st.available) : range(w0.roomLow, w0.roomTyp)}</span></div>
@@ -6560,6 +6561,7 @@ app.addEventListener('click', e => {
 
   if (ds.action === 'toggle-ahead') { state.showAllAhead = !state.showAllAhead; return render(true); }
   if (ds.action === 'toggle-buffer') { state.showBuffer = !state.showBuffer; return render(true); }
+  if (ds.action === 'toggle-whatif-detail') { state.showWhatifDetail = !state.showWhatifDetail; return render(true); }
   if (ds.action === 'toggle-bill-more') { state.form.showMore = !state.form.showMore; return render(true); }
   if (ds.action === 'toggle-bill-suggestions') { state.form.showSuggestions = !state.form.showSuggestions; return render(true); }
   if (ds.action === 'ack') { state.ackTerms = true; state.ob = freshOb(); return go('ob'); }
