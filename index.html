@@ -3201,6 +3201,7 @@ function screenDetail() {
       ${everydayRow(w0, true)}
       <button class="linkish mt8" style="text-align:left" data-go="add">+ Add a bill</button>
     </section>
+    <section class="pad mt14"><button class="secondary" data-go="setaside">View money set aside</button></section>
     <section class="pad stack mt14">
       <button class="linkish" style="text-align:left" data-action="add-income">+ Add income</button>
     </section>
@@ -6442,7 +6443,7 @@ function screenSetAside() {
   <main>
     <section class="pad stack gap8 mt8"><h1 class="h1">Set aside</h1>
       <p class="purpose">Money with a purpose. See your plans in one place without mixing up what each amount is for.</p>
-      <p class="small">These are separate records, not a single bank balance. Some may be held in the same account. Alon doesn't move money.</p>
+      <p class="small">These are separate records, not a single bank balance. Some may be held in the same account. aLoN doesn't move money or automatically transfer it.</p>
     </section>
     <section class="pad stack gap12 mt20">
       <button class="card tap stack gap8" data-go="pool"><span class="row"><strong>Tide pool</strong><strong>${money(P.balance)}</strong></span><span class="small">${pendingPool ? money(pendingPool) + " planned to add · " : ""}Carry money forward to smooth uneven stretches. Tap for details.</span></button>
