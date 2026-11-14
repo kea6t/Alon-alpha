@@ -44,13 +44,13 @@
   a { color: var(--royal); }
 
   body { height: 100vh; height: 100dvh; overflow: hidden; }
-  .phone { position: relative; width: 100%; max-width: 430px; height: 100%; margin: 0 auto; background: var(--ivory); display: flex; flex-direction: column; overflow: hidden; }
+  .phone { position: relative; width: 100%; height: 100%; margin: 0 auto; background: var(--ivory); display: flex; flex-direction: column; overflow: hidden; }   /* full width on phones and narrow windows (Nov 13) */
   .phone.wide { max-width: min(880px, calc(100vw - 32px)); }
   .scroller { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; scrollbar-width: none; }
   .scroller::-webkit-scrollbar { display: none; }
   @media (min-width: 520px) {
     body { padding: 16px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; }
-    .phone { flex: 1 1 auto; min-height: 0; height: auto; max-height: 920px; border-radius: 40px; box-shadow: 0 1px 2px rgba(14,36,64,.08), 0 20px 60px rgba(14,36,64,.12); }
+    .phone { max-width: 430px; flex: 1 1 auto; min-height: 0; height: auto; max-height: 920px; border-radius: 40px; box-shadow: 0 1px 2px rgba(14,36,64,.08), 0 20px 60px rgba(14,36,64,.12); }
   }
   .demo-tag { text-align: center; font-size: 12px; color: var(--muted); padding: 0 0 10px; margin: 0; flex: none; }
   @media (max-width: 519px) { .demo-tag { display: none; } }
@@ -307,7 +307,16 @@
   .facts .spec-link { font-weight: 700; color: var(--navy); text-transform: none; letter-spacing: 0; }
   .tile { width: 40px; height: 40px; border-radius: 12px; background: var(--tint); display: grid; place-items: center; flex: none; }
   .tile.warm { background: var(--amber-bg); }
-  .row-card { background: var(--white); border: 1px solid var(--line); border-radius: 20px; padding: 0 14px; }
+  /* Open canvas (Nov 13): lists sit straight on the page, edge to edge, no box around them.
+     Thin lines between rows start after the icon, like an iPhone list; a tap tints the whole row. */
+  .row-card { background: none; border: 0; border-radius: 0; padding: 0; margin: 0 -24px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .row-card .line-item { position: relative; padding: 14px 24px; border-bottom: 0; }
+  .row-card .line-item:not(:last-child)::after { content: ''; position: absolute; left: 76px; right: 0; bottom: 0; height: 1px; background: var(--line); }
+  .row-card .line-item:active, .next-up:active { background: rgba(22,89,208,.06); }
+  .has-rail .row-card, .has-rail .next-up { margin-right: -78px; }
+  .has-rail .row-card .line-item, .has-rail .next-up { padding-right: 78px; }
+  .has-rail.left .row-card, .has-rail.left .next-up { margin-left: -70px; margin-right: -24px; }
+  .has-rail.left .row-card .line-item, .has-rail.left .next-up { padding-left: 70px; padding-right: 24px; }
   .row-card .line-item .lead { display: flex; align-items: center; gap: 12px; min-width: 0; text-align: left; }
   .row-card .line-item .end { display: flex; align-items: center; gap: 8px; flex: none; }
   .hero-tap { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
@@ -337,7 +346,7 @@
   .ahead-amt { font-size: 19px; font-weight: 800; white-space: nowrap; }
   .ahead-row.short { background: var(--amber-bg, #FBF1DF); border-color: #E8D2A8; }
   .ahead-row.short .ahead-word, .ahead-row.short .ahead-amt { color: var(--amber-text); }
-  .next-up { display: flex; align-items: center; gap: 12px; width: 100%; padding: 14px; border-radius: 20px; background: var(--white); border: 1px solid var(--line); text-align: left; cursor: pointer; }
+  .next-up { display: flex; align-items: center; gap: 12px; width: calc(100% + 48px); margin: 0 -24px; padding: 14px 24px; border-radius: 0; background: none; border: 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); text-align: left; cursor: pointer; }
   .next-up .stack { flex: 1; min-width: 0; }
   .purpose { margin: 0; font-size: 15px; color: var(--muted-2); line-height: 1.5; }
   .opt { border: 1px solid var(--field-line); }
@@ -371,6 +380,14 @@
 
   /* "What's this?" — a short explanation, opened only when wanted */
   .learn { border: 1px solid var(--line); background: var(--white); border-radius: 16px; }
+  /* Open canvas: explainers and shaded notes run edge to edge too, no boxed card with margins */
+  .pad > .learn, .pad > .stack > .learn, .pad .learn { border: 0; border-bottom: 1px solid var(--line); border-radius: 0; background: none; margin: 0 -24px; }
+  .pad > .learn:first-child, .pad .stack > .learn:first-child { border-top: 1px solid var(--line); }
+  .pad .learn .learn-q { padding: 10px 24px; }
+  .pad .learn .learn-a { padding: 0 24px 14px 58px; }
+  .pad > .tint { border-radius: 0; margin-left: -24px; margin-right: -24px; padding: 16px 24px; }
+  .has-rail .pad .learn, .has-rail .pad > .tint { margin-right: -78px; padding-right: 78px; }
+  .has-rail .pad .learn .learn-q { padding-right: 0; }
   .learn-q { width: 100%; min-height: 48px; display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: none; border: 0; font-size: 15px; font-weight: 700; color: var(--royal); cursor: pointer; text-align: left; }
   .learn-q .ico { width: 24px; height: 24px; border-radius: 12px; background: var(--tint); color: var(--royal); display: grid; place-items: center; font-size: 13px; font-weight: 800; flex-shrink: 0; }
   .learn-q .chev { margin-left: auto; font-size: 18px; color: var(--muted); }
@@ -395,6 +412,83 @@
   button:disabled { opacity:.45; cursor:default; }
   :focus-visible { outline:3px solid var(--royal); outline-offset:3px; }
   @media (prefers-reduced-motion:reduce) { *, *::before, *::after { animation:none!important; transition:none!important; scroll-behavior:auto!important; } }
+
+  /* ---------- New design (Nov 13): safe to look, easy to decide, a way through ---------- */
+  /* The wave rail, laid along the bottom: navigation between the five places (Kenny, Nov 13 evening).
+     Same water, same drift, same knob as the side rail; the knob sits on the page you're on. */
+  .has-navrail .scroller { padding-bottom: 96px; }
+  #bill-form-panel { margin-top: 8px; }
+  #bill-form-panel .add-panel { background: none; border: 0; border-radius: 0; padding: 0; box-shadow: none; }   /* open canvas: the form sits on the page, no box */
+  /* Sheets: slide up over the page you're on */
+  .ssheet-bg { position: absolute; inset: 0; background: rgba(11,31,63,.32); z-index: 30; animation: ss-fade .2s ease-out; }
+  .ssheet { position: absolute; left: 0; right: 0; bottom: 0; max-height: 92%; z-index: 31; display: flex; flex-direction: column; background: var(--ivory); border-radius: 28px 28px 0 0; box-shadow: 0 -12px 40px rgba(11,31,63,.25); animation: ss-up .28s cubic-bezier(.2,.8,.3,1); }
+  .ssheet-head { position: relative; display: flex; align-items: center; justify-content: space-between; padding: 22px 16px 4px 24px; flex: none; }
+  .ssheet-head .grab { position: absolute; top: 8px; left: 50%; margin-left: -20px; width: 40px; height: 5px; border-radius: 3px; background: #CFC7B8; }
+  .ssheet-title { font-size: 20px; font-weight: 800; }
+  .ssheet-x { width: 44px; height: 44px; border-radius: 22px; border: 0; background: #EFEAE0; color: var(--navy); font-size: 16px; font-weight: 800; display: grid; place-items: center; cursor: pointer; }
+  .ssheet-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding-bottom: calc(16px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; }
+  @keyframes ss-up { from { transform: translateY(40%); opacity: .4; } to { transform: none; opacity: 1; } }
+  @keyframes ss-fade { from { opacity: 0; } to { opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) { .ssheet, .ssheet-bg { animation: none; } }
+  /* Forms: Save pinned at the bottom of the screen */
+  .savebar { position: sticky; bottom: 0; margin-top: auto; padding: 18px 20px calc(16px + env(safe-area-inset-bottom)); background: linear-gradient(rgba(246,242,234,0), var(--ivory) 18px); z-index: 6; }
+  .savebar .primary { box-shadow: 0 8px 20px rgba(22,89,208,.28); }
+  .linkish.danger { color: #A8553F; text-align: left; min-height: 44px; }
+  /* Money: Going out | Coming in */
+  .seg { display: flex; gap: 4px; padding: 4px; border-radius: 24px; background: #ECE6DA; margin: 6px 0 2px; }
+  .seg button { flex: 1; min-height: 40px; border: 0; border-radius: 20px; background: none; font: inherit; font-size: 15px; font-weight: 700; color: var(--muted-2); cursor: pointer; }
+  .seg button.on { background: #fff; color: var(--navy); box-shadow: 0 1px 4px rgba(11,31,63,.15); }
+  .askdock { bottom: 0; padding: 18px 16px 6px; background: linear-gradient(rgba(246,242,234,0), var(--ivory) 18px); border-top: 0; }   /* sits on the rail: the scroller's bottom padding is the rail */
+  .askdock .ask { min-height: 56px; background: #fff; border: 1px solid #E6DFD2; box-shadow: 0 8px 24px rgba(11,31,63,.14); padding: 6px 6px 6px 20px; }
+  .askdock .ask input { font-size: 17px; }
+  .navrail { position: absolute; left: 0; right: 0; bottom: 0; pointer-events: none; }
+  .navrail::before { content: ''; position: absolute; left: 0; right: 0; top: -28px; bottom: 0; background: linear-gradient(rgba(246,242,234,0), var(--ivory) 30px); }
+  .navrail-sea { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+  .navrail-sea svg { position: absolute; left: 0; bottom: 0; }
+  .wave-layer-x { animation: alon-drift-x linear infinite; will-change: transform; }
+  @keyframes alon-drift-x { from { transform: translateX(calc(-1 * var(--len))); } to { transform: translateX(0); } }
+  @media (prefers-reduced-motion: reduce) { .wave-layer-x { animation: none; } }
+  .nav-stop, .nav-knob { pointer-events: auto; position: absolute; bottom: 12px; padding: 0; font-family: inherit; font-size: 13px; font-weight: 800; display: grid; place-items: center; cursor: pointer; }
+  .nav-stop span, .nav-knob span { pointer-events: none; white-space: nowrap; }
+  .nav-stop { width: 70px; height: 44px; margin-left: -35px; border: 0; border-radius: 22px; background: none; color: var(--navy); }
+  .nav-stop:hover { background: rgba(22,89,208,.08); }
+  .nav-knob { width: 80px; height: 48px; margin-left: -40px; bottom: 10px; border: 0; border-radius: 24px; background: var(--royal); color: #fff; box-shadow: 0 6px 16px rgba(22,89,208,.35); cursor: grab; touch-action: none; }
+  .nav-knob.dragging { cursor: grabbing; }
+  .nav-stop:focus-visible, .nav-knob:focus-visible { outline: 3px solid var(--navy); outline-offset: 2px; }
+  /* What if? = Ask Alon: one field for any question or amount, then the quick choices */
+  .ask-big { display: flex; align-items: center; gap: 10px; padding: 8px 8px 8px 18px; border-radius: 28px; background: #fff; border: 2px solid var(--royal); margin: 0; }
+  .ask-big input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font: inherit; font-size: 17px; color: var(--navy); }
+  .ask-big .send { width: 48px; height: 48px; border-radius: 24px; background: var(--navy); }
+  .pick-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .pick { min-height: 56px; padding: 10px 14px; border-radius: 18px; border: 1px solid #DDD5C6; background: #fff; font: inherit; font-size: 16px; font-weight: 700; color: var(--navy); text-align: left; cursor: pointer; }
+  .pick.wide { grid-column: 1 / -1; }
+  .try-chip { min-height: 44px; padding: 0 16px; border-radius: 22px; border: 0; background: #E9EEF9; font: inherit; font-size: 15px; font-weight: 600; color: var(--navy); cursor: pointer; text-align: left; }
+  .small-caps { font-size: 13px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted-2); }
+  .now-sentence { font-size: 19px; font-weight: 600; line-height: 1.35; color: var(--navy); }
+  .pill-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .cushion-chip { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 14px 0 11px; border-radius: 20px; background: #fff; border: 1px solid #E6DFD2; font: inherit; font-size: 15px; font-weight: 600; color: var(--navy); cursor: pointer; }
+  .scrubbable { touch-action: pan-y; cursor: ew-resize; outline-offset: 4px; }
+  .scrub-line { position: absolute; top: -4px; bottom: 22px; width: 2px; margin-left: -1px; background: var(--navy); border-radius: 1px; pointer-events: none; }
+  .scrub-line::after { content: ''; position: absolute; left: -8px; top: var(--ky, 40%); width: 14px; height: 14px; margin-top: -9px; border-radius: 50%; background: #fff; border: 3px solid var(--navy); }
+  .scrub-flag { position: absolute; top: -26px; transform: translateX(-50%); padding: 4px 10px; border-radius: 13px; background: var(--navy); color: #fff; font-size: 12px; font-weight: 700; letter-spacing: .06em; white-space: nowrap; pointer-events: none; }
+  .scrub-back { align-self: flex-start; min-height: 44px; padding: 0 16px; border-radius: 20px; border: 0; background: var(--navy); color: #fff; font: inherit; font-size: 15px; font-weight: 700; cursor: pointer; }
+  .ways { border-radius: 20px; background: #fff; border: 1px solid #E6DFD2; padding: 2px 16px; }
+  .way { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 0; border: 0; border-bottom: 1px solid #EFEAE0; background: transparent; font: inherit; color: var(--navy); text-align: left; cursor: pointer; }
+  .way:last-child { border-bottom: 0; }
+  .way .wt { font-size: 17px; font-weight: 700; line-height: 1.3; }
+  .way .we { display: flex; align-items: center; gap: 7px; font-size: 15px; color: var(--muted-2); }
+  .way .try { flex: none; font-size: 15px; font-weight: 700; color: var(--royal); }
+  .ways-head { font-size: 15px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted-2); }
+  .help-link { display: flex; align-items: center; gap: 10px; min-height: 44px; font-size: 15px; line-height: 1.4; color: var(--navy); text-decoration: none; }
+  .dial-wrap { display: flex; flex-direction: column; gap: 6px; }
+  .dial { -webkit-appearance: none; appearance: none; width: 100%; height: 56px; background: transparent; cursor: ew-resize; touch-action: pan-y; }
+  .dial::-webkit-slider-runnable-track { height: 40px; background: repeating-linear-gradient(90deg, rgba(11,31,63,.35) 0 2px, transparent 2px 12px) center/100% 16px no-repeat, repeating-linear-gradient(90deg, rgba(11,31,63,.6) 0 2px, transparent 2px 60px) center/100% 30px no-repeat; }
+  .dial::-moz-range-track { height: 40px; background: repeating-linear-gradient(90deg, rgba(11,31,63,.35) 0 2px, transparent 2px 12px) center/100% 16px no-repeat, repeating-linear-gradient(90deg, rgba(11,31,63,.6) 0 2px, transparent 2px 60px) center/100% 30px no-repeat; }
+  .dial::-webkit-slider-thumb { -webkit-appearance: none; width: 6px; height: 44px; margin-top: -2px; border-radius: 3px; background: var(--royal); box-shadow: 0 0 0 4px rgba(29,78,216,.15); }
+  .dial::-moz-range-thumb { width: 6px; height: 44px; border: 0; border-radius: 3px; background: var(--royal); }
+  .dial:focus-visible { outline: 3px solid var(--royal); outline-offset: 2px; border-radius: 8px; }
+  .dial-ends { display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; color: var(--muted-2); }
+  .dial-answer { margin: 0; font-size: 24px; font-weight: 800; line-height: 1.2; letter-spacing: -.01em; color: var(--navy); }
 </style>
 </head>
 <body>
@@ -420,7 +514,7 @@ const FEEDBACK_EMAIL = '';      // optional fallback
    form = the .../formResponse address, fields = the entry.NNN id for each question.
    Until it's set, feedback waits on this device and goes out once it is. */
 const FEEDBACK_FORM = { url: '', fields: { screen: '', build: '', feedback: '' } };
-const BUILD = 'v7.5 · Nov 12';
+const BUILD = 'v9.0 · Nov 13';
 const STORE = ALPHA ? 'alon-alpha-v1' : 'alon-proto-v4';
 const DEMO_START = Date.UTC(2026, 9, 30);       // Fri, Oct 30, 2026
 let TODAY = DEMO_START;                         // moves forward with the demo's skip-ahead
@@ -2062,6 +2156,7 @@ const icon = {
 };
 
 function header(backTo, backLabel) {
+  if (SHEET_MODE) return '';   // a sheet has its own grab bar and Close
   const left = backTo
     ? `<button class="back" data-go="${backTo}">${icon.back}${backLabel}</button>`
     : `<div class="brand">${icon.wave}<span>alon</span></div>`;
@@ -2069,10 +2164,9 @@ function header(backTo, backLabel) {
     <nav class="menu" aria-label="Go to">
       <button data-go="now">Now</button>
       <button data-go="waves">What’s ahead</button>
-      <button data-go="check">What if?</button>
+      <button data-go="ask">What if?</button>
       <button data-action="tour-start">How Alon works</button>
-      <button data-go="income">Your income</button>
-      <button data-go="bills">Your bills</button>
+      <button data-go="bills">Money</button>
       <button data-go="setaside">Set aside</button>
       <button data-action="surprise">Something came up</button>
       <button data-go="year">Your year in waves</button>
@@ -2081,7 +2175,6 @@ function header(backTo, backLabel) {
       ${ALPHA ? '' : `<button class="quiet" data-action="skip">Demo: skip to the next ${persona().unit === 'month' ? 'income' : persona().unit}</button>
       ${iso(TODAY) !== state.startDay ? `<button class="quiet" data-action="skip-reset">Demo: back to ${short(parse(state.startDay))}</button>` : ''}
       ${window.innerWidth >= 860 ? `<button class="quiet" data-action="fold">${isWide() ? 'Demo: fold to phone size' : 'Demo: unfold (tablet / foldable)'}</button>` : ''}`}
-      <button class="quiet" data-action="rail-side">Put the wave on the ${state.railLeft ? 'right' : 'left'}</button>
       ${ALPHA ? `<button data-go="data">Your data &amp; backup</button>
       <button class="quiet" data-action="start-over">Start over</button>` : `<button class="quiet" data-action="ob-start">Start over with my own numbers</button>`}
       ${ALPHA ? '' : `<button class="quiet" data-go="arrival">Try an example person</button>
@@ -2343,9 +2436,23 @@ function seaLine(ws, opts) {
   return { svg, low: { v: low.v, t: low.t, short: short_ }, basis: S.basis, maybe: S.maybe };
 }
 
-const CONTEXT = { setaside: '', outcome: 'Done', data: 'Your data', pool: 'Tide pool', plan: 'Bills', options: 'Answer', surprise: 'Came up', goals: 'Goals', 'goal-edit': 'Goals', 'income-edit': 'Income', check: 'What if', year: 'Year', now: '', detail: 'Now', waves: 'Ahead', why: 'Ahead', add: 'Bills', bills: 'Bills', payday: 'Payday', income: 'Income' };
-const DOCK_HINT = { outcome: 'Ask about what changed', data: 'Ask about your data', pool: 'Ask about your tide pool', add: 'Ask about this bill', plan: 'Ask about paying in parts', 'goal-edit': 'Ask about this goal', goals: 'Ask about saving', surprise: 'Ask what you can do', 'income-edit': 'Ask about this income', income: 'Ask about your income', check: 'Ask before you buy', why: 'Ask why it’s short', payday: 'Ask about this paycheck', bills: 'Ask about your bills', options: 'Ask a follow-up', detail: 'Ask about this paycheck' };
+const CONTEXT = { ask: 'What if', setaside: '', outcome: 'Done', data: 'Your data', pool: 'Tide pool', plan: 'Bills', options: 'Answer', surprise: 'Came up', goals: 'Goals', 'goal-edit': 'Goals', 'income-edit': 'Income', check: 'What if', year: 'Year', now: '', detail: 'Now', waves: 'Ahead', why: 'Ahead', add: 'Bills', bills: 'Bills', payday: 'Payday', income: 'Income' };
+const DOCK_HINT = { bills: 'Ask about your money', ask: 'Ask anything, or type an amount', outcome: 'Ask about what changed', data: 'Ask about your data', pool: 'Ask about your tide pool', add: 'Ask about this bill', plan: 'Ask about paying in parts', 'goal-edit': 'Ask about this goal', goals: 'Ask about saving', surprise: 'Ask what you can do', 'income-edit': 'Ask about this income', income: 'Ask about your income', check: 'Ask before you buy', why: 'Ask why it’s short', payday: 'Ask about this paycheck', options: 'Ask a follow-up', detail: 'Ask about this paycheck' };
+/* The Ask pill (Nov 13): one line above the wave rail on every page that has it. A question gets an
+   answer; an amount opens Buy something. What if? has its own big field, so no pill there. */
+function askPill() {
+  return `<div class="dock askdock">
+    <form class="ask" data-form="ask">
+      <label for="ask" class="sr">Ask Alon</label>
+      <input id="ask" name="q" placeholder="${DOCK_HINT[state.screen] || 'Ask Alon anything'}" autocomplete="off" enterkeyhint="go">
+      <button type="button" class="send" aria-label="Send" data-action="ask">${icon.send}</button>
+    </form>
+  </div>`;
+}
 function dock() {
+  if (SHEET_MODE) return '';
+  if (navOn()) return askPill();
+  return '';   // pages without the rail (forms, menu pages) have no ask bar
   const sug = state.screen === 'now' ? [] : askSuggestions().slice(0, 1);   // at most one, the one that matters here   // Now diet: no suggested questions under Now
   return `<div class="dock">
     ${sug.length ? `<div class="ask-chips" aria-label="Questions you could ask">${sug.map(q => `<button type="button" class="ask-chip" data-askq="${esc(q)}">${esc(q)}</button>`).join('')}</div>` : ''}
@@ -2418,7 +2525,28 @@ function railLine(ky) { return `M${railEdge(ky).join(' L')}`; }
    expect it; the screen works without the rail. The rail keeps only that screen's secondary action.
    railSpec() still knows every action and when it isn't ready yet (the in-screen buttons use its hints). */
 const RAIL_KEEPS = { now: ['What if?', 'Log'], detail: ['What if?'], add: ['Remove'], 'goal-edit': ['Remove'], plan: ['Remove'], 'income-edit': ['Remove'], why: ['Leave'] };
+/* New design (Nov 13, evening): the wave rail moves to the bottom and becomes the navigation between
+   five places. Each place keeps its own buttons for adding and saving, so the rail only moves you.
+   Other screens (forms, Why, What if's Buy) keep the side rail with their actions.
+   Weekly and monthly people, and the unfolded tablet layout, keep the side rail for now. */
+const NAV = [['now', 'Now'], ['waves', 'Ahead'], ['ask', 'What if?'], ['bills', 'Money'], ['setaside', 'Set aside']];   // Money = Going out | Coming in
+const NAV_SCREENS = NAV.map(n => n[0]);
+const tabMode = () => !!state.persona && NAV_SCREENS.includes(state.screen);
+/* Pages you open from a place (not places themselves) keep the bottom rail with the knob on their place,
+   like a pushed page in an iPhone tab: Your income is opened from Now's menu, so the knob sits on Now,
+   and tapping the knob takes you back to Now. */
+/* The map (Nov 13): pages you open from a place keep the rail, its knob on that place. Forms, sheets and the
+   menu's pages (Your data, About, Feedback, Your year) have no rail: Back at the top, their own buttons. */
+const NAV_PARENT = { detail: 'waves', why: 'waves', payday: 'now', options: 'now', goals: 'setaside', pool: 'setaside', outcome: 'now' };
+const navOn = () => tabMode() || (!!state.persona && !!NAV_PARENT[state.screen]);
+/* Sheets slide up over the page you were on: one What if, no second page. */
+const SHEET_SCREENS = ['check', 'surprise', 'change'];
+const SHEET_TITLE = { check: 'Buy something', surprise: 'Something came up', change: 'Pay off or cancel' };
+let SHEET_MODE = false;
+/* Forms: their Save is pinned at the bottom of the screen. */
+const FORM_SAVE = { add: 'save-bill', 'goal-edit': 'save-goal', plan: 'save-plan', 'income-edit': 'save-income', surprise: 'save-surprise', feedback: 'send-feedback' };
 function railActions() {
+  if (navOn()) return null;
   const all = railSpec();
   if (!all) return null;
   return all;   // the rail keeps every screen's actions; the main one is also a button in the screen
@@ -2483,7 +2611,114 @@ function railSpec() {
   }
 }
 
+/* ---------- The wave rail at the bottom (navigation) ----------
+   The same ocean edge as the side rail, turned on its side: two drifting layers behind, the light water in
+   front, swelling into a pocket around the knob. The knob shows where you are; tap a name or slide the knob. */
+let NAVG = { W: 390, H: 92, xs: [] };
+function navGeom() {
+  const W = (typeof app !== 'undefined' && app && app.clientWidth) || 390;
+  const edge = 46, step = (W - 2 * edge) / (NAV.length - 1);   // the end knobs stay clear of the screen edge
+  NAVG = { W, H: 92, xs: NAV.map((_, i) => Math.round(edge + i * step)) };
+}
+function navEdge(kx) {
+  const { W, H } = NAVG, pts = [];
+  for (let x = 0; x <= W; x += 4) {
+    const swell = Math.exp(-Math.pow((x - kx) / 58, 2));                         // the pocket around the knob
+    const water = 16 + 2 * crest(2 * Math.PI * x / 110);                          // small waves along the edge
+    pts.push(`${x},${(H - (water * (1 - swell) + 66 * swell)).toFixed(1)}`);
+  }
+  return pts;
+}
+function navPath(kx) { return `M0,${NAVG.H} L${navEdge(kx).join(' L')} L${NAVG.W},${NAVG.H} Z`; }
+function navLine(kx) { return `M${navEdge(kx).join(' L')}`; }
+function navSeaLayer(w) {
+  const { W, H } = NAVG, wl = W + w.len, pts = [];
+  for (let x = 0; x <= wl; x += 4) pts.push(`${x},${(H - (w.base + 12 + w.amp * crest(2 * Math.PI * x / w.len))).toFixed(1)}`);   // a little higher than the side rail's, so it shows under the names
+  return `<svg class="wave-layer-x" width="${wl}" height="${H}" viewBox="0 0 ${wl} ${H}" style="--len:${w.len}px;animation-duration:${w.dur}s">
+    <path d="M0,${H} L${pts.join(' L')} L${wl},${H} Z" fill="${w.color}"/>
+    ${w.line ? `<path d="M${pts.join(' L')}" fill="none" stroke="${w.line}" stroke-width="1" stroke-linejoin="round"/>` : ''}
+  </svg>`;
+}
+const navIndex = () => { const k = NAV_SCREENS.indexOf(state.screen); return k >= 0 ? k : Math.max(0, NAV_SCREENS.indexOf(NAV_PARENT[state.screen])); };
+function navRailHtml() {
+  navGeom();
+  const { W, H, xs } = NAVG, cur = navIndex(), kx = xs[cur];
+  return `<nav class="navrail" aria-label="Go to" style="height:${H}px">
+    <div class="navrail-sea" aria-hidden="true">
+      ${SEA.map(navSeaLayer).join('')}
+      <svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><path id="nav-path" d="${navPath(kx)}" fill="#E8EFFB"/><path id="nav-line" d="${navLine(kx)}" fill="none" stroke="#C9D6EC" stroke-width="1"/></svg>
+    </div>
+    ${NAV.map(([sc, label], i) => i === cur ? '' : `<button class="nav-stop" data-nav="${sc}" data-i="${i}" style="left:${xs[i]}px"><span>${label}</span></button>`).join('')}
+    <button class="nav-knob" id="nav-knob" data-nav="${NAV[cur][0]}" data-i="${cur}" aria-current="page" aria-label="${NAV[cur][0] === state.screen ? `${NAV[cur][1]}, you are here. Slide to move` : `Back to ${NAV[cur][1]}`}" style="left:${kx}px"><span>${NAV[cur][1]}</span></button>
+  </nav>`;
+}
+let navAnim = null;
+function setNavKnob(kx, label) {
+  const p = document.getElementById('nav-path'), l = document.getElementById('nav-line'), k = document.getElementById('nav-knob');
+  if (p) p.setAttribute('d', navPath(kx));
+  if (l) l.setAttribute('d', navLine(kx));
+  if (k) { k.style.left = kx + 'px'; const sp = k.querySelector('span'); if (label != null && sp) sp.textContent = label; }
+}
+function navNearest(kx) { let n = 0; NAVG.xs.forEach((x, i) => { if (Math.abs(x - kx) < Math.abs(NAVG.xs[n] - kx)) n = i; }); return n; }
+/* Slide the knob from where it is to stop i, the water following, then open that place. */
+function navTo(i, fromX) {
+  const from = fromX != null ? fromX : NAVG.xs[navIndex()], to = NAVG.xs[i], label = NAV[i][1];
+  if (navAnim) cancelAnimationFrame(navAnim);
+  const done = () => { navAnim = null; if (NAV[i][0] !== state.screen) go(NAV[i][0]); else setNavKnob(to, label); };
+  if (reduceMotion() || from === to) { setNavKnob(to, label); return done(); }
+  const t0 = performance.now(), dur = 240;
+  const step = now => {
+    const k = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+    setNavKnob(from + (to - from) * e, label);
+    if (k < 1) navAnim = requestAnimationFrame(step); else done();
+  };
+  navAnim = requestAnimationFrame(step);
+}
+let navDrag = null, navDraggedAt = -Infinity;
+document.addEventListener('pointerdown', e => {
+  const k = e.target.closest && e.target.closest('#nav-knob'); if (!k) return;
+  navDrag = { x0: e.clientX, moved: false, kx: NAVG.xs[navIndex()], id: e.pointerId };
+  try { k.setPointerCapture(e.pointerId); } catch (err) {}
+});
+document.addEventListener('pointermove', e => {
+  if (!navDrag || e.pointerId !== navDrag.id) return;
+  const dx = e.clientX - navDrag.x0;
+  if (Math.abs(dx) > 6) navDrag.moved = true;
+  if (!navDrag.moved) return;
+  const xs = NAVG.xs, kx = Math.max(xs[0], Math.min(xs[xs.length - 1], xs[navIndex()] + dx));
+  navDrag.kx = kx;
+  const k = document.getElementById('nav-knob'); if (k) k.classList.add('dragging');
+  setNavKnob(kx, NAV[navNearest(kx)][1]);
+});
+const endNavDrag = e => {
+  if (!navDrag || (e.pointerId != null && e.pointerId !== navDrag.id)) return;
+  const d = navDrag; navDrag = null;
+  const k = document.getElementById('nav-knob'); if (k) k.classList.remove('dragging');
+  try { if (k) k.releasePointerCapture(d.id); } catch (err) {}
+  if (!d.moved) return;
+  navDraggedAt = performance.now();
+  navTo(navNearest(d.kx), d.kx);
+};
+document.addEventListener('pointerup', endNavDrag);
+document.addEventListener('pointercancel', endNavDrag);
+document.addEventListener('click', e => {
+  const b = e.target.closest && e.target.closest('.nav-stop, .nav-knob'); if (!b) return;
+  e.stopPropagation(); e.preventDefault();
+  if (performance.now() - navDraggedAt < 350) return;    // the slide already chose
+  if (b.classList.contains('nav-stop')) navTo(Number(b.dataset.i));
+  else if (b.dataset.nav !== state.screen) go(b.dataset.nav);   // on a page inside a place, the knob takes you back to it
+}, true);
+document.addEventListener('keydown', e => {   // arrow keys along the rail, like a tab bar
+  const b = e.target.closest && e.target.closest('.navrail button'); if (!b) return;
+  const dir = { ArrowRight: 1, ArrowLeft: -1 }[e.key]; if (!dir) return;
+  e.preventDefault();
+  const all = [...document.querySelectorAll('.navrail button')].sort((p, q) => Number(p.dataset.i) - Number(q.dataset.i));
+  const at = all.indexOf(b), next = all[(at + dir + all.length) % all.length]; if (next) next.focus();
+});
+
 function railHtml() {
+  if (navOn()) return navRailHtml();
+  return '';   // the side rail is retired (Nov 13 map): every action is a button on its page or sheet
   const acts = railActions();
   if (!acts) return '';
   const [t, c, b] = acts;
@@ -2581,6 +2816,74 @@ const endDrag = e => {
 document.addEventListener('pointerup', endDrag);
 document.addEventListener('pointercancel', endDrag);
 
+
+/* ---------- Drag the water (Nov 13) ----------
+   Slide along the water on Now and the big number follows: what you'd have that day, after everyday
+   spending. A soft tick (where the phone supports it) at each bill or payday. "Back to today" resets. */
+let scrub = null, scrubbedAt = -Infinity;
+function scrubPts(el) { if (!el._pts) { try { el._pts = JSON.parse(el.dataset.pts); } catch (e) { el._pts = []; } } return el._pts; }
+function scrubShow(el, k) {
+  const pts = scrubPts(el); if (!pts.length) return;
+  k = Math.max(0, Math.min(pts.length - 1, k));
+  const p = pts[k], prev = el._k;
+  el._k = k;
+  if (prev != null && prev !== k && p.ev) { try { navigator.vibrate && navigator.vibrate(8); } catch (e) {} }
+  const svg = el.querySelector('svg'); if (!svg) return;
+  const n = Number(el.dataset.n) || 1, W = 60 * n, sr = svg.getBoundingClientRect(), er = el.getBoundingClientRect();
+  const left = (sr.left - er.left) + ((p.x * 60 + 6) / (W + 12)) * sr.width;
+  let line = el.querySelector('.scrub-line'), flag = el.querySelector('.scrub-flag');
+  if (!line) { line = document.createElement('div'); line.className = 'scrub-line'; el.appendChild(line); }
+  if (!flag) { flag = document.createElement('div'); flag.className = 'scrub-flag'; el.appendChild(flag); }
+  const t = parse(p.t), today = k === 0;
+  line.style.left = flag.style.left = left + 'px';
+  flag.textContent = today ? 'TODAY' : long(t).toUpperCase();
+  el.setAttribute('aria-valuenow', k);
+  el.setAttribute('aria-valuetext', `${today ? 'Today' : long(t)}: about ${p.v < 0 ? money(-p.v) + ' short' : money(p.v)} after everyday spending`);
+  const hero = document.querySelector('.now-diet .hero.big'), sub = document.querySelector('.now-diet .hero-sub');
+  if (hero && sub) {
+    if (hero.dataset.orig == null) { hero.dataset.orig = hero.textContent; sub.dataset.orig = sub.innerHTML; hero.dataset.fs = hero.style.fontSize; }
+    const txt = money(p.v);
+    hero.textContent = txt; hero.style.fontSize = heroSize(txt) + 'px';
+    hero.classList.toggle('short', p.v < 0);
+    sub.textContent = `${today ? 'Today' : 'On ' + long(t)}, after everyday spending`;
+  }
+  if (!document.querySelector('.scrub-back') && sub) {
+    const b = document.createElement('button'); b.className = 'scrub-back'; b.type = 'button'; b.dataset.scrubBack = '1'; b.textContent = 'Back to today';
+    sub.closest('.hero-tap') ? sub.closest('.hero-tap').after(b) : sub.after(b);
+  }
+}
+function scrubAt(el, clientX) {
+  const svg = el.querySelector('svg'); if (!svg) return;
+  const pts = scrubPts(el), n = Number(el.dataset.n) || 1, W = 60 * n, sr = svg.getBoundingClientRect();
+  const wx = (-6 + Math.max(0, Math.min(1, (clientX - sr.left) / sr.width)) * (W + 12)) / 60;
+  let k = 0; pts.forEach((p, i) => { if (Math.abs(p.x - wx) < Math.abs(pts[k].x - wx)) k = i; });
+  scrubShow(el, k);
+}
+document.addEventListener('pointerdown', e => {
+  const el = e.target.closest && e.target.closest('.scrubbable'); if (!el) return;
+  scrub = { el, x0: e.clientX, y0: e.clientY, moved: false, id: e.pointerId };
+});
+document.addEventListener('pointermove', e => {
+  if (!scrub || e.pointerId !== scrub.id) return;
+  if (!scrub.moved && Math.abs(e.clientX - scrub.x0) > 6 && Math.abs(e.clientX - scrub.x0) > Math.abs(e.clientY - scrub.y0)) { scrub.moved = true; try { scrub.el.setPointerCapture(scrub.id); } catch (err) {} }
+  if (scrub.moved) { e.preventDefault(); scrubAt(scrub.el, e.clientX); }
+});
+const endScrub = e => { if (!scrub || (e.pointerId != null && e.pointerId !== scrub.id)) return; if (scrub.moved) scrubbedAt = performance.now(); scrub = null; };
+document.addEventListener('pointerup', endScrub);
+document.addEventListener('pointercancel', endScrub);
+document.addEventListener('click', e => {
+  if (performance.now() - scrubbedAt < 400 && e.target.closest && e.target.closest('.scrubbable')) { e.stopPropagation(); e.preventDefault(); return; }
+  if (e.target.closest && e.target.closest('[data-scrub-back]')) { e.stopPropagation(); render(); }
+}, true);
+document.addEventListener('keydown', e => {
+  const el = e.target.closest && e.target.closest('.scrubbable'); if (!el) return;
+  const k = el._k || 0, last = scrubPts(el).length - 1;
+  const step = { ArrowRight: 1, ArrowUp: 1, ArrowLeft: -1, ArrowDown: -1, PageUp: 7, PageDown: -7 }[e.key];
+  if (step) { e.preventDefault(); return scrubShow(el, k + step); }
+  if (e.key === 'Home' || e.key === 'Escape') { e.preventDefault(); return render(true); }
+  if (e.key === 'End') { e.preventDefault(); return scrubShow(el, last); }
+});
+
 /* ---------- screens ---------- */
 function screenArrival() {
   return `<header class="top"><div class="brand">${icon.wave}<span>alon</span></div></header>
@@ -2658,6 +2961,97 @@ function cashUnknownHero(w0) {
     <span class="hero-sub" style="font-weight:500;color:var(--muted-2);line-height:1.45">Alon needs one number to see this stretch: what’s in your account now. Until ${long(w0.end)}, ${money(w0.billsTotal)} in bills and about ${money(w0.everyday)} of everyday spending are still to come.</span>
     <button class="primary mt8" data-action="onhand">Add what’s in your account</button>
     <span class="small">A rough number from your bank app is fine. Alon asks again each time you’re between paydays.</span>`;
+}
+/* ---------- New design helpers (Nov 13) ----------
+   Look: say what's handled first, in words, then the number. Research: people avoid looking when they
+   expect bad news (the ostrich effect), so the first second has to feel safe. */
+const NUM_WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten'];
+function nowSentence(hm) {
+  const { f, h } = hm, td = iso(TODAY);
+  if (h.amount < 0) {
+    const sf = f.heroShortfall || f.shortfall;
+    if (sf && sf.date && sf.recovers) {
+      const d = Math.max(1, Math.round((parse(sf.recovers.date) - parse(sf.date)) / DAY));
+      return `${d === 1 ? 'One tight day' : capFirst(NUM_WORDS[d] || String(d)) + ' tight days'}, then your paycheck brings it back.`;
+    }
+    return 'Money runs short before your next paycheck. Here’s a way through.';
+  }
+  const outs = f.heroBalance.rows.filter(r => r.dir === 'out' && r.date >= td && r.date < h.until).slice().sort((a, b) => b.amount - a.amount);
+  if (!outs.length) return `No bills before your ${short(parse(h.until))} paycheck.`;
+  const names = [...new Set(outs.map(r => inSentence(causeName(r.name))))], shown = names.slice(0, 2), more = names.length - shown.length;
+  return `${capFirst(more > 0 ? `${shown.join(', ')} and ${more} more` : listJoin(shown))} ${names.length > 1 ? 'are' : 'is'} covered.`;
+}
+/* The cushion sits on Now: a small buffer matters more to how people feel than a big balance. */
+function cushionChip(hm) {
+  if (!hm || !tabMode()) return '';
+  const c = bufferAmt(), res = ((hm.h.now || {}).reserved) || 0;
+  if (!(c > 0) && !(res > 0)) return '';
+  const pool = '<svg aria-hidden="true" width="18" height="18" viewBox="0 0 20 20" fill="none"><rect x="1.5" y="3.5" width="17" height="13" rx="4" stroke="#1D4ED8" stroke-width="1.8"/><path d="M2.5 11c2-1.6 3.8-1.6 5.6 0s3.8 1.6 5.6 0 3-1.4 4-.6V13a2.6 2.6 0 0 1-2.6 2.6H5.1A2.6 2.6 0 0 1 2.5 13z" fill="#1D4ED8"/></svg>';
+  return `<button class="cushion-chip" data-go="setaside" aria-label="Your cushion: ${money(c)} buffer${res > 0 ? `, ${money(res)} set aside` : ''}. Tap to see money set aside">${pool}Cushion ${money(c)}${res > 0 ? ` · ${money(res)} set aside` : ''}</button>`;
+}
+/* Get through: a short stretch leads with real moves, each with its effect, then where to get help.
+   Research: shame makes people look away; a visible way through keeps them looking. */
+function waysThrough(hm) {
+  const sf = hm.f.heroShortfall || hm.f.shortfall || {}, gap = -hm.h.amount;
+  const pay = sf.recovers ? parse(sf.recovers.date) : parse(hm.h.until);
+  const behind = (sf.behind || []).slice().sort((a, b) => b.amount - a.amount);
+  const uniq = []; behind.forEach(x => { if (!uniq.some(u => u.name === x.name)) uniq.push(x); });
+  const eff = amt => amt >= gap ? { ok: true, e: 'Closes the gap' } : { ok: false, e: `Covers ${money(amt)} of it` };
+  const ways = [];
+  if (uniq[0]) ways.push(Object.assign({ t: `Ask to move ${inSentence(causeName(uniq[0].name))} to ${short(addDays(pay, 1))}` }, eff(uniq[0].amount)));
+  const res = ((hm.h.now || {}).reserved) || 0;
+  if (res > 0 && !sf.dipsIntoSetAside) ways.push({ t: `Use ${money(Math.min(gap, res))} of what you set aside`, e: `Refill it from your ${short(pay)} paycheck`, ok: res >= gap });
+  if (uniq[1]) ways.push(Object.assign({ t: `Ask to pay ${inSentence(causeName(uniq[1].name))} on ${short(pay)}` }, eff(uniq[1].amount)));
+  if (ways.length < 3) ways.push({ t: `Spend ${money(gap)} less before ${short(pay)}`, e: 'Covers it if you can', ok: false });
+  const okIc = '<svg aria-hidden="true" width="16" height="16" viewBox="0 0 20 20"><circle cx="10" cy="10" r="10" fill="#2F7D57"/><path d="M5.8 10.2l2.8 2.8 5.6-5.8" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const partIc = '<span aria-hidden="true" style="width:16px;height:16px;border-radius:8px;border:2px solid #5D7698;box-sizing:border-box;display:inline-block"></span>';
+  return `<section class="stack gap10 mt14" aria-label="Ways through">
+    <span class="ways-head">Ways through</span>
+    <div class="ways">${ways.slice(0, 3).map(w => `<button class="way" data-action="options-now"><span class="stack gap4"><span class="wt">${w.t}</span><span class="we">${w.ok ? okIc : partIc}${w.e}</span></span><span class="try">Try ›</span></button>`).join('')}</div>
+    <button class="linkish" style="text-align:left;padding:0;min-height:44px;font-size:16px" data-whysheet="0">See why it’s short</button>
+    <a class="help-link" href="https://www.nfcc.org/" target="_blank" rel="noopener"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M4 15.5V11a7 7 0 0 1 14 0v4.5"/><rect x="2.5" y="13" width="4" height="6" rx="1.5"/><rect x="15.5" y="13" width="4" height="6" rx="1.5"/></svg><span>More than a few tight days? <strong style="text-decoration:underline">Talk to a free nonprofit counselor</strong></span></a>
+  </section>`;
+}
+/* ---------- What if? = Ask Alon (Nov 13, evening) ----------
+   One field: a question, or an amount (an amount opens Buy something with it filled in).
+   Under it the quick choices, which work with AI off, and two questions to try from your own numbers. */
+const PICK_ICONS = {
+  buy: '<path d="M3 4h2l1.6 8.2a1.5 1.5 0 0 0 1.5 1.2h6.6a1.5 1.5 0 0 0 1.5-1.2L17.5 7H6"/><circle cx="8.5" cy="16.5" r="1"/><circle cx="14.5" cy="16.5" r="1"/>',
+  payoff: '<circle cx="10" cy="10" r="7"/><path d="M6.8 10.2l2.2 2.2 4.2-4.6"/>',
+  aside: '<rect x="2.5" y="5" width="15" height="11" rx="3.5"/><path d="M3 12c2-1.4 3.8-1.4 5.5 0s3.6 1.4 5.5 0 2.6-1.2 3.5-.6"/>',
+  prepare: '<rect x="3" y="4" width="14" height="13" rx="2.5"/><path d="M3 8h14M7 2.5v3M13 2.5v3"/>',
+  cameup: '<path d="M11 2.5 4.5 11H10l-1 6.5L15.5 9H10z"/>'
+};
+/* ---------- What if? = Ask Alon (Nov 13) ----------
+   The same Ask pill as every other page, in the same place above the rail: a question gets an answer,
+   an amount opens Buy something. The page itself is the quick choices, as an edge-to-edge list. */
+function screenAsk() {
+  const ws = computeWindows(), hm = heroModel(ws[0]);
+  const tries = [];
+  if (hm && hm.h.basis === 'spendable') {
+    const free = Math.max(0, hm.h.amount), amt = free >= 400 ? Math.round(free * 0.3 / 50) * 50 || 50 : 50;
+    tries.push(`Can I afford $${amt}?`);
+    tries.push(hm.h.amount < 0 ? 'What can I do if I can’t pay a bill?' : 'How am I doing?');
+  } else tries.push('How am I doing?', 'What is a sinking fund?');
+  const row = (k, label, sub, attrs) => `<button class="line-item tap pick-row" ${attrs} style="width:100%"><span class="lead"><span class="tile"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#1D4ED8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${PICK_ICONS[k]}</svg></span><span><span class="name">${label}</span><span class="meta">${sub}</span></span></span><span class="end">${CHEV}</span></button>`;
+  return `${header()}
+  <main>
+    <section class="pad stack gap8 mt8"><h1 class="h1">What if?</h1><p class="purpose">What are you thinking about? Ask below, type an amount, or pick one.</p></section>
+    <section class="pad stack mt24">
+      <div class="row-card">
+        ${row('buy', 'Buy something', 'See if it fits before you spend', 'data-go="check"')}
+        ${row('payoff', 'Pay off or cancel', 'See what ending a bill frees up', 'data-go="change"')}
+        ${row('aside', 'Set some aside', 'A goal, a surprise fund, a big bill', 'data-go="setaside"')}
+        ${row('prepare', 'Prepare for a bill', 'Spread a big one over paychecks', 'data-explore="prepare"')}
+        ${row('cameup', 'Something came up', 'Add it and see what changes', 'data-action="surprise"')}
+      </div>
+    </section>
+    <section class="pad stack gap10 mt24"><h2 class="h2" style="font-size:18px;margin:0">Try asking</h2>
+      <div class="chips">${tries.map(t => `<button type="button" class="try-chip" data-askq="${esc(t)}">${esc(t)}</button>`).join('')}</div>
+      <p class="small" style="margin:8px 0 0">Alon explains your own numbers. For advice about your situation, talk to a financial professional.</p>
+    </section>
+  </main>
+  ${dock()}`;
 }
 function screenNow() {
   const p = persona();
@@ -2787,6 +3181,8 @@ function screenNow() {
       <div class="bar thin"><div style="width:${covered}%"></div></div>
       <span class="small">${money(Math.min(eb.have, eb.due))} of ${money(eb.due)} covered.</span><button class="secondary in-main" style="min-height:44px" data-action="log" data-rail="Log">Log what you made</button>
     </div>`;
+  } else if (hm && hm.h.basis === 'spendable' && hm.h.amount < 0 && tabMode()) {
+    notice = waysThrough(hm);
   } else if (hm && hm.h.basis === 'spendable' && hm.h.amount < 0) {
     const sf = hm.f.heroShortfall || hm.f.shortfall;
     // the number already says how short; the card says when and what (amounts are on Next and in the sheet)
@@ -2860,10 +3256,10 @@ function screenNow() {
   <main class="now-grid now-diet">
     <div class="pad now-a">
       <section class="stack gap8 mt24">
-        <span class="hello">${greeting()}</span>
+        ${hm && hm.h.basis === 'spendable' ? `<span class="now-sentence">${nowSentence(hm)}</span>` : `<span class="hello">${greeting()}</span>`}
         ${w0.cashUnknown ? cashUnknownHero(w0) : `${hm ? heroHtml(hm, w0) : `<button class="hero-tap" data-whysheet="0" aria-label="${range(w0.roomLow, w0.roomTyp)}. Tap to see how it adds up">${w0.backfilled && !w0.workingOk ? '<span class="hero-about">about</span>' : ''}<span class="hero big ${isRange ? 'range' : ''} ${w0.roomLow < 0 ? 'short' : ''}" style="margin-top:4px;white-space:nowrap;font-size:${heroSize(range(w0.roomLow, w0.roomTyp))}px">${range(w0.roomLow, w0.roomTyp)}</span>
         <span class="hero-sub">${leftLine(w0)}${isRange && p.rangeNote ? `<span class="small" style="display:block;font-weight:500;font-size:15px">${p.rangeNote.charAt(0).toUpperCase() + p.rangeNote.slice(1)}</span>` : ''}</span></button>`}
-        ${eb ? '' : statusPill(ws, hm)}`}
+        ${eb ? '' : `<div class="pill-row">${statusPill(ws, hm)}${cushionChip(hm)}</div>`}`}
         ${(() => { if (notice || !hm || !(hm.h.basis === 'spendable' || hm.h.basis === 'runway')) return ''; const r = (hm.h.now || {}).reserved || 0; return r > 0 ? `<button class="linkish set-line" style="text-align:left;padding:0" data-go="setaside">${money(r)} set aside, not counted</button>` : ''; })()}
         ${notice}
       </section>
@@ -3113,7 +3509,7 @@ function nowWave() {
   const ws = computeWindows(), n = ws.length;
   if (!n) return '';
   const last = ws[n - 1];
-  const sea = seaLine(ws, { tap: true, height: 96 });   // the water level of your available money
+  const sea = seaLine(ws, { tap: true, height: tabMode() ? 128 : 96 });   // the water level of your available money
   let svg;
   if (sea) svg = sea.svg;
   else {   // weekly and monthly people keep the older picture for now
@@ -3122,6 +3518,16 @@ function nowWave() {
     const crestY = Math.min(...lows.map(v => 100 - rough(v) / den * 78)), short_ = lows.some(v => v < 0);
     const top = Math.max(-10, Math.min(64, Math.floor(crestY - (short_ ? 34 : 14))));
     svg = waveChart(ws2, { tap: true }).replace(/viewBox="0 0 (\d+) (\d+)"/, (m, W, H) => `viewBox="0 ${top} ${W} ${H - top}"`);
+  }
+  if (sea && tabMode() && sea.basis === 'spendable') {
+    /* Drag the water: one point per day, so the big number can follow a thumb (or the arrow keys). */
+    const S = seaSeries(ws), byDay = {};
+    S.pts.forEach(p => { if (!p.gap) byDay[iso(p.t)] = { x: +p.x.toFixed(3), v: Math.round(p.v), t: iso(p.t), ev: !!p.ev || !!(byDay[iso(p.t)] || {}).ev }; });
+    const pts = Object.values(byDay);
+    return `<section class="now-wave mt20 scrubbable" tabindex="0" role="slider" aria-label="Look ahead: drag along the water or use the arrow keys to see any day" aria-valuemin="0" aria-valuemax="${pts.length - 1}" aria-valuenow="0" aria-valuetext="Today" data-n="${n}" data-pts="${esc(JSON.stringify(pts))}">
+    ${svg}
+    <div class="now-wave-dates" aria-hidden="true"><span>Today · drag to look ahead</span><span>${short(last.last || last.end)}</span></div>
+  </section>`;
   }
   return `<section class="now-wave mt20" aria-label="The ${n} ${unitWord2()}s ahead. Tap a stretch to see why">
     ${svg}
@@ -3133,6 +3539,11 @@ function nowMainButton(ws) {
   const ms = persona().unit === 'paycheck' ? nowState(ws[0]) : null;
   const arrow = '<svg width="18" height="18" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   const b = (attrs, label) => `<button class="primary now-main mt20" ${attrs}>${label}${arrow}</button>`;
+  if (tabMode()) {   // new design: the Ahead tab and the ways-through card already do these jobs
+    const hm = heroModel(ws[0]);
+    if (hm && hm.h.basis === 'spendable' && hm.h.amount < 0) return '';
+    if (!(ms && (ms.state === 'PRESSURE' || ms.state === 'OPPORTUNITY'))) return '';
+  }
   if (ms && ms.state === 'PRESSURE') return b('data-action="why-now"', 'See why');   // what happened → why → what you can do
   if (ms && ms.state === 'OPPORTUNITY') return b('data-action="explore"', 'Explore what you could do');
   if (!ms && (knownShort(ws[0]) || whyWindows().slice(0, ws.length).some(breaks))) return b('data-action="why-now"', 'See why');
@@ -3491,6 +3902,7 @@ function screenWhy() {
         'A general money concept. Your numbers come from your entries.')}</section>
     <section class="pad stack gap12 mt20">
       <button class="primary" data-action="plan" ${picked || state.prepAmt > 0 ? '' : 'disabled'}>Plan it</button>
+      <button class="linkish" style="text-align:center" data-action="leave" data-rail="Leave">Leave it as is</button>
       <p class="decision-note">Your decision. Alon doesn’t move money; you set it aside yourself, and Alon asks on each payday whether you did.</p>
       <p class="small">Education, not financial advice.</p>
     </section>
@@ -3528,17 +3940,17 @@ function screenCheck() {
     detail = (r.freeTyp !== r.freeLow ? `That's on a lighter ${u}; on a typical one, up to ${money(r.freeTyp)}. ` : '') + keeps;
   }
   const answer = `<h1 class="h1">${headline}</h1><p class="body">${detail}${r.st ? '' : ' Every bill and your everyday estimate are already counted.'}</p>`;
-  return `${header('now', 'Now')}
+  return `${header('ask', 'What if?')}
   <main>
     <section class="pad stack gap10 mt8">
-      <fieldset style="border:0;padding:0;margin:0" class="stack gap8"><legend class="legend" style="margin-bottom:8px;font-size:17px;font-weight:700;color:var(--navy)">What are you thinking about?</legend>
+      ${SHEET_MODE ? '' : `      <fieldset style="border:0;padding:0;margin:0" class="stack gap8"><legend class="legend" style="margin-bottom:8px;font-size:17px;font-weight:700;color:var(--navy)">What are you thinking about?</legend>
         <div class="chips">
           <button type="button" class="chip on" aria-pressed="true">Buy something</button>
           <button type="button" class="chip" aria-pressed="false" data-go="setaside">Set some aside</button>
           <button type="button" class="chip" aria-pressed="false" data-explore="prepare">Prepare for a bill</button>
           <button type="button" class="chip" aria-pressed="false" data-action="surprise">Something came up</button>
           <button type="button" class="chip" aria-pressed="false" data-go="change">Pay off or cancel</button>
-        </div></fieldset>
+        </div></fieldset>`}
       ${hasCard() ? `<fieldset style="border:0;padding:0;margin:0" class="stack gap8"><legend class="legend" style="margin-bottom:4px">Paying with</legend>
         <div class="chips">${[['debit', 'Debit or cash']].concat(state.bills.filter(isCard).map(b => [b.id, b.name])).map(([k, l]) => `<button type="button" class="chip ${(state.payWith || 'debit') === k ? 'on' : ''}" aria-pressed="${(state.payWith || 'debit') === k}" data-paywith="${esc(k)}">${esc(l)}</button>`).join('')}</div></fieldset>` : ''}
       <span class="eyebrow mt8">${untilText}</span>
@@ -3554,6 +3966,10 @@ function screenCheck() {
       <h2 class="h2">How much would it cost?</h2>
       <label for="amount" class="legend">How much?</label>
       <div class="money"><span>$</span><input id="amount" inputmode="decimal" value="${esc(state.purchaseRaw != null ? state.purchaseRaw : (amt || ''))}" data-input="purchase" autocomplete="off"></div>
+      ${(() => { const mx = dialMax(r); return `<div class="dial-wrap"><label for="p-dial" class="sr">Slide to change the amount</label>
+        <input type="range" class="dial" id="p-dial" min="0" max="${mx}" step="5" value="${Math.min(mx, amt)}" data-input="dial" aria-valuetext="${money(amt)}">
+        <div class="dial-ends" aria-hidden="true"><span>$0</span><span>Slide to try an amount</span><span>${money(mx)}</span></div></div>
+        <p class="dial-answer" id="p-answer" role="status">${dialAnswer(ws, amt)}</p>`; })()}
       <div class="chips">${[20, 50, 75, 100, 150].map(n => `<button class="chip ${amt === n ? 'on' : ''}" aria-pressed="${amt === n}" data-amount="${n}">$${n}</button>`).join('')}${r.freeLow > 0 && ![20, 50, 75, 100, 150].includes(r.freeLow) ? `<button class="chip ${amt === r.freeLow ? 'on' : ''}" aria-pressed="${amt === r.freeLow}" data-amount="${r.freeLow}">Up to $${r.freeLow.toLocaleString('en-US')}</button>` : ''}</div>
       ${(() => { const sea = seaLine(ws, { purchase: purchaseNow(amt), markLow: true, height: 104 }); return sea ? `<div class="now-wave" id="p-sea">${sea.svg}<p class="sea-key" id="p-low">${whatIfLine(sea, amt)}</p></div>` : ''; })()}
       <div class="field"><label for="p-name">What is it? (optional)</label><input class="input" id="p-name" data-input="pname" value="${esc(state.purchaseName)}" placeholder="e.g. New work shoes" autocomplete="off"></div>
@@ -3575,6 +3991,19 @@ function screenCheck() {
   ${dock()}`;
 }
 
+/* The What if dial (Nov 13): slide an amount, the answer and the water follow, like a payment wheel.
+   The scale runs a little past what's free, so the point where it stops fitting is on the dial. */
+function dialMax(r) {
+  const base = Math.max(r.freeTyp || 0, r.freeLow || 0, r.st ? Math.max(0, r.st.available) : 0, 200);
+  return Math.ceil(base * 1.5 / 50) * 50;
+}
+function dialAnswer(ws, amt) {
+  if (!(amt > 0)) return 'Slide or type an amount.';
+  const { aLow } = checkNumbers(ws[0], amt);
+  if (aLow >= bufferAmt()) return 'Yes, with room to spare.';
+  if (aLow >= 0) return 'Yes, but it gets tight.';
+  return 'Not without coming up short.';
+}
 /* What if?'s one-line answer under the wave: the lowest point with this purchase in it. */
 function seaLowText(sea, amt) {
   const l = sea.low, when = short(l.t);
@@ -3705,6 +4134,9 @@ function refreshCheck() {
   after.textContent = range(aLow, aTyp);
   after.style.color = aLow < 0 ? 'var(--amber-text)' : 'var(--navy)';
   document.getElementById('p-explain').textContent = explain;
+  const ans = document.getElementById('p-answer'); if (ans) ans.textContent = dialAnswer(ws, amt);
+  const dial = document.getElementById('p-dial'); if (dial && document.activeElement !== dial) dial.value = Math.min(Number(dial.max), amt);
+  if (dial) dial.setAttribute('aria-valuetext', money(amt));
   const seaBox = document.getElementById('p-sea');
   if (seaBox) { const sea = seaLine(ws, { purchase: purchaseNow(amt), markLow: true, height: 104 }); if (sea) seaBox.innerHTML = `${sea.svg}<p class="sea-key" id="p-low">${whatIfLine(sea, amt)}</p>`; }
   document.getElementById('p-decision').innerHTML = purchaseDecision(ws, amt);
@@ -3781,7 +4213,9 @@ function screenPayday() {
   ${dock()}`;
 }
 
-function screenIncome() {
+const INCOME_TILE = '<svg aria-hidden="true" width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#1D4ED8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5" width="15" height="10" rx="2"/><circle cx="10" cy="10" r="2.2"/><path d="M5.5 8v4M14.5 8v4"/></svg>';
+const WALLET_TILE = '<svg aria-hidden="true" width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#1D4ED8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6.5A2.5 2.5 0 0 1 5.5 4H15v3"/><rect x="3" y="6.5" width="14.5" height="10" rx="2.5"/><circle cx="13.6" cy="11.5" r="1" fill="#1D4ED8" stroke="none"/></svg>';
+function screenMoneyIn() {
   const p = persona();
   const prim = primarySource();
   const rows = state.sources.filter(s => !s.mobilizedOnly || state.mobilized).map(s => {
@@ -3792,7 +4226,7 @@ function screenIncome() {
     if (Number(s.spread) > 0) note += ' · Give or take a few days';
     { const k = keepOf(s); if (k) note += ` · Keeps ${k.pct ? k.pct + '%' : money(k.amt)} for ${keepWord(k.label)}`; }
     const main = prim && prim.id === s.id ? '<span style="display:inline-block;margin-left:6px;font-size:10px;font-weight:800;letter-spacing:.06em;color:var(--royal);text-transform:uppercase">Main</span>' : '';
-    return `<button class="line-item tap" data-editincome="${s.id}"><span><span class="name">${esc(s.name)}${main}</span><span class="meta">${s.perWeek ? 'Earned through the week' : freqLabel(s.freq)} · ${certaintyLabel(s)}${note}</span></span><span class="amt">${amt}${s.perWeek ? '<span class="small" style="display:block;text-align:right">a week</span>' : ''}</span></button>`;
+    return `<button class="line-item tap" data-editincome="${s.id}" style="width:100%"><span class="lead"><span class="tile">${INCOME_TILE}</span><span><span class="name">${esc(s.name)}${main}</span><span class="meta">${s.perWeek ? 'Earned through the week' : freqLabel(s.freq)} · ${certaintyLabel(s)}${note}</span></span></span><span class="end"><span class="amt">${amt}${s.perWeek ? '<span class="small" style="display:block;text-align:right">a week</span>' : ''}</span>${CHEV}</span></button>`;
   }).join('');
   const onHandToday = state.onHand != null && state.onHandDate === iso(TODAY);
   const mob = state.persona === 'reservist' ? `
@@ -3800,14 +4234,19 @@ function screenIncome() {
       <span class="stack gap4"><span style="font-size:16px;font-weight:700">What if I'm mobilized?</span><span class="small">From Dec 26: civilian pay and drill pay stop, military pay starts on the 1st and 15th. The forecast redraws from that date.</span></span>
       <button class="switch" role="switch" aria-checked="${state.mobilized}" aria-label="Show forecast if mobilized" data-action="mobilize"></button>
     </div></section>` : '';
-  return `${header('now', 'Now')}
+  return `${header()}
   <main>
-    <section class="pad stack gap8 mt8"><h1 class="h1">Your income</h1><p class="body">Each kind of income on its own, in one forecast. Tap any to change it. Your most dependable income sets the dates of your ${p.unit === 'week' ? 'weeks' : 'paychecks'}.</p></section>
-    <section class="pad stack mt20">${rows || '<p class="small">No income yet.</p>'}
-      <button class="line-item tap" data-action="onhand"><span><span class="name">On hand now</span><span class="meta est-t"><span class="dot est"></span>${onHandToday ? `Your estimate for ${short(TODAY)} · counted in the current ${p.unit === 'month' ? 'window' : p.unit} only` : 'Not set · Tap to add what’s in your account'}</span></span><span class="amt est-t">${onHandToday ? '~' + money(state.onHand) : '—'}</span></button>
+    <section class="pad stack gap8 mt8"><h1 class="h1">Money</h1>
+      <div class="seg" role="tablist" aria-label="Money"><button role="tab" aria-selected="false" data-money="out">Going out</button><button role="tab" aria-selected="true" class="on" data-money="in">Coming in</button></div>
+      <p class="purpose">Each kind of income on its own, in one forecast. Tap one to change it. Your most dependable income sets the dates of your ${p.unit === 'week' ? 'weeks' : 'paychecks'}.</p></section>
+    <section class="pad stack mt24"><h2 class="h2" style="font-size:18px;margin-bottom:8px">Coming in</h2>
+      ${rows ? `<div class="row-card">${rows}</div>` : '<p class="small">No income yet. Add your first one below.</p>'}
+    </section>
+    <section class="pad stack mt24"><h2 class="h2" style="font-size:18px;margin-bottom:8px">In your account</h2>
+      <div class="row-card"><button class="line-item tap" data-action="onhand" style="width:100%"><span class="lead"><span class="tile">${WALLET_TILE}</span><span><span class="name">On hand now</span><span class="meta est-t">${onHandToday ? `Your estimate for ${short(TODAY)} · counted in the current ${p.unit === 'month' ? 'window' : p.unit} only` : 'Not set · Tap to add what’s in your account'}</span></span></span><span class="end"><span class="amt est-t">${onHandToday ? '~' + money(state.onHand) : '—'}</span>${CHEV}</span></button></div>
     </section>
     ${mob}
-    <div class="pad mt24"><button class="secondary" data-action="add-income">Add income</button></div>
+    <div class="pad stack gap10 mt24"><button class="primary" data-action="add-income">Add income</button></div>
   </main>
   ${dock()}`;
 }
@@ -3923,7 +4362,7 @@ function screenIncomeEdit() {
         </div>
         ${f.keepFor === 'taxes' ? '<p class="small" style="margin:0">You choose the amount. Alon doesn’t suggest a tax rate; a tax professional can help you pick one. Mark your estimated tax bill “paid from money set aside for taxes” and Alon uses it there.</p>' : ''}` : ''}
       </fieldset>`;
-  return `${header('income', 'Income')}
+  return `${header('income', 'Money')}
   <main>
     <section class="pad stack gap14 mt8">
       <h1 class="h1">${f.id ? 'Edit income' : 'Add income'}</h1>
@@ -3945,6 +4384,7 @@ function screenIncomeEdit() {
       </div>
       <button class="primary in-main" data-action="save-income" data-rail="Save">Save income</button>
       <p class="decision-note">Nothing changes until you save.</p>
+      ${f.id ? '<button type="button" class="linkish danger" data-action="remove-income" data-rail="Remove">Remove this income</button>' : ''}
     </section>
   </main>
   ${dock()}`;
@@ -3983,9 +4423,10 @@ function screenAdd() {
   const f = state.form;
   const { preview, note, valid } = billPreview(f);
   const panel = addMarkup(f, preview, note, valid, f.id ? [] : QUICK_MONTHLY.concat(QUICK_RARE, homeQuick()));
-  const back = state.returnTo && !['add', 'bills'].includes(state.returnTo) ? state.returnTo : 'now';
-  const backLabel = { now: 'Now', detail: 'Back', waves: 'What’s ahead', why: 'Back' }[back] || 'Back';
-  return screenBills(panel, header(back, backLabel));
+  const back = state.returnTo && !['add'].includes(state.returnTo) ? state.returnTo : 'bills';
+  const backLabel = { now: 'Now', detail: 'Back', waves: 'Ahead', why: 'Back', bills: 'Money' }[back] || 'Back';
+  return `${header(back, backLabel)}
+  <main>${panel}</main>`;
 }
 
 /* The form's date, honestly: a monthly bill with no exact date counts as "I'm not sure" (skipping
@@ -4280,7 +4721,7 @@ function addMarkup(f, preview, note, valid, quick) {
   const back = state.returnTo || 'bills';
   return `<section class="pad mt14" id="bill-form-panel"><div class="card stack gap4 add-panel" role="region" aria-labelledby="add-title">
     <section class="stack gap14">
-      <div class="row" style="justify-content:space-between;align-items:center"><h2 class="h2" id="add-title" style="font-size:24px">${f.id ? 'Edit bill' : 'Add a bill'}</h2><button type="button" class="linkish" style="min-height:44px;padding:0 4px" data-go="${back === 'add' ? 'bills' : back}">Close</button></div>
+      <h1 class="h1" id="add-title" style="margin:0">${f.id ? 'Edit bill' : 'Add a bill'}</h1>
       ${f.unconfirmed ? '<div class="warn"><span style="font-size:15px;color:var(--amber-body);line-height:1.5">This amount isn’t confirmed yet. Check your latest bill, then save it as Exact.</span></div>' : ''}
       ${false ? `<button class="card tap row" data-action="surprise" style="text-align:left"><span class="stack gap4"><span style="font-size:15px;font-weight:700">Something came up?</span><span class="small">A repair or a doctor’s bill. See what it does and how to cover it.</span></span><span style="color:var(--royal);font-weight:700">›</span></button>` : ''}
       ${quick.length && !f.quickOpen ? `<button type="button" class="secondary" style="min-height:48px" data-action="bill-quick">Pick a common bill</button>` : ''}
@@ -4325,6 +4766,7 @@ function addMarkup(f, preview, note, valid, quick) {
         <span id="bill-note" class="small">${note}</span>
       </div>
       <button class="primary in-main" data-action="save-bill" data-rail="Save">Save bill</button>
+      ${f.id ? '<button type="button" class="linkish danger" data-action="remove-bill" data-rail="Remove">Remove this bill</button>' : ''}
     </form>
   </div></section>`;
 }
@@ -4496,6 +4938,7 @@ function screenPlan() {
       <div class="card stack gap6 preview-card"><span class="small" style="font-weight:600">What this changes</span><span id="pl-preview" class="${pv.valid ? 'body' : 'ph'}">${pv.text}</span><div id="pl-rows">${pv.rows}</div></div>
       <button class="primary in-main" data-action="save-plan" data-rail="Save">Save</button>
       <p class="decision-note">You can change or remove it anytime.</p>
+      ${state.planForm && state.planForm.id ? '<button type="button" class="linkish danger" data-action="remove-plan" data-rail="Remove">Remove this plan</button>' : ''}
     </section>
   </main>
   ${dock()}`;
@@ -4688,6 +5131,7 @@ function spreadOffer(list) {
 /* Step 6 (Nov 12): one list, by date. Each row is a name, a date and an amount; a short marker only when
    it matters. Everything else about a bill is inside it (tap). Bills paid in parts show each part on its date. */
 function screenBills(panel, head) {
+  if (!panel && state.moneySide === 'in') return screenMoneyIn();
   const horizon = addDays(TODAY, 45);
   const evs = [].concat(...state.bills.map(b => billEvents(b, TODAY, horizon).filter(x => !(x.orig != null && (b.paid || {})[payKey(x.orig, x.part || 0)]))))
     .filter(x => x.amount > 0).sort((a, c) => a.date - c.date || eventName(a).localeCompare(eventName(c)));
@@ -4708,9 +5152,11 @@ function screenBills(panel, head) {
     } else if (b.endsOn && x && iso(x.date) === iso(parse(b.endsOn))) out.push('last charge');
     return out.length ? ' · ' + out.join(' · ') : ''; };
   const row = (b, when, amt, x) => `<button class="line-item tap" data-editbill="${b.id}" style="width:100%"><span class="lead">${tileHtml(b)}<span><span class="name">${esc(x ? eventName(x) : b.name)}</span><span class="meta">${when}${marks(b, x)}</span></span></span><span class="end"><span class="amt">${b.status === 'estimate' ? 'about ' : ''}${moneyExact(amt)}</span>${CHEV}</span></button>`;
-  return `${head || header('now', 'Now')}
+  return `${head || header()}
   <main>
-    <section class="pad stack gap8 mt8"><h1 class="h1">Your bills</h1>${panel ? '' : '<p class="purpose">What’s coming up, in order. Tap one to change it.</p>'}
+    <section class="pad stack gap8 mt8"><h1 class="h1">Money</h1>
+      <div class="seg" role="tablist" aria-label="Money"><button role="tab" aria-selected="true" class="on" data-money="out">Going out</button><button role="tab" aria-selected="false" data-money="in">Coming in</button></div>
+      ${panel ? '' : '<p class="purpose">Your bills, in order. Tap one to change it.</p>'}
       ${panel ? '' : (() => { const u = uncertainItems(); return (u.cluster ? clusterCard(u.cluster, 'bills') : '') + (u.dates.length || u.amounts.length ? `<button class="tint tap row mt8" style="border:0;text-align:left" data-action="review"><span class="stack gap4"><span style="font-size:15px;font-weight:700">${listJoin([u.dates.length ? `${u.dates.length} date${u.dates.length > 1 ? 's' : ''} not set` : '', u.amounts.length ? `${u.amounts.length} amount${u.amounts.length > 1 ? 's' : ''} not confirmed` : ''].filter(Boolean))}</span><span class="small">Confirming them makes your forecast more accurate.</span></span><span class="see" style="font-weight:700;color:var(--royal)">Review</span></button>` : ''); })()}
     </section>
     ${panel || ''}
@@ -4722,7 +5168,7 @@ function screenBills(panel, head) {
     ${done.length ? `<section class="pad stack mt24"><h2 class="h2" style="font-size:18px;margin-bottom:8px">Done</h2>
       <div class="row-card">${done.map(b => row(b, 'Paid off', b.amount, null)).join('')}</div></section>` : ''}
     ${state.bills.length ? '' : '<p class="small pad mt14">No bills yet. Add your first one below.</p>'}
-    <div class="pad stack gap10 mt24">${panel ? '' : '<button class="primary" data-go="add" data-rail="Add">Add a bill</button>'}<button class="secondary" data-action="add-plan">Add something you’re paying in parts</button><button class="linkish" data-go="setaside">See money set aside</button></div>
+    <div class="pad stack gap10 mt24">${panel ? '' : '<button class="primary" data-go="add" data-rail="Add">Add a bill</button>'}<button class="secondary" data-action="add-plan">Add something you’re paying in parts</button></div>
     ${panel ? '' : lighterHtml()}
   </main>
   ${dock()}`;
@@ -4889,6 +5335,7 @@ function screenGoals() {
     <section class="pad stack gap8 mt8"><h1 class="h1">Your goals</h1>
       <p class="body">Something you’re saving for. Alon sets aside a little from each ${persona().unit === 'month' ? 'window' : persona().unit} and shows it in your forecast, so you can see what it changes.</p></section>
     <section class="pad stack gap12 mt20">${goals.length ? goals.map(goalCard).join('') : `<div class="tint stack gap6"><span style="font-size:16px;font-weight:700">No goals yet</span><span class="small">A car, a trip, a gift.</span></div>`}</section>
+    <section class="pad mt14"><button class="primary" data-action="add-goal" data-rail="Add">Add a goal</button></section>
     ${goals.length && per ? `<p class="small pad mt14">This ${persona().unit === 'month' ? 'window' : persona().unit}: ${money(per)} set aside for goals. Alon doesn’t move money; you move it to savings yourself.</p>` : ''}
     ${goals.some(g => g.fund) ? '' : `<section class="pad mt20"><div class="tint stack gap8">
       <span style="font-size:16px;font-weight:700">For what you can’t plan</span>
@@ -4929,6 +5376,7 @@ function screenGoalEdit() {
       ${f.id ? `<label class="row card" style="cursor:pointer"><span class="stack gap4"><span style="font-weight:700">Pause this goal</span><span class="small">For a tight stretch. Nothing is set aside until you turn it back on.</span></span><input type="checkbox" data-gpause ${f.paused ? 'checked' : ''} style="width:22px;height:22px"></label>` : ''}
       <button class="primary in-main" data-action="save-goal" data-rail="Save">Save goal</button>
       <p class="decision-note">Alon only plans it; you move the money to savings yourself.</p>
+      ${f.id ? '<button type="button" class="linkish danger" data-action="remove-goal" data-rail="Remove">Remove this goal</button>' : ''}
       ${f.fund ? fundLearn() : ''}
     </section>
   </main>
@@ -6874,7 +7322,8 @@ function tourSteps() {
   ];
   if (sh >= 0 && document.querySelector('.why-card')) steps.push({ sel: '.why-card', title: `${short(ws[sh].start)} could come up ${money(-ws[sh].roomLow)} short`, text: `Alon counts each ${u} on its own, so one big bill can make a ${u} short even when others have room. Tap it anytime to see why and what you can do.` });
   else steps.push({ sel: '.status-pill', title: sh >= 0 ? 'A wave is coming' : 'You can see ahead', text: `Alon shows when things are covered, when something looks tight, and when you have more room than usual.` });
-  steps.push({ sel: '#rail-knob', title: 'Can I spend this?', text: 'Tap “What if?” on the wave to check a purchase before you make it. Ask Alon anything at the bottom.' });
+  if (document.querySelector('.navrail [data-nav="ask"]')) steps.push({ sel: '.navrail [data-nav="ask"]', title: 'Ask, or try an amount', text: 'Tap “What if?” on the wave at the bottom to ask a question or try an amount before you spend it. Slide the wave to move between Now, Ahead, Bills and Set aside.' });
+  else steps.push({ sel: '#rail-knob', title: 'Can I spend this?', text: 'Tap “What if?” on the wave to check a purchase before you make it. Ask Alon anything at the bottom.' });
   return steps;
 }
 function tourHtml() {
@@ -6980,7 +7429,7 @@ function reviewSheetHtml() {
 }
 
 /* ---------- render + events ---------- */
-const screens = { change: screenChange, setaside: screenSetAside, ob: screenOb, welcome: screenWelcome, about: screenAbout, year: screenYear, arrival: screenArrival, now: screenNow, detail: screenDetail, waves: screenWaves, why: screenWhy, check: screenCheck, add: screenAdd, payday: screenPayday, bills: screenBills, income: screenIncome, 'income-edit': screenIncomeEdit, goals: screenGoals, 'goal-edit': screenGoalEdit, surprise: screenSurprise, options: screenOptions, plan: screenPlan, feedback: screenFeedback, pool: screenPool, data: screenData, outcome: screenOutcome };
+const screens = { ask: screenAsk, change: screenChange, setaside: screenSetAside, ob: screenOb, welcome: screenWelcome, about: screenAbout, year: screenYear, arrival: screenArrival, now: screenNow, detail: screenDetail, waves: screenWaves, why: screenWhy, check: screenCheck, add: screenAdd, payday: screenPayday, bills: screenBills, income: screenMoneyIn, 'income-edit': screenIncomeEdit, goals: screenGoals, 'goal-edit': screenGoalEdit, surprise: screenSurprise, options: screenOptions, plan: screenPlan, feedback: screenFeedback, pool: screenPool, data: screenData, outcome: screenOutcome };
 const app = document.getElementById('app');
 
 function syncToday() {
@@ -6988,6 +7437,14 @@ function syncToday() {
   TODAY = parse(state.today || '2026-10-30');
 }
 let RENDER_N = 0;
+/* Forms: lift the form's own Save button out of the page and pin it at the bottom of the screen. */
+function withSavebar(html) {
+  const act = FORM_SAVE[state.screen]; if (!act) return html;
+  const re = new RegExp(`<button class="primary in-main" data-action="${act}"[^>]*>[\\s\\S]*?</button>`);
+  const m = html.match(re); if (!m) return html;
+  const out = html.replace(m[0], ''), at = out.lastIndexOf('</main>');   // pinned inside the page's main, at its end
+  return at < 0 ? out + `<div class="savebar">${m[0]}</div>` : out.slice(0, at) + `<div class="savebar">${m[0]}</div>` + out.slice(at);
+}
 function render(keepFocus, resetScroll) {
   RENDER_N++;
   syncToday();
@@ -6999,13 +7456,30 @@ function render(keepFocus, resetScroll) {
   const scrollTop = resetScroll || !prev ? 0 : prev.scrollTop;
   app.classList.toggle('wide', isWide());
   railGeom();
-  const rail = railHtml();
-  app.classList.toggle('has-rail', !!rail);
-  app.classList.toggle('left', !!state.railLeft);
+  // a sheet (Buy something, Something came up, Pay off or cancel) is drawn over the page it was opened from
+  const asSheet = !!state.persona && SHEET_SCREENS.includes(state.screen);
+  const top_ = state.screen;
+  const base = asSheet ? (state.sheetBase && screens[state.sheetBase] && !SHEET_SCREENS.includes(state.sheetBase) ? state.sheetBase : 'ask') : top_;
+  let screenHtml, sheetPart = '', rail;
+  const prevSheet = document.getElementById('ssheet-body'), sheetScroll = prevSheet && !resetScroll ? prevSheet.scrollTop : 0;
+  state.screen = base;
+  try { screenHtml = screens[base](); rail = railHtml(); app.classList.toggle('has-navrail', navOn()); } finally { state.screen = top_; }
+  app.classList.toggle('has-rail', false);
+  if (asSheet) {
+    SHEET_MODE = true;
+    let inner; try { inner = withSavebar(screens[top_]()); } finally { SHEET_MODE = false; }
+    sheetPart = `<div class="ssheet-bg" data-action="sheet-close" aria-hidden="true"></div>
+    <section class="ssheet" role="dialog" aria-modal="true" aria-label="${SHEET_TITLE[top_]}">
+      <div class="ssheet-head"><span class="grab" aria-hidden="true"></span><span class="ssheet-title">${top_ === 'check' ? SHEET_TITLE[top_] : ''}</span><button class="ssheet-x" data-action="sheet-close" aria-label="Close"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M2 2l10 10M12 2L2 12"/></svg></button></div>
+      <div class="ssheet-body" id="ssheet-body">${inner}</div>
+    </section>`;
+  } else screenHtml = withSavebar(screenHtml);
   let paper = '';
-  if (state.screen === 'now' && state.persona) { const w0_ = computeWindows()[0]; paper = knownShort(w0_) ? 'paper-short' : 'paper-clear'; }
-  app.innerHTML = `<div class="scroller ${paper}" id="scroller">${screens[state.screen]()}</div><div id="rail-wrap">${rail}</div>` + tourHtml() + sheetHtml() + whySheetHtml() + nextSheetHtml() + exploreSheetHtml() + termSheetHtml() + reviewSheetHtml();
-  const sc = document.getElementById('scroller'); if (sc) sc.scrollTop = scrollTop;
+  if (base === 'now' && state.persona) { const w0_ = computeWindows()[0]; paper = knownShort(w0_) ? 'paper-short' : 'paper-clear'; }
+  app.innerHTML = `<div class="scroller ${paper}" id="scroller" ${asSheet ? 'aria-hidden="true" inert' : ''}>${screenHtml}</div><div id="rail-wrap" ${asSheet ? 'aria-hidden="true" inert' : ''}>${rail}</div>` + sheetPart + tourHtml() + sheetHtml() + whySheetHtml() + nextSheetHtml() + exploreSheetHtml() + termSheetHtml() + reviewSheetHtml();
+  const sc = document.getElementById('scroller'); if (sc) sc.scrollTop = asSheet ? (window._baseScroll || 0) : scrollTop;
+  if (!asSheet) window._baseScroll = scrollTop;
+  const sb = document.getElementById('ssheet-body'); if (sb) sb.scrollTop = sheetScroll;
   waveEdges();
   placeTour();
   if (id) { const el = document.getElementById(id); if (el) { el.focus(); try { el.setSelectionRange(pos, pos); } catch (e) {} } }
@@ -7027,7 +7501,15 @@ window.addEventListener('resize', () => {
     railGeom(); updateRail();             // only the rail; never redraw inputs while a keyboard opens
   }, 120);
 });
+function closeSheet() {
+  const b = state.sheetBase && !SHEET_SCREENS.includes(state.sheetBase) && screens[state.sheetBase] ? state.sheetBase : 'ask';
+  state.change = null;
+  go(b);
+}
 function go(screen) {
+  if (screen === 'income') { state.moneySide = 'in'; screen = 'bills'; }
+  if (screen === 'bills' && state.screen === 'add') state.moneySide = 'out';
+  if (SHEET_SCREENS.includes(screen) && !SHEET_SCREENS.includes(state.screen)) state.sheetBase = state.screen;
   if (screen === 'add' && state.screen !== 'add' && !(state.form && state.form.id && state.form._opening)) {
     if (!state.form || state.form.id) state.form = blankBillForm();
     state.returnTo = state.screen === 'income-edit' ? 'income' : state.screen;
@@ -7319,6 +7801,7 @@ app.addEventListener('click', e => {
   if (ds.go === 'data') { state.dataView = null; state.menuOpen = false; }
   if (ds.go) return go(ds.go);
   if (ds.action === 'save-bill') return saveBill();
+  if (ds.money) { state.moneySide = ds.money; return render(false, true); }
   if (ds.action === 'leave') { toast('Nothing changed. The gap stays visible.'); return go('now'); }
   if (ds.action === 'fold') { state.fold = isWide() ? 'closed' : 'open'; state.menuOpen = false; toast(isWide() ? 'Folded to phone size.' : 'Unfolded: tablet and foldable layout.'); return render(); }
   if (ds.action === 'rail-side') { state.railLeft = !state.railLeft; state.menuOpen = false; toast(`The wave is now on the ${state.railLeft ? 'left' : 'right'}.`); return render(); }
@@ -7387,8 +7870,9 @@ app.addEventListener('click', e => {
   if (ds.action === 'not-now') {
     Object.assign(state, { purchaseName: '', purchaseLater: false, purchaseTarget: null, purchaseRaw: null, purchase: 50 });
     toast('Nothing changed.');
-    return go('now');
+    return closeSheet();
   }
+  if (ds.action === 'sheet-close') return closeSheet();
 
   if (ds.quick) { const [n, fr, pre] = ds.quick.split('|'); state.form.name = n; state.form.freq = fr; state.form.preset = pre || null; return render(); }   // the list stays open so the pick shows as selected
   if (ds.kind) { state.form.kind = ds.kind; return render(); }
@@ -7554,6 +8038,11 @@ app.addEventListener('input', e => {
     const pv = document.getElementById('chg-preview'); if (pv) pv.innerHTML = changePreview(state.change);
     return;
   }
+  if (el.dataset.input === 'dial') {   // the dial and the amount box are the same number
+    state.purchase = Number(el.value) || 0; state.purchaseRaw = String(state.purchase); state.purchaseTarget = null;
+    const box = document.getElementById('amount'); if (box) box.value = state.purchase || '';
+    return refreshCheck();
+  }
   if (el.dataset.input === 'purchase') { state.purchase = parseMoney(el.value) || 0; state.purchaseRaw = el.value; state.purchaseTarget = null; refreshCheck(); }
   if (el.dataset.input === 'pname') { state.purchaseName = el.value; save(); }
   if (el.dataset.input === 'draft') {
@@ -7609,6 +8098,11 @@ function ask() {
   const input = document.getElementById('ask');
   const q = ((input && input.value) || '').toLowerCase().trim();
   if (!q) return;
+  if (/^\$?\s?\d[\d,]*(\.\d{1,2})?$/.test(q)) {   // just an amount: try it in Buy something
+    const n = parseMoney(q); input.value = '';
+    state.purchase = n; state.purchaseRaw = String(n); state.purchaseTarget = null; state.purchaseLater = false;
+    return go('check');
+  }
   // the tutor first: how it works, and what a word means
   if (/how does (alon|this|it) work|how (do i|to) read|walk me through|show me around|tour|tutorial|explain (this|alon|the app)/.test(q)) { input.value = ''; state.railHint = false; if (state.screen !== 'now') go('now'); state.tour = 0; return render(false, true); }
   const termQ = /paychecks?,? not months|not by month|why (paychecks|weeks|windows)/.test(q) ? 'paycheck'
@@ -7679,6 +8173,7 @@ document.addEventListener('keydown', e => {
   if (form.dataset.form === 'bill') saveBill();
 });
 document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && SHEET_SCREENS.includes(state.screen) && state.persona && !state.sheet && !state.why) { e.preventDefault(); return closeSheet(); }
   if (e.key === 'Enter' && e.target && e.target.dataset && e.target.dataset.ifield) { e.preventDefault(); saveIncome(); }
   if (e.key === 'Enter' && e.target && e.target.dataset && e.target.dataset.obf && obValid()) { e.preventDefault(); obClick({ ob: 'next' }); }
   if (e.key === 'Enter' && e.target && e.target.dataset && e.target.dataset.gfield) { e.preventDefault(); saveGoal(); }
