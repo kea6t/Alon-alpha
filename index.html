@@ -341,11 +341,23 @@
   .set-line { font-size: 15px; font-weight: 600; color: var(--muted-2); min-height: 44px; }
   .ahead-row { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 60px; padding: 12px 16px; border-radius: 16px; background: var(--white); border: 1px solid var(--line); text-align: left; cursor: pointer; font: inherit; color: var(--navy); }
   .ahead-row > .stack { flex: 1; min-width: 0; }
+  /* Ahead (Nov 13): two targets in one row: the row opens the quick overview, the arrow opens the whole paycheck */
+  .ahead-line { display: flex; align-items: stretch; width: 100%; min-height: 60px; border-radius: 16px; background: var(--white); border: 1px solid var(--line); }
+  .ahead-line .ahead-row { flex: 1; min-width: 0; background: none !important; border: 0 !important; border-radius: 16px 0 0 16px; padding-right: 8px; }
+  .ahead-more { flex: none; width: 52px; border: 0; border-left: 1px solid var(--line); background: none; border-radius: 0 16px 16px 0; display: grid; place-items: center; cursor: pointer; }
+  .ahead-more:hover, .ahead-line .ahead-row:hover { background: rgba(22,89,208,.06) !important; }
+  .ahead-more:focus-visible { outline: 3px solid var(--navy); outline-offset: -3px; }
+  .ahead-line.short { background: var(--amber-bg, #FBF1DF); border-color: #E8D2A8; }
+  .ahead-line.short .ahead-more { border-left-color: #E8D2A8; }
+  /* Buy something's numbers: open canvas, edge to edge, labels and numbers on shared rows */
+  .flat-block { margin: 0 -24px; padding: 16px 24px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .two-num { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 16px; row-gap: 4px; align-items: end; }
+  .two-num .num { font-size: 22px; font-weight: 800; align-self: start; }
   .ahead-date { font-size: 17px; font-weight: 700; }
   .ahead-word { font-size: 15px; font-weight: 700; color: var(--royal); }
   .ahead-amt { font-size: 19px; font-weight: 800; white-space: nowrap; }
   .ahead-row.short { background: var(--amber-bg, #FBF1DF); border-color: #E8D2A8; }
-  .ahead-row.short .ahead-word, .ahead-row.short .ahead-amt { color: var(--amber-text); }
+  .ahead-row.short .ahead-word, .ahead-row.short .ahead-amt, .ahead-line.short .ahead-word, .ahead-line.short .ahead-amt { color: var(--amber-text); }
   .next-up { display: flex; align-items: center; gap: 12px; width: calc(100% + 48px); margin: 0 -24px; padding: 14px 24px; border-radius: 0; background: none; border: 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); text-align: left; cursor: pointer; }
   .next-up .stack { flex: 1; min-width: 0; }
   .purpose { margin: 0; font-size: 15px; color: var(--muted-2); line-height: 1.5; }
@@ -514,7 +526,7 @@ const FEEDBACK_EMAIL = '';      // optional fallback
    form = the .../formResponse address, fields = the entry.NNN id for each question.
    Until it's set, feedback waits on this device and goes out once it is. */
 const FEEDBACK_FORM = { url: '', fields: { screen: '', build: '', feedback: '' } };
-const BUILD = 'v9.0 · Nov 13';
+const BUILD = 'v9.2 · Nov 13';
 const STORE = ALPHA ? 'alon-alpha-v1' : 'alon-proto-v4';
 const DEMO_START = Date.UTC(2026, 9, 30);       // Fri, Oct 30, 2026
 let TODAY = DEMO_START;                         // moves forward with the demo's skip-ahead
@@ -3744,9 +3756,9 @@ function screenWaves() {
     if (st && !open) {   // step 5: date, what's available, and a word only when it isn't covered; the rest is behind the tap
       const until = short(addDays(w.end, -1)), label = w.i === 0 ? `Today – ${until}` : `${long(w.start)}`;
       const word = st.status === 'Covered' ? '' : st.status === 'Short' && st.available >= 0 ? 'Short after everyday spending' : st.status;
-      return `<button class="ahead-row tap ${isShort ? 'short' : st.status === 'Tight' ? 'tight' : ''}" data-whysheet="${w.i}" aria-label="${label}: ${st.available < 0 ? money(-st.available) + ' short' : money(st.available) + (st.basis === 'remainder' ? ' left' : ' available')}${word ? ', ' + word : ''}. Tap to see how it adds up">
+      return `<div class="ahead-line ${isShort ? 'short' : st.status === 'Tight' ? 'tight' : ''}"><button class="ahead-row tap" data-whysheet="${w.i}" aria-label="${label}: ${st.available < 0 ? money(-st.available) + ' short' : money(st.available) + (st.basis === 'remainder' ? ' left' : ' available')}${word ? ', ' + word : ''}. Tap for a quick overview">
         <span class="stack gap2"><span class="ahead-date">${label}</span>${word ? `<span class="ahead-word">${word}</span>` : ''}</span>
-        <span class="ahead-amt">${money(st.available)}</span>${CHEV}</button>`;
+        <span class="ahead-amt">${money(st.available)}</span></button><button class="ahead-more" data-window-all="${w.i}" aria-label="See everything in the ${label} paycheck">${CHEV}</button></div>`;
     }
     if (w.cashUnknown) return `<div class="card window-card stack gap10">
       <button class="tap row" style="background:none;border:0;padding:0;align-items:flex-start" data-whysheet="${w.i}"><span class="stack gap4"><span style="font-size:16px;font-weight:700">${windowEyebrow(w)}</span><span style="font-size:13px;color:var(--muted)">Between paydays · ${money(w.billsTotal)} in bills still to come</span></span><span style="font-size:20px;font-weight:800">?</span></button>
@@ -3974,11 +3986,13 @@ function screenCheck() {
       ${(() => { const sea = seaLine(ws, { purchase: purchaseNow(amt), markLow: true, height: 104 }); return sea ? `<div class="now-wave" id="p-sea">${sea.svg}<p class="sea-key" id="p-low">${whatIfLine(sea, amt)}</p></div>` : ''; })()}
       <div class="field"><label for="p-name">What is it? (optional)</label><input class="input" id="p-name" data-input="pname" value="${esc(state.purchaseName)}" placeholder="e.g. New work shoes" autocomplete="off"></div>
     </section>
-    <section class="pad mt24"><div class="card stack gap12">
+    <section class="pad mt24"><div class="flat-block stack gap12">
       <span class="eyebrow">${windowEyebrow(w0)}</span>
-      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px">
-        <div class="stack gap4"><span class="small">${r.st ? `${r.st.basis === 'spendable' ? 'Available' : 'Left'} until ${short(parse(r.st.until))}` : 'Left now'}</span><span style="font-size:22px;font-weight:800">${r.st ? money(r.st.available) : range(w0.roomLow, w0.roomTyp)}</span></div>
-        <div class="stack gap4"><span class="small">${r.st ? 'After this and everyday spending' : 'After this'}</span><span id="p-after" style="font-size:22px;font-weight:800;color:${aLow < 0 ? 'var(--amber-text)' : 'var(--navy)'}">${range(aLow, aTyp)}</span></div>
+      <div class="two-num">   <!-- each label stays next to its number (screen readers read them in pairs); the grid puts labels on one row and numbers on the next -->
+        <span class="small" style="grid-area:1/1">${r.st ? `${r.st.basis === 'spendable' ? 'Available' : 'Left'} until ${short(parse(r.st.until))}` : 'Left now'}</span>
+        <span class="num" style="grid-area:2/1">${r.st ? money(r.st.available) : range(w0.roomLow, w0.roomTyp)}</span>
+        <span class="small" style="grid-area:1/2">${r.st ? 'After this and everyday spending' : 'After this'}</span>
+        <span id="p-after" class="num" style="grid-area:2/2;color:${aLow < 0 ? 'var(--amber-text)' : 'var(--navy)'}">${range(aLow, aTyp)}</span>
       </div>
       <p class="small">${r.st ? `Every bill before ${short(parse(r.st.until))} and money you’ve set aside are already counted. Nothing is subtracted twice.` : `Every bill due in this ${p.unit === 'month' ? 'window' : p.unit} and your ~${money(w0.everyday)} everyday estimate are already counted. Nothing is subtracted twice.`}</p>
     </div></section>
@@ -5268,7 +5282,33 @@ function goalCard(g) {
 /* Step 7 (Nov 12): one place for every dollar set aside. Six kinds, one idea: set aside, still yours,
    not counted in what's available. Each row opens its own details (the bill, the goal, the tide pool,
    the income it's kept from). */
+/* Set aside | Came up (Nov 13): the money you keep apart, and the things it's for when they come up,
+   in one place, the way Money holds Going out and Coming in. */
+function screenCameUp() {
+  const list = (state.surprises || []).slice().reverse();
+  const bolt = '<svg aria-hidden="true" width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#1D4ED8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 2.5 4.5 11H10l-1 6.5L15.5 9H10z"/></svg>';
+  const row = x => {
+    const b = state.bills.find(y => y.surprise === x.id);
+    const how = x.parts > 1 ? `in ${x.parts} parts of ${money(x.each)}` : `due ${short(parse(x.due))}`;
+    const usedAmt = Object.values(x.drawn || {}).reduce((t, v) => t + (Number(v) || 0), 0);   // drawn = { goalId: amount }
+    const used = usedAmt > 0 ? ` · ${money(usedAmt)} from money set aside` : '';
+    const inner = `<span class="lead"><span class="tile">${bolt}</span><span><span class="name">${esc(x.name)}</span><span class="meta">Added ${short(parse(x.on))} · ${how}${used}</span></span></span><span class="end"><span class="amt">${moneyExact(x.amount)}</span>${b ? CHEV : ''}</span>`;
+    return b ? `<button class="line-item tap" data-editbill="${b.id}" style="width:100%">${inner}</button>` : `<div class="line-item">${inner}</div>`;
+  };
+  const fund = (state.goals || []).find(g => g.fund);
+  return `${header()}
+  <main>
+    <section class="pad stack gap8 mt8"><h1 class="h1">Set aside</h1>
+      <div class="seg" role="tablist" aria-label="Set aside"><button role="tab" aria-selected="false" data-aside="saved">Set aside</button><button role="tab" aria-selected="true" class="on" data-aside="cameup">Came up</button></div>
+      <p class="purpose">Things that came up and how you’re covering them. Tap one to change it.</p></section>
+    <section class="pad stack mt24">${list.length ? `<div class="row-card">${list.map(row).join('')}</div>` : `<div class="tint stack gap6"><span style="font-size:16px;font-weight:700">Nothing has come up</span><span class="small">A car repair, a doctor’s bill, something that broke. Add it and see what it does to your next paychecks before you decide how to cover it.</span></div>`}</section>
+    <section class="pad stack gap10 mt24"><button class="primary" data-action="surprise">Add something that came up</button>
+      ${fund ? `<p class="small" style="margin:0">Your surprise fund has ${money(fund.saved || 0)} for the next one.</p>` : '<button class="secondary" data-action="start-fund">Start a surprise fund for next time</button>'}</section>
+  </main>
+  ${dock()}`;
+}
 function screenSetAside() {
+  if (state.asideSide === 'cameup') return screenCameUp();
   const u = persona().unit === 'month' ? 'window' : persona().unit;
   const rows = [];
   const card = (o) => `<div class="card stack gap8">
@@ -5313,9 +5353,10 @@ function screenSetAside() {
   });
   const total = reservedEvents(TODAY, addDays(TODAY, 1)).existingC / 100;
   const outside = state.reservedInBalance === false;
-  return `${header('now', 'Now')}
+  return `${header()}
   <main>
     <section class="pad stack gap8 mt8"><h1 class="h1">Set aside</h1>
+      <div class="seg" role="tablist" aria-label="Set aside"><button role="tab" aria-selected="true" class="on" data-aside="saved">Set aside</button><button role="tab" aria-selected="false" data-aside="cameup">Came up</button></div>
       <p class="body" style="margin:0">${total > 0 ? `<strong>${money(total)} set aside.</strong> ` : ''}Still yours${outside ? ', kept outside your everyday account' : ''}, just not counted in what’s available.</p><p class="small" style="margin:0">Alon doesn’t move money. You set it aside yourself; Alon keeps track.</p></section>
     <section class="pad stack gap12 mt20">${rows.length ? rows.map(r => r.html).join('') : `<div class="tint stack gap6"><span style="font-size:16px;font-weight:700">Nothing set aside yet</span><span class="small">A goal, a surprise fund, money for a big bill or for taxes. Everything you put aside shows up here.</span></div>`}</section>
     <section class="pad stack gap10 mt24">
@@ -5685,7 +5726,7 @@ function saveSurprise() {
   const b = surpriseBuild(f, sid);
   state.bills = b.bills; state.goals = b.goals; state.draws = b.draws; state.picked = null;
   state.surprises = (state.surprises || []).concat([{ id: sid, name: b.bill.name, kind: f.kind, amount: b.amount, parts: b.n, each: b.each, due: b.due, on: iso(TODAY), drawn: b.added.drawn, skips: b.added.skips }]);
-  state.surpriseForm = null; state.surpriseBack = null;
+  state.outcomeBack = state.surpriseBack; state.surpriseForm = null; state.surpriseBack = null;   // Done returns where you started
   const used = b.fundUsed + b.goalsUsed;
   showOutcome(before, `${b.bill.name} added`, `${b.n > 1 ? `${b.n} payments of ${money(b.each)}. ` : ''}${used ? `${money(used)} comes from your savings. ` : ''}Every paycheck below already counts it.`);
 }
@@ -7657,6 +7698,12 @@ app.addEventListener('click', e => {
     return openWhy(i < 0 ? 0 : i);
   }
   if (ds.action === 'why-sheet') { const ws = whyWindows(); let i = nextShort(ws); if (i < 0) i = ws.findIndex(w => w.roomLow < 0); return openWhy(i < 0 ? 0 : i); }
+  if (ds.windowAll != null) {   // the arrow: everything in that paycheck (this one: its own page; a later one: opened in place, scrolled to)
+    const i = Number(ds.windowAll); state.why = null; if (i === 0) return go('detail');
+    state.openWindows = { [i]: true }; go('waves');
+    const card = document.querySelector('.window-card.open'); if (card && card.scrollIntoView) card.scrollIntoView({ block: 'start' });
+    return;
+  }
   if (ds.action === 'why-all') { const i = state.why ? state.why.i : 0; state.why = null; if (i === 0) return go('detail'); state.openWindows = { [i]: true }; return go('waves'); }   // this paycheck: the full list you can edit
   if (ds.action === 'why-prepare') { const gap = round5(-whyWindows()[state.why.i].roomLow); go('why'); state.prepAmt = gap; return render(); }
   if (ds.action === 'why-options') { const w = whyWindows()[state.why.i]; state.askAnswer = { q: `What can I do about ${w.i === 0 ? 'this ' + unitWord2() : short(w.start)}?`, amount: round5(-w.roomLow), quote: false }; state.askBack = state.screen === 'options' ? 'now' : state.screen; return go('options'); }
@@ -7736,7 +7783,7 @@ app.addEventListener('click', e => {
   if (ds.action === 'feedback') { state.fbFrom = state.screen === 'feedback' ? state.fbFrom : state.screen; state.fb = state.fb || { kind: null, text: '' }; state.menuOpen = false; return go('feedback'); }
   if (ds.fbkind) { state.fb.kind = state.fb.kind === ds.fbkind ? null : ds.fbkind; return render(true); }
   if (ds.action === 'send-feedback') return sendFeedback();
-  if (ds.action === 'surprise') { state.surpriseBack = ['goals', 'add', 'detail'].includes(state.screen) ? (state.screen === 'add' ? (state.returnTo || 'now') : state.screen) : 'now'; state.surpriseForm = freshSurpriseForm(null); state.menuOpen = false; return go('surprise'); }
+  if (ds.action === 'surprise') { state.surpriseBack = ['goals', 'add', 'detail', 'setaside'].includes(state.screen) ? (state.screen === 'add' ? (state.returnTo || 'now') : state.screen) : 'now'; state.surpriseForm = freshSurpriseForm(null); state.menuOpen = false; return go('surprise'); }
   if (ds.skind) {
     const f = state.surpriseForm, label = (SURPRISE_KINDS.find(x => x[0] === ds.skind) || [])[1];
     if (!f.name.trim() || SURPRISE_KINDS.some(x => x[1] === f.name)) f.name = ds.skind === 'other' ? '' : label;
@@ -7802,6 +7849,7 @@ app.addEventListener('click', e => {
   if (ds.go) return go(ds.go);
   if (ds.action === 'save-bill') return saveBill();
   if (ds.money) { state.moneySide = ds.money; return render(false, true); }
+  if (ds.aside) { state.asideSide = ds.aside; return render(false, true); }
   if (ds.action === 'leave') { toast('Nothing changed. The gap stays visible.'); return go('now'); }
   if (ds.action === 'fold') { state.fold = isWide() ? 'closed' : 'open'; state.menuOpen = false; toast(isWide() ? 'Folded to phone size.' : 'Unfolded: tablet and foldable layout.'); return render(); }
   if (ds.action === 'rail-side') { state.railLeft = !state.railLeft; state.menuOpen = false; toast(`The wave is now on the ${state.railLeft ? 'left' : 'right'}.`); return render(); }
@@ -7836,7 +7884,7 @@ app.addEventListener('click', e => {
       o.allocs.map((a, n) => ({ id: 'r' + stamp + n, from: iso(ws[a.from].start), to: iso(ws[a.to].start), amount: a.amount, done: null })));
     return showOutcome(before, `Planned for ${windowShortName(ws[sm.k])}`, 'Setting money aside doesn’t move it. Alon asks on each payday whether you did.');
   }
-  if (ds.action === 'outcome-done') { state.outcome = null; return go('now'); }
+  if (ds.action === 'outcome-done') { const back = state.outcomeBack && screens[state.outcomeBack] ? state.outcomeBack : 'now'; state.outcome = null; state.outcomeBack = null; return go(back); }
   if (ds.action === 'undo') { state.reserves = []; toast('Plan removed.'); return go('why'); }
 
   if (ds.cushion !== undefined) { state.buffer = Number(ds.cushion); return render(); }
