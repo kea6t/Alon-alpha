@@ -526,7 +526,7 @@ const FEEDBACK_EMAIL = '';      // optional fallback
    form = the .../formResponse address, fields = the entry.NNN id for each question.
    Until it's set, feedback waits on this device and goes out once it is. */
 const FEEDBACK_FORM = { url: '', fields: { screen: '', build: '', feedback: '' } };
-const BUILD = 'v9.2 · Nov 13';
+const BUILD = 'v9.4 · Nov 14';
 const STORE = ALPHA ? 'alon-alpha-v1' : 'alon-proto-v4';
 const DEMO_START = Date.UTC(2026, 9, 30);       // Fri, Oct 30, 2026
 let TODAY = DEMO_START;                         // moves forward with the demo's skip-ahead
@@ -692,7 +692,7 @@ function freshState(key, seed) {
     goalForm: null,         // the goal being added or edited
     pool: { balance: 0, adds: [], uses: [], dismissed: {} },   // the tide pool
     surprises: [],          // things that came up: what was added, so it can be undone
-    draws: [],              // money taken from a goal or surprise fund: { id, goalId, name, date, amount, surprise }
+    draws: [],              // money taken from a goal or emergency fund: { id, goalId, name, date, amount, surprise }
     surpriseForm: null,     // "Something came up" while it's being filled in
     ow: freshOw(),          // "Other ways people cover it": inputs and which one is open
     today: day,             // "today"; the demo's skip-ahead moves it
@@ -1000,7 +1000,9 @@ function recentItemsFor(b, todayT) {
       // over (within the last 14 days), or under way right now: either way Alon asks, never assumes
       if (rs < todayT && re >= from) out.push({ bill: b, key: `${b.id}|${payKey(t, 0)}`, orig: t, part: 0, amount: b.amount, range: true, going: re >= todayT });
     });
-    return out;
+    // one question per bill: with a wide range ("I'm not sure" is the whole month) last month's can still be
+    // inside the 14 days while this month's is under way. Asking twice reads as the bill being there twice.
+    return out.slice(-1);
   }
   if (!b.plan) {
     if (!['weekly', 'biweekly', 'semimonthly', 'monthly'].includes(b.freq)) return out;
@@ -1093,7 +1095,7 @@ function scheduleChoicesHtml(attr, t, rule, n, amts, mode, daysDates, billWord) 
   let out = '';
   if (ch) out += ch.map(c => scheduleCard(attr, c.anchor, mode === c.anchor, datesLine(c.dates, amts),
     c.anchor === 'before' ? 'Starts the payday on or before it’s due' : 'Starts the payday on or after it’s due')).join('');
-  out += scheduleCard(attr, 'days', mode === 'days', 'Something else', mode === 'days' && daysDates ? datesLine(daysDates, amts) : 'I’ll enter the days of the month');
+  out += scheduleCard(attr, 'days', mode === 'days', 'Other days', mode === 'days' && daysDates ? datesLine(daysDates, amts) : 'I’ll enter the days of the month');
   const why = !rule || rule.freq === 'once' ? '' : !ch ? `<p class="small" style="margin:0">You’re paid ${everyLabel(rule.freq)}, so ${n} payments can’t all land on paydays in one month. Enter the days instead.</p>` : '';
   return `<span class="small" style="font-weight:700">Which matches your plan for the ${due} ${billWord || 'bill'}?</span>${out}${why}`;
 }
@@ -1292,7 +1294,7 @@ function computeWindows(reserves, count) {
   /* The tide pool: extra money the person chose to carry forward. Planned moves go in from
      their paycheck; the pool then covers any paycheck that would come up short, earliest first.
      Money already confirmed is in the balance; uses already confirmed are recorded so they
-     aren't drawn twice. The surprise fund is separate and never used here. */
+     aren't drawn twice. The emergency fund is separate and never used here. */
   /* Set some aside when it arrives: what's kept from a deposit isn't part of that paycheck's room; a bill
      paid from it (estimated taxes) uses it, up to what's been kept so far. */
   const keepRun = Object.assign({}, state.keptSoFar || {});
@@ -2211,7 +2213,7 @@ function itemRow(x, opts = {}) {
   { const pl = preparedLeft(b); if (pl && x.orig === pl.date) meta += ` · ${money(pl.prepared)} set aside, ${money(pl.left)} to go`; }
   if (b.count) meta += ` · Payment ${occurrences(b, parse(b.start), addDays(x.date, 1)).length} of ${b.count}`;
   if (x.part) { const done = (b.plan && Number(b.plan.paidBefore)) || 0; meta += b.standalone ? ` · Payment ${x.part + done} of ${x.parts + done}` : ` · Part ${x.part} of ${x.parts}`; if (b.standalone && x.part === x.parts) meta += ' · Last one'; }
-  if (x.fee) meta = x.once ? `${short(x.date)} · One-time fee to start the plan` : `${short(x.date)} · Fee for paying in parts`;
+  if (x.fee) meta = x.once ? `${short(x.date)} · One-time fee to start the plan` : `${short(x.date)} · Payment plan fee`;
   if (x.membership) meta = `${short(x.date)} · Monthly membership, until you cancel it`;
   if (b.surprise) meta += ' · Came up';
   const inner = `<span><span class="name">${esc(eventName(x))}</span><span class="meta ${cls}"><span class="dot ${dot}"></span>${meta}</span></span><span class="amt ${b.status === 'estimate' ? 'est-t' : ''}">${amt}</span>`;
@@ -2449,7 +2451,7 @@ function seaLine(ws, opts) {
 }
 
 const CONTEXT = { ask: 'What if', setaside: '', outcome: 'Done', data: 'Your data', pool: 'Tide pool', plan: 'Bills', options: 'Answer', surprise: 'Came up', goals: 'Goals', 'goal-edit': 'Goals', 'income-edit': 'Income', check: 'What if', year: 'Year', now: '', detail: 'Now', waves: 'Ahead', why: 'Ahead', add: 'Bills', bills: 'Bills', payday: 'Payday', income: 'Income' };
-const DOCK_HINT = { bills: 'Ask about your money', ask: 'Ask anything, or type an amount', outcome: 'Ask about what changed', data: 'Ask about your data', pool: 'Ask about your tide pool', add: 'Ask about this bill', plan: 'Ask about paying in parts', 'goal-edit': 'Ask about this goal', goals: 'Ask about saving', surprise: 'Ask what you can do', 'income-edit': 'Ask about this income', income: 'Ask about your income', check: 'Ask before you buy', why: 'Ask why it’s short', payday: 'Ask about this paycheck', options: 'Ask a follow-up', detail: 'Ask about this paycheck' };
+const DOCK_HINT = { bills: 'Ask about your money', ask: 'Ask anything, or type an amount', outcome: 'Ask about what changed', data: 'Ask about your data', pool: 'Ask about your tide pool', add: 'Ask about this bill', plan: 'Ask about this payment plan', 'goal-edit': 'Ask about this goal', goals: 'Ask about saving', surprise: 'Ask what you can do', 'income-edit': 'Ask about this income', income: 'Ask about your income', check: 'Ask before you buy', why: 'Ask why it’s short', payday: 'Ask about this paycheck', options: 'Ask a follow-up', detail: 'Ask about this paycheck' };
 /* The Ask pill (Nov 13): one line above the wave rail on every page that has it. A question gets an
    answer; an amount opens Buy something. What if? has its own big field, so no pill there. */
 function askPill() {
@@ -3053,7 +3055,7 @@ function screenAsk() {
       <div class="row-card">
         ${row('buy', 'Buy something', 'See if it fits before you spend', 'data-go="check"')}
         ${row('payoff', 'Pay off or cancel', 'See what ending a bill frees up', 'data-go="change"')}
-        ${row('aside', 'Set some aside', 'A goal, a surprise fund, a big bill', 'data-go="setaside"')}
+        ${row('aside', 'Set some aside', 'A goal, an emergency fund, a big bill', 'data-go="setaside"')}
         ${row('prepare', 'Prepare for a bill', 'Spread a big one over paychecks', 'data-explore="prepare"')}
         ${row('cameup', 'Something came up', 'Add it and see what changes', 'data-action="surprise"')}
       </div>
@@ -4279,7 +4281,7 @@ const INCOME_KINDS = [
   ['military', 'Military or Reserve', 'fixed', 0, null, 'Drill pay'],
   ['benefits', 'Pension or benefits', 'fixed', 0, null, 'Pension'],
   ['gig', 'Gig or tips', 'variable', 0, null, 'Tips and gigs'],
-  ['other', 'Something else', 'fixed', 0, null, 'Income']];
+  ['other', 'Other', 'fixed', 0, null, 'Income']];
 const incomeKind = id => INCOME_KINDS.find(k => k[0] === id) || null;
 const KEEP_KINDS = ['1099', 'rental', 'business'];
 function incomeFormFrom(src) {
@@ -4606,7 +4608,7 @@ function planCostNote(b) {
   const parts_ = [];
   if (recurring) parts_.push(`about ${moneyExact(Math.round(recurring * 100) / 100)} a year in ${p.membership && (p.fee || p.feePct) ? 'fees and membership' : p.membership ? 'membership' : 'fees'}`);
   if (once) parts_.push(`a ${moneyExact(once)} one-time fee`);
-  return `Paying in parts costs ${parts_.join(', plus ')}, from what you entered.`;
+  return `This payment plan costs ${parts_.join(', plus ')}, from what you entered.`;
 }
 
 /* Update the bill preview and Save button without redrawing the form, so typing keeps focus. */
@@ -4768,10 +4770,10 @@ function addMarkup(f, preview, note, valid, quick) {
       </fieldset>
       ${savedFieldHtml(f)}
       <fieldset style="border:0;padding:0;margin:0" class="stack gap8"><legend class="legend" style="margin-bottom:8px">How do you pay it?</legend>
-        <div class="seg"><button type="button" class="${f.plan ? '' : 'on'}" aria-pressed="${!f.plan}" data-paymode="once">All at once</button><button type="button" class="${f.plan ? 'on' : ''}" aria-pressed="${!!f.plan}" data-paymode="parts">In parts</button></div>
+        <div class="seg"><button type="button" class="${f.plan ? '' : 'on'}" aria-pressed="${!f.plan}" data-paymode="once">All at once</button><button type="button" class="${f.plan ? 'on' : ''}" aria-pressed="${!!f.plan}" data-paymode="parts">Split payments</button></div>
         ${f.plan ? planFields(f.plan, f.freq === 'once' ? 'Pay it in' : 'Each time, pay it in', { monthly: splitByPayday(f), due: f.due, amount: parseMoney(f.amount) }) : ''}
       </fieldset>
-      ${keepPayHtml(f)}` : `<button type="button" class="linkish" style="text-align:left" data-action="bill-more">More options: an estimate, not sure of the date, paying in parts, money already set aside</button>`}
+      ${keepPayHtml(f)}` : `<button type="button" class="linkish" style="text-align:left" data-action="bill-more">More options: an estimate, not sure of the date, split payments, money already set aside</button>`}
       ${existingBill && LONG_FREQS.includes(existingBill.freq) ? spreadOffer([existingBill]) + (/tax/i.test(existingBill.name) ? `<div class="mt8">${taxLearn(existingBill)}</div>` : '') : ''}
       <div id="bill-recent-wrap" data-keys="${esc(billRecentItems(f).map(x => x.key).join(','))}">${billRecentBlock(f)}</div>
       <div class="tint stack gap6 preview-card">
@@ -4925,7 +4927,7 @@ function screenPlan() {
   return `${header(back, 'Back')}
   <main>
     <section class="pad stack gap14 mt8">
-      <h1 class="h1">${f.id ? 'Edit payment plan' : 'Something you’re paying in parts'}</h1>
+      <h1 class="h1">${f.id ? 'Edit payment plan' : 'Add a payment plan'}</h1>
       <p class="body" style="margin:0">Add what’s left, and each payment shows up in your forecast.</p>
       <div class="chips">${PLAN_KINDS.map(([k, l]) => chip('plkind', k, l, f.kind === k)).join('')}</div>
       ${input('name', 'What’s it for?', advance ? 'e.g. Paycheck advance' : 'e.g. Sofa, hospital bill', 'type="text"')}
@@ -5182,7 +5184,7 @@ function screenBills(panel, head) {
     ${done.length ? `<section class="pad stack mt24"><h2 class="h2" style="font-size:18px;margin-bottom:8px">Done</h2>
       <div class="row-card">${done.map(b => row(b, 'Paid off', b.amount, null)).join('')}</div></section>` : ''}
     ${state.bills.length ? '' : '<p class="small pad mt14">No bills yet. Add your first one below.</p>'}
-    <div class="pad stack gap10 mt24">${panel ? '' : '<button class="primary" data-go="add" data-rail="Add">Add a bill</button>'}<button class="secondary" data-action="add-plan">Add something you’re paying in parts</button></div>
+    <div class="pad stack gap10 mt24">${panel ? '' : '<button class="primary" data-go="add" data-rail="Add">Add a bill</button>'}<button class="secondary" data-action="add-plan">Add a payment plan</button></div>
     ${panel ? '' : lighterHtml()}
   </main>
   ${dock()}`;
@@ -5200,7 +5202,7 @@ function goalFromForm(f) {
     name: f.name.trim(), target: parseMoney(f.target), saved: parseMoney(f.saved) || 0, mode: f.mode,
     by: f.by, per: parseMoney(f.per) || 0, paused: !!f.paused, fund: !!f.fund });
 }
-/* A surprise fund is a goal you don't spend on a date: you use it when something comes up,
+/* An emergency fund is a goal you don't spend on a date: you use it when something comes up,
    then it refills. A starting target from the person's own numbers: about one month of
    bills and everyday spending (rare bills averaged over the year), rounded up to $50. */
 function monthOfBillsFor(bills, everydayPerWeek, fromT) {
@@ -5209,10 +5211,10 @@ function monthOfBillsFor(bills, everydayPerWeek, fromT) {
 }
 const monthOfBills = () => monthOfBillsFor(state.bills, state.everydayPerWeek, TODAY);
 function fundForm() {
-  return Object.assign(goalFormFrom(null), { name: 'Surprise fund', fund: true, mode: 'amount', target: '500', per: '25' });
+  return Object.assign(goalFormFrom(null), { name: 'Emergency fund', fund: true, mode: 'amount', target: '500', per: '25' });
 }
 function fundLearn() {
-  return learn('fund', 'What’s a surprise fund?',
+  return learn('fund', 'What’s an emergency fund?',
     `<p>Money kept aside for the things you can’t put on a calendar: a car repair, a doctor’s bill, a furnace that quits. It’s different from saving for a car or a trip. You don’t spend it on a date; you use it when something comes up, then it refills.</p>
      <p>There’s no single right size. A fund that covers the next surprise is already doing its job, and you can raise the target later.</p>
      <p class="you"><strong>For you:</strong> about one month of your bills and everyday spending is ${money(monthOfBills())}, from the numbers you’ve entered.</p>`,
@@ -5303,7 +5305,7 @@ function screenCameUp() {
       <p class="purpose">Things that came up and how you’re covering them. Tap one to change it.</p></section>
     <section class="pad stack mt24">${list.length ? `<div class="row-card">${list.map(row).join('')}</div>` : `<div class="tint stack gap6"><span style="font-size:16px;font-weight:700">Nothing has come up</span><span class="small">A car repair, a doctor’s bill, something that broke. Add it and see what it does to your next paychecks before you decide how to cover it.</span></div>`}</section>
     <section class="pad stack gap10 mt24"><button class="primary" data-action="surprise">Add something that came up</button>
-      ${fund ? `<p class="small" style="margin:0">Your surprise fund has ${money(fund.saved || 0)} for the next one.</p>` : '<button class="secondary" data-action="start-fund">Start a surprise fund for next time</button>'}</section>
+      ${fund ? `<p class="small" style="margin:0">Your emergency fund has ${money(fund.saved || 0)} for the next one.</p>` : '<button class="secondary" data-action="start-fund">Start an emergency fund for next time</button>'}</section>
   </main>
   ${dock()}`;
 }
@@ -5327,7 +5329,7 @@ function screenSetAside() {
     rows.push({ kind: 'bill', html: card({ name: esc(b.name), have: pl ? pl.prepared + sum(planned.filter(r => r.done === true), r => r.amount) : sum(planned.filter(r => r.done === true), r => r.amount), of: b.amount,
       sub: `For a bill${due ? ` · due ${short(due)}` : ''}`, note: plannedAmt ? `${money(plannedAmt)} more planned from ${listJoin(planned.filter(r => r.done == null).map(r => short(parse(r.from))))}. Alon asks on that payday.` : '', attrs: `data-editbill="${b.id}"` }) });
   });
-  // goals and the surprise fund
+  // goals and the emergency fund
   const ws = computeWindows();
   (state.goals || []).forEach(g => {
     const plan = goalPlan(g);
@@ -5358,10 +5360,10 @@ function screenSetAside() {
     <section class="pad stack gap8 mt8"><h1 class="h1">Set aside</h1>
       <div class="seg" role="tablist" aria-label="Set aside"><button role="tab" aria-selected="true" class="on" data-aside="saved">Set aside</button><button role="tab" aria-selected="false" data-aside="cameup">Came up</button></div>
       <p class="body" style="margin:0">${total > 0 ? `<strong>${money(total)} set aside.</strong> ` : ''}Still yours${outside ? ', kept outside your everyday account' : ''}, just not counted in what’s available.</p><p class="small" style="margin:0">Alon doesn’t move money. You set it aside yourself; Alon keeps track.</p></section>
-    <section class="pad stack gap12 mt20">${rows.length ? rows.map(r => r.html).join('') : `<div class="tint stack gap6"><span style="font-size:16px;font-weight:700">Nothing set aside yet</span><span class="small">A goal, a surprise fund, money for a big bill or for taxes. Everything you put aside shows up here.</span></div>`}</section>
+    <section class="pad stack gap12 mt20">${rows.length ? rows.map(r => r.html).join('') : `<div class="tint stack gap6"><span style="font-size:16px;font-weight:700">Nothing set aside yet</span><span class="small">A goal, an emergency fund, money for a big bill or for taxes. Everything you put aside shows up here.</span></div>`}</section>
     <section class="pad stack gap10 mt24">
       <button class="primary" data-action="add-goal">Start a goal</button>
-      ${(state.goals || []).some(g => g.fund) ? '' : '<button class="secondary" data-action="start-fund">Start a surprise fund</button>'}
+      ${(state.goals || []).some(g => g.fund) ? '' : '<button class="secondary" data-action="start-fund">Start an emergency fund</button>'}
       <button class="secondary" data-go="pool">Carry some forward to your tide pool</button>
     </section>
     <section class="pad mt14 stack gap8">${fundLearn()}${learn('sinking', 'What’s a sinking fund?', '<p>Money you set aside a little at a time for a bill you know is coming, like insurance or taxes, so it never lands all at once. In Alon it’s “Already set aside” on that bill.</p>', 'Alon’s explanation. You move the money yourself; Alon only plans it.')}</section>
@@ -5380,8 +5382,8 @@ function screenGoals() {
     ${goals.length && per ? `<p class="small pad mt14">This ${persona().unit === 'month' ? 'window' : persona().unit}: ${money(per)} set aside for goals. Alon doesn’t move money; you move it to savings yourself.</p>` : ''}
     ${goals.some(g => g.fund) ? '' : `<section class="pad mt20"><div class="tint stack gap8">
       <span style="font-size:16px;font-weight:700">For what you can’t plan</span>
-      <span class="small">A car repair, a doctor’s bill, a broken AC. A surprise fund is a goal you use when something comes up, then refill.</span>
-      <button class="secondary" style="min-height:44px" data-action="start-fund">Start a surprise fund</button>
+      <span class="small">A car repair, a doctor’s bill, a broken AC. An emergency fund is a goal you use when something comes up, then refill.</span>
+      <button class="secondary" style="min-height:44px" data-action="start-fund">Start an emergency fund</button>
     </div></section>`}
     <section class="pad mt14">${fundLearn()}</section>
     <section class="pad mt14"><button class="linkish" style="text-align:left" data-action="surprise">Something came up? Add it and see your options</button></section>
@@ -5395,9 +5397,9 @@ function screenGoalEdit() {
   return `${header('setaside', 'Set aside')}
   <main>
     <section class="pad stack gap14 mt8">
-      <h1 class="h1">${f.id ? (f.fund ? 'Your surprise fund' : 'Edit goal') : (f.fund ? 'Start a surprise fund' : 'Add a goal')}</h1>
+      <h1 class="h1">${f.id ? (f.fund ? 'Your emergency fund' : 'Edit goal') : (f.fund ? 'Start an emergency fund' : 'Add a goal')}</h1>
       ${f.fund ? `<p class="body">For what you can’t put on a calendar. Use it when something comes up; it refills on its own in your forecast.</p>` : ''}
-      <div class="field"><label for="g-name">What are you saving for?</label><input class="input" id="g-name" data-gfield="name" value="${esc(f.name)}" placeholder="e.g. Car, trip, surprise fund" autocomplete="off"></div>
+      <div class="field"><label for="g-name">What are you saving for?</label><input class="input" id="g-name" data-gfield="name" value="${esc(f.name)}" placeholder="e.g. Car, trip, emergency fund" autocomplete="off"></div>
       <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px">
         <div class="field"><label for="g-target">Target</label><input class="input" id="g-target" data-gfield="target" inputmode="decimal" value="${esc(f.target)}" placeholder="$0" autocomplete="off"></div>
         <div class="field"><label for="g-saved">Saved so far</label><input class="input" id="g-saved" data-gfield="saved" inputmode="decimal" value="${esc(f.saved)}" placeholder="$0" autocomplete="off"></div>
@@ -5448,10 +5450,10 @@ function saveGoal() {
 /* ===================== Something came up =====================
    An unexpected bill: a car repair, a doctor's bill, a furnace, a burst pipe. Alon adds it
    like any bill, shows what it does to the next paychecks, and lays out ways to cover it:
-   the surprise fund, money saved for goals, skipping goal set-asides while it's paid.
+   the emergency fund, money saved for goals, skipping goal set-asides while it's paid.
    Money taken from savings lands on the day of the payment, because nothing carries over
    between paychecks. Alon never lends; when nothing covers it, it says so and keeps showing it. */
-const SURPRISE_KINDS = [['car', 'Car repair'], ['medical', 'Medical bill'], ['home', 'Home repair'], ['other', 'Something else']];
+const SURPRISE_KINDS = [['car', 'Car repair'], ['medical', 'Medical bill'], ['home', 'Home repair'], ['other', 'Other']];
 const PART_CHOICES = [2, 3, 4, 6, 12];
 const unitWord = () => persona().unit === 'month' ? 'window' : persona().unit;
 const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
@@ -5518,7 +5520,7 @@ function surpriseBuild(f, sid) {
     }
     return used;
   };
-  // 2. The surprise fund: by default, as much of the bill as it holds.
+  // 2. The emergency fund: by default, as much of the bill as it holds.
   if (f.cover.fund) {
     const pool = goals.filter(g => g.fund);
     res.fundUsed = allocate(pool, f.fundUse == null ? Math.min(savedIn(pool), amount) : (parseMoney(f.fundUse) || 0));
@@ -5610,7 +5612,7 @@ function rowsHtml(rows) {
 }
 /* The ways to cover it that are actually possible for this person right now. */
 function coverAvail(v) {
-  return [['fund', 'Use your surprise fund', v.fundSaved > 0], ['goals', 'Use money saved for goals', v.otherSaved > 0], ['skip', 'Pause goal set-asides while you pay it', v.activeGoals]]
+  return [['fund', 'Use your emergency fund', v.fundSaved > 0], ['goals', 'Use money saved for goals', v.otherSaved > 0], ['skip', 'Pause goal set-asides while you pay it', v.activeGoals]]
     .filter(x => x[2]).map(x => [x[0], x[1]]);
 }
 function coverDesc(key, v, f) {
@@ -5634,7 +5636,7 @@ function surpriseTips(kind) {
   if (kind === 'home') return learn('tips-home', 'Before you pay for a home repair', '<p>Ask your homeowners or renters insurance whether it’s covered before the repair starts. Get more than one quote if you can. If a contractor offers to split it, ask whether there’s interest or a fee.</p>', 'General tips, not advice for your situation.');
   if (kind === 'medical') return learn('medical', 'Can I get help with a hospital bill?',
     `<p>In the U.S., a nonprofit hospital must have a written <strong>financial assistance policy</strong> for emergency and other medically necessary care. It says who can get free or discounted care and how to apply, and the hospital has to tell patients about it, including on billing statements.</p>
-     <p class="you"><strong>For you:</strong> before paying, ask the billing office for that policy, an itemized bill, and whether you can pay in parts. If you can, set “Pay it” to in parts above and Alon spreads it out.</p>`,
+     <p class="you"><strong>For you:</strong> before paying, ask the billing office for that policy, an itemized bill, and whether you can set up a payment plan. If you can, set “Pay it” to Payment plan above and Alon spreads it out.</p>`,
     `Source: IRS, <a href="https://www.irs.gov/charities-non-profits/financial-assistance-policies-faps" target="_blank" rel="noopener">Financial assistance policies (FAPs)</a> · checked Nov 2, 2026. Applies to tax-exempt hospitals; other providers may differ.`);
   return '';
 }
@@ -5664,9 +5666,9 @@ function screenSurprise() {
         <div class="field"><label for="s-due">${Number(f.parts) > 1 ? 'First payment' : 'When you pay it'}</label><input class="input" id="s-due" type="date" data-sfield="due" value="${esc(f.due)}" min="${iso(TODAY)}"></div>
       </div>
       <fieldset style="border:0;padding:0;margin:0" class="stack gap8"><legend class="legend" style="margin-bottom:8px">Pay it</legend>
-        <div class="seg"><button type="button" class="${Number(f.parts) > 1 ? '' : 'on'}" aria-pressed="${!(Number(f.parts) > 1)}" data-sparts="1">All at once</button><button type="button" class="${Number(f.parts) > 1 ? 'on' : ''}" aria-pressed="${Number(f.parts) > 1}" data-sparts="${Number(f.parts) > 1 ? f.parts : 3}">In parts</button></div>
+        <div class="seg"><button type="button" class="${Number(f.parts) > 1 ? '' : 'on'}" aria-pressed="${!(Number(f.parts) > 1)}" data-sparts="1">All at once</button><button type="button" class="${Number(f.parts) > 1 ? 'on' : ''}" aria-pressed="${Number(f.parts) > 1}" data-sparts="${Number(f.parts) > 1 ? f.parts : 3}">Payment plan</button></div>
         ${Number(f.parts) > 1 ? `<div class="chips">${PART_CHOICES.map(n => `<button type="button" class="chip ${Number(f.parts) === n ? 'on' : ''}" data-sparts="${n}">${n} months</button>`).join('')}</div>
-          <div class="field"><label for="s-partFee">Fee for paying in parts (if any)</label><input class="input" id="s-partFee" data-sfield="partFee" inputmode="decimal" value="${esc(f.partFee || '')}" placeholder="$0" autocomplete="off"></div>
+          <div class="field"><label for="s-partFee">Payment plan fee (if any)</label><input class="input" id="s-partFee" data-sfield="partFee" inputmode="decimal" value="${esc(f.partFee || '')}" placeholder="$0" autocomplete="off"></div>
           <span class="small">Only if they’ve agreed to it. Alon counts only the amounts you enter.</span>` : ''}
       </fieldset>
       <div class="card stack gap6 preview-card"><span class="small" style="font-weight:600">What this changes</span><span id="s-impact" class="${v.valid ? 'body' : 'ph'}">${v.valid ? v.impact : 'Fill in what it is and how much to see what it does to your paychecks.'}</span><div id="s-impact-rows">${v.valid ? rowsHtml(v.impactRows) : ''}</div></div>
@@ -5678,8 +5680,8 @@ function screenSurprise() {
       ${coverAvail(v).map(([k, t]) => box(k, t)).join('')}
       <div class="card stack gap6 preview-card"><span class="small" style="font-weight:600">With what you picked</span>
         <div id="s-result">${surpriseResultHtml(v)}</div></div>`
-        : `<p id="s-result" class="small" style="margin:0;line-height:1.5">There’s no surprise fund or goal savings to draw from yet. You can still change the date, or pay it in parts above if they agree to it.</p>`}
-      ${fundGoals().length ? '' : `<button type="button" class="more-toggle" data-action="start-fund">For next time: start a surprise fund <span class="sum">›</span></button>`}
+        : `<p id="s-result" class="small" style="margin:0;line-height:1.5">There’s no emergency fund or goal savings to draw from yet. You can still change the date, or choose a payment plan above if they agree to it.</p>`}
+      ${fundGoals().length ? '' : `<button type="button" class="more-toggle" data-action="start-fund">For next time: start an emergency fund <span class="sum">›</span></button>`}
       ${surpriseTips(f.kind)}
       <button class="primary in-main" data-action="save-surprise" data-rail="Save">Save it to my forecast</button>
       <p class="decision-note">Alon doesn’t lend or move money; it shows you the numbers.</p>
@@ -5855,8 +5857,8 @@ function owSection(ctx) {
   const items = {
     ask: ['Ask for more time or smaller payments', 'Free',
       `<p class="small" style="margin:0">Landlords, utilities, hospitals and repair shops often agree to a later date or a payment plan, especially if you ask before it’s due.</p>
-       ${q([`Can I pay on ${later[0] ? long(later[0].start) : 'my next payday'}?`, 'Is there a late fee if I do?', 'Can I pay it in parts, and is there a fee for that?', 'Do you have a hardship program?'])}
-       ${state.screen === 'surprise' ? '<p class="small" style="margin:0">If they agree, set it above under “When you pay it” or “In parts” to see it in your forecast.</p>' : ''}
+       ${q([`Can I pay on ${later[0] ? long(later[0].start) : 'my next payday'}?`, 'Is there a late fee if I do?', 'Can I set up a payment plan, and is there a fee for that?', 'Do you have a hardship program?'])}
+       ${state.screen === 'surprise' ? '<p class="small" style="margin:0">If they agree, set it above under “When you pay it” or “Payment plan” to see it in your forecast.</p>' : ''}
        <p class="learn-src" style="margin:0">211.org suggests contacting your landlord or lender first about payment plans.</p>`],
     help: ['Local help programs', 'Free',
       `<p class="small" style="margin:0">In the U.S., you can call 211 to reach your local 211, which helps people find programs for paying rent, mortgage or utility bills. Who qualifies depends on the program; they’ll ask about your household and income.</p>
@@ -5865,7 +5867,7 @@ function owSection(ctx) {
       `<p class="small" style="margin:0">Agree on the amount and the date you’ll pay it back, so it’s clear for both of you.</p>
        <span class="small" style="font-weight:700">Pay it back on</span>${chips('familyBack', later.map((w, i) => [i, short(w.start)]))}`],
     split: ['A bill-splitting or pay-later service', 'Fees',
-      `<p class="small" style="margin:0">Pays the bill now and lets you pay it back in parts, for a fee or a membership.</p>
+      `<p class="small" style="margin:0">Pays the bill now and lets you pay it back over time, for a fee or a membership.</p>
        <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px">${field('ow-split-fee', 'splitFee', 'Total fee they quote', o.splitFee, '$0')}<div class="stack gap8"><span class="small" style="font-weight:700">Payments</span>${chips('splitN', [[2, '2'], [3, '3'], [4, '4']])}</div></div>
        ${q(['Is there a monthly fee, even in months I don’t use it?', 'What does each split cost?', 'What happens if a payment is late?', 'Does it report to credit bureaus?'])}`],
     card: ['A credit card', 'Interest',
@@ -5907,8 +5909,8 @@ function refreshOw() {
 }
 
 /* ===================== Tide pool =====================
-   Extra the person chooses to carry forward. Separate from the surprise fund: the tide pool
-   covers short paychecks automatically; the surprise fund is only used by choice. */
+   Extra the person chooses to carry forward. Separate from the emergency fund: the tide pool
+   covers short paychecks automatically; the emergency fund is only used by choice. */
 const poolState = () => state.pool || (state.pool = { balance: 0, adds: [], uses: [], dismissed: {} });
 const poolPending = () => sum(poolState().adds.filter(a => a.done == null && parse(a.from) >= TODAY), a => a.amount);
 const extraOf = w => Math.max(0, w.roomLow);
@@ -6026,9 +6028,9 @@ function screenPool() {
     ${extras.length ? `<section class="pad stack mt24"><h2 class="h2" style="font-size:16px;margin-bottom:4px">${u === 'week' ? 'Weeks' : 'Paychecks'} with room to spare</h2>
       ${extras.map(w => `<button class="line-item tap" data-poolfrom="${iso(w.start)}"><span><span class="name">${windowShortName(w)}</span><span class="meta">${money(extraOf(w))} left · Tap to carry some forward</span></span><span class="amt" style="color:var(--royal)">＋</span></button>`).join('')}
     </section>` : ''}
-    <section class="pad mt20">${learn('pool', 'How is this different from the surprise fund?',
+    <section class="pad mt20">${learn('pool', 'How is this different from the emergency fund?',
       `<p>The tide pool smooths ordinary ups and downs: a light ${u}, a month with a big bill. Alon uses it automatically when a ${u} would come up short.</p>
-       <p>The surprise fund is for what nobody can plan, like a car repair. Alon never uses it on its own; only when you choose to on “Something came up.” Keeping them apart means a short ${u} can’t quietly drain your emergency money.</p>`,
+       <p>The emergency fund is for what nobody can plan, like a car repair. Alon never uses it on its own; only when you choose to on “Something came up.” Keeping them apart means a short ${u} can’t quietly drain your emergency money.</p>`,
       'Alon’s explanation. You move the money yourself; Alon only plans it.')}</section>
   </main>
   ${dock()}`;
@@ -6042,8 +6044,8 @@ function screenPool() {
 const OB_ESSENTIAL = ['way', 'income', 'others', 'onhand', 'home', 'homecosts', 'bills', 'style', 'recent', 'everyday', 'ready'];
 const OB_EXTRAS = [
   ['rare', 'Bills that come a few times a year', 'Car insurance, registration, taxes'],
-  ['plans', 'Anything you’re paying in parts', 'Pay later, payment plans, advances'],
-  ['cushion', 'Money set aside for surprises', 'Even a little helps Alon show options'],
+  ['plans', 'Payment plans', 'Pay later, installments, advances'],
+  ['cushion', 'Money set aside for emergencies', 'Even a little helps Alon show options'],
   ['onhand', 'What’s in your account now', 'Counts toward the days until payday']
 ];
 const obSteps = () => [].concat(...OB_ESSENTIAL.filter(k => (k !== 'onhand' || (state.ob && state.ob.way && (!obPaydayToday() || state.ob.way === 'free'))) && (k !== 'recent' || (state.ob && obRecent(state.ob).length > 0))
@@ -6053,7 +6055,7 @@ const OB_HOUSING = [
   ['rent', 'I rent', 'An apartment, a house or a room'],
   ['mortgage', 'I have a mortgage', 'A monthly home loan payment'],
   ['own', 'I own it outright', 'No mortgage payment'],
-  ['other', 'Something else', 'Living with family, a dorm, or no set payment']
+  ['other', 'Other', 'Living with family, a dorm, or no set payment']
 ];
 /* [name, how often, what a mortgage could already include] */
 const OB_HOMECOSTS = [['HOA dues', 'monthly', 'hoa'], ['Condo fees', 'monthly', null], ['Property taxes', 'semiannual', 'tax'], ['Homeowners insurance', 'yearly', 'ins'], ['Special assessment', 'once', null]];
@@ -6449,7 +6451,7 @@ function obSeed() {
   const saved = o.fund === 'some' ? obNum(o.fundSaved) || 0 : 0, per = obNum(o.fundPer) || 0;
   if (o.fund && (saved > 0 || per > 0)) {
     const target = Math.max(monthOfBillsFor(bills, obNum(o.everyday) || 0, parse(o.today)), 50);
-    fund = { id: 'fund', name: 'Surprise fund', fund: true, target, saved, mode: 'amount', per: per > 0 ? per : 25, paused: !(per > 0), skips: [], hist: {} };
+    fund = { id: 'fund', name: 'Emergency fund', fund: true, target, saved, mode: 'amount', per: per > 0 ? per : 25, paused: !(per > 0), skips: [], hist: {} };
   }
   return {
     startDay: o.today, sources: [src, ...more], bills, home: o.housing ? { kind: o.housing, escrow: obEscrow(o) } : null, style: o.style || null,
@@ -6530,7 +6532,8 @@ function obClick(ds) {
     if (list === 'plans') {
       const def = PLAN_KINDS.find(k => k[0] === name);
       o.plans.push({ kind: name, name: ({ paylater: 'Pay-later purchase', plan: 'Payment plan', advance: 'Paycheck advance', other: '' })[name] || '', each: '', left: name === 'advance' ? '1' : name === 'paylater' ? '3' : '', every: name === 'paylater' ? 'biweekly' : 'monthly', next: iso(addDays(parse(o.today), 14)) });
-      return render(true);
+      render(true);
+      return obShowCard(list);
     }
     // Tapping a chip again adds another of the same kind (two student loans, three cards).
     // Then every card of that kind gets a name box, so each can be told apart.
@@ -6540,7 +6543,8 @@ function obClick(ds) {
     if (list === 'homecosts') {
       const def = OB_HOMECOSTS.find(b => b[0] === name);
       o.homecosts.push(Object.assign(entry, { freq: def ? def[1] : 'monthly', date: '', when: null }));
-      return render(true);
+      render(true);
+      return obShowCard(list);
     }
     if (list === 'bills') {
       const def = OB_BILLS.find(b => b[0] === name);
@@ -6550,9 +6554,25 @@ function obClick(ds) {
       const freq = def ? def[1] : 'yearly';
       o.rare.push(Object.assign(entry, { freq, date: '', when: null }));
     }
+    render(true);
+    return obShowCard(list);
+  }
+  if (ds.obgo) {
+    const card = [...document.querySelectorAll('[data-obcard]')].find(c => c.dataset.obcard === ds.obgo);
+    if (card && card.scrollIntoView) card.scrollIntoView({ block: 'center', behavior: matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+    const f = card && card.querySelector('input'); if (f) f.focus({ preventScroll: true });
+    return;
+  }
+  if (ds.obdel) {
+    const [list, i] = ds.obdel.split('|'), at = Number(i);
+    o[list].splice(at, 1);
+    // A setup bill's id is its place in the list, so every bill after this one just moved up.
+    // Their "Paid / Not yet" answers are dropped and asked again, never handed to a different bill.
+    const pre = { bills: 'ob', rare: 'obr', homecosts: 'obh', plans: 'obp' }[list];
+    Object.keys(o.recent || {}).forEach(k => { const m = k.match(/^([a-z]+)(\d+)\|/); if (m && m[1] === pre && Number(m[2]) >= at) delete o.recent[k]; });
     return render(true);
   }
-  if (ds.obdel) { const [list, i] = ds.obdel.split('|'); o[list].splice(Number(i), 1); return render(); }
+
   if (ds.obextra) { o.extra = ds.obextra; return go('ob'); }
   if (ds.ob === 'back') { if (o.extra) { o.extra = null; return go('ob'); } if (o.step === 0) return go('welcome'); o.step--; return go('ob'); }
   if (ds.ob === 'skip') {
@@ -6579,6 +6599,27 @@ function obClick(ds) {
     go('now'); state.tour = 0;
     return render(false, true);
   }
+}
+/* A card just added sits under the list of choices, often below the screen: bring it into view,
+   so a tap on "+ Car insurance" always visibly does something. */
+/* Tester feedback, Nov 14: a bill you already picked looks picked (✓), and tapping it again takes you
+   to its card instead of quietly adding a copy. A second one of the same kind (two student loans) is
+   "Add another" at the bottom of that card. */
+function obChip(list, nm, lab) {
+  const chosen = ((state.ob && state.ob[list]) || []).some(b => b.preset === nm);
+  const sub = lab ? ` <span style="font-weight:500;opacity:.75">· ${lab}</span>` : '';
+  return chosen
+    ? `<button class="chip on" data-obgo="${list}|${esc(nm)}" aria-pressed="true" aria-label="${esc(nm)}, added. Go to it">✓ ${esc(nm)}${sub}</button>`
+    : `<button class="chip" data-obadd="${list}|${esc(nm)}">+ ${esc(nm)}${sub}</button>`;
+}
+function obAnother(list, i) {
+  const all = (state.ob && state.ob[list]) || [], b = all[i];
+  if (!b || !b.preset || all.slice(i + 1).some(x => x.preset === b.preset)) return '';
+  return `<button type="button" class="linkish" style="align-self:flex-start;min-height:44px" data-obadd="${list}|${esc(b.preset)}">+ Add another ${esc(inSentence(b.preset))}</button>`;
+}
+function obShowCard(list) {
+  const del = [...document.querySelectorAll(`[data-obdel^="${list}|"]`)].pop(), card = del && del.closest('.card');
+  if (card && card.scrollIntoView) card.scrollIntoView({ block: 'center', behavior: matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
 }
 function obSet(path, value) {
   const keys = path.split('.'); let t = state.ob;
@@ -6717,10 +6758,10 @@ function screenOb() {
     body = q('Any other costs that come with your home?', 'Skip any you don’t have. Most come only a few times a year, so they’re easy to forget.') +
       (inc.length ? `<div class="tint mt14"><span style="font-size:14px;line-height:1.5;color:var(--muted-2)">Your mortgage payment already includes ${listJoin(inc.map(x => x[1].toLowerCase()))}. Alon won’t count ${inc.length === 1 ? 'it' : 'them'} again.</span></div>` : '') +
       (unsure ? `<div class="tint mt14"><span style="font-size:14px;line-height:1.5;color:var(--muted-2)">${ESCROW_NOT_SURE}</span></div>` : '') +
-      `<section class="mt20"><div class="chips">${offer.map(([nm, fr]) => `<button class="chip" data-obadd="homecosts|${nm}">+ ${nm}${fr !== 'monthly' ? ` <span style="font-weight:500;opacity:.75">· ${nm === 'Special assessment' ? 'One time' : freqLabel(fr)}</span>` : ''}</button>`).join('')}</div></section>
+      `<section class="mt20"><div class="chips">${offer.map(([nm, fr]) => obChip('homecosts', nm, fr !== 'monthly' ? (nm === 'Special assessment' ? 'One time' : freqLabel(fr)) : '')).join('')}</div></section>
       <section class="stack gap10 mt20">${list.map((b, i) => {
         const special = b.preset === 'Special assessment';
-        return `<div class="card stack gap10">
+        return `<div class="card stack gap10" data-obcard="homecosts|${esc(b.preset || '')}">
         <div class="row">${b.custom ? `<input class="input" style="min-height:44px" data-obf="homecosts.${i}.name" value="${esc(b.name)}" placeholder="Which one?" aria-label="Name" autocomplete="off">` : `<span style="font-size:16px;font-weight:700">${esc(b.name)}</span>`}<button class="linkish" style="color:var(--muted);font-size:13px" data-obdel="homecosts|${i}" aria-label="Remove ${esc(b.name || 'cost')}">Remove</button></div>
         ${special ? `<div class="seg">${[[false, 'Paid at once'], [true, 'In installments']].map(([v, l]) => `<button type="button" class="${!!b.parts === v ? 'on' : ''}" aria-pressed="${!!b.parts === v}" data-obhcparts="${i}|${v ? 1 : 0}">${l}</button>`).join('')}</div>`
           : `<div class="chips when-chips">${HC_FREQS.map(f => `<button type="button" class="chip ${b.freq === f ? 'on' : ''}" aria-pressed="${b.freq === f}" data-obhcfreq="${i}|${f}">${freqLabel(f)}</button>`).join('')}</div>`}
@@ -6731,6 +6772,7 @@ function screenOb() {
           <div class="field"><label for="ob-hc-${i}-every">How often are the installments?</label><select class="input" id="ob-hc-${i}-every" data-obf="homecosts.${i}.every">${[['monthly','Monthly'],['biweekly','Every 2 weeks'],['weekly','Weekly']].map(([v,l])=>`<option value="${v}" ${(b.every || 'monthly') === v ? 'selected' : ''}>${l}</option>`).join('')}</select></div>`
           : `<div class="field"><label for="ob-homecosts-${i}-a">${b.freq === 'monthly' ? 'Each month' : special ? 'Amount' : 'Each time'}</label><input class="input" id="ob-homecosts-${i}-a" data-obf="homecosts.${i}.amount" inputmode="decimal" value="${esc(b.amount)}" placeholder="$0" autocomplete="off"></div>
           ${obWhenHtml('homecosts', i, b)}${b.freq !== 'monthly' ? obSavedHtml('homecosts', i, b) : ''}`}
+        ${obAnother('homecosts', i)}
       </div>`; }).join('')}</section>
       ${list.length ? `<p class="small mt8">Costs without an amount are skipped. Ones a few times a year need a date or a month.</p>` : ''}`;
     footer = foot(list.length ? '' : `<button class="secondary" data-ob="skip">None of these</button>`);
@@ -6747,8 +6789,8 @@ function screenOb() {
     body = (st === 'bills'
       ? q('What other bills do you have?', 'Tap the ones you have. Choose how often each one is paid; estimates are fine.')
       : q('Any bills that only come a few times a year?', 'These cause most money surprises, so they’re worth a minute. Skip any you don’t have.')) +
-      `<section class="mt20"><div class="chips">${defs.map(([nm, lab]) => `<button class="chip" data-obadd="${st}|${nm}">+ ${nm}${lab ? ` <span style="font-weight:500;opacity:.75">· ${lab}</span>` : ''}</button>`).join('')}<button class="chip" data-obadd="${st}|other">+ Something else</button></div></section>
-      <section class="stack gap10 mt20">${list.map((b, i) => `<div class="card stack gap10">
+      `<section class="mt20"><div class="chips">${defs.map(([nm, lab]) => obChip(st, nm, lab)).join('')}<button class="chip" data-obadd="${st}|other">+ Other</button></div></section>
+      <section class="stack gap10 mt20">${list.map((b, i) => `<div class="card stack gap10" data-obcard="${st}|${esc(b.preset || '')}">
         <div class="row">${b.custom ? `<input class="input" style="min-height:44px" data-obf="${st}.${i}.name" value="${esc(b.name)}" placeholder="${b.preset ? `Which one? e.g. ${obExample(b.preset)}` : 'What is it?'}" aria-label="Bill name" autocomplete="off">` : `<span style="font-size:16px;font-weight:700">${esc(b.name)}${st === 'rare' ? `<span class="small" style="display:block;font-weight:500">${freqLabel(b.freq)}</span>` : ''}</span>`}<button class="linkish" style="color:var(--muted);font-size:13px" data-obdel="${st}|${i}" aria-label="Remove ${esc(b.name || 'bill')}">Remove</button></div>
         ${obFrequencyHtml(st, i, b)}
         ${b.preset === 'Credit card' ? obCardStyleHtml(st, i, b) : ''}
@@ -6757,11 +6799,12 @@ function screenOb() {
         ${LONG_FREQS.includes(obCardFreq(b,st)) ? obSavedHtml(st, i, b) : ''}
         <details><summary class="linkish" style="cursor:pointer;min-height:44px;align-content:center">${b.est ? 'Amount: estimate' : 'Amount: exact'} · change</summary><div class="chips">${[['exact','Exact'],['estimate','Estimate']].map(([v,l])=>`<button type="button" class="chip ${!!b.est === (v === 'estimate') ? 'on' : ''}" aria-pressed="${!!b.est === (v === 'estimate')}" data-obcardestimate="${st}|${i}|${v}">${l}</button>`).join('')}</div></details>
         ${obCardProblem(b,st) ? `<p class="small" style="color:var(--amber-text)">${obCardProblem(b,st)}</p>` : ''}
+        ${obAnother(st, i)}
       </div>`).join('')}</section>
       ${list.length ? `<p class="small mt8">Bills without an amount are skipped. Complete the schedule for each bill with an amount. Monthly bills can use an approximate time.</p>` : ''}`;
     footer = foot(list.length ? '' : `<button class="secondary" data-ob="skip">${st === 'bills' ? 'No other bills' : 'None of these'}</button>`);
   } else if (st === 'plans') {
-    body = q('Are you paying anything off in parts right now?', 'Like a pay-in-4 purchase, a payment plan with a hospital, or a paycheck advance. Each payment changes what’s free, so it’s worth adding.') +
+    body = q('Are you on any payment plans right now?', 'Like a pay-in-4 purchase, a payment plan with a hospital, or a paycheck advance. Each payment changes what’s free, so it’s worth adding.') +
       `<section class="mt20"><div class="chips">${PLAN_KINDS.map(([k, l]) => `<button class="chip" data-obadd="plans|${k}">+ ${l}</button>`).join('')}</div></section>
       <section class="stack gap10 mt20">${o.plans.map((x, i) => `<div class="card stack gap10">
         <div class="row"><input class="input" style="min-height:44px" data-obf="plans.${i}.name" value="${esc(x.name)}" placeholder="What’s it for?" aria-label="What it’s for" autocomplete="off"><button class="linkish" style="color:var(--muted);font-size:13px;margin-left:10px" data-obdel="plans|${i}">Remove</button></div>
@@ -6785,7 +6828,7 @@ function screenOb() {
   } else if (st === 'cushion') {
     const u = o.way === 'gig' ? 'week' : o.way === 'benefit' ? 'month' : 'paycheck';
     const choice = (k, t, d) => `<button class="tap option ${o.fund === k ? 'on' : ''}" aria-pressed="${o.fund === k}" data-obfund="${k}"><span class="radio"></span><span><span class="t">${t}</span><span class="d">${d}</span></span></button>`;
-    body = q('Is any money set aside for surprises?', 'Like a car repair or a doctor’s bill. Any amount counts, and none is fine too. Alon uses it to show your options when something comes up.') +
+    body = q('Is any money set aside for emergencies?', 'Like a car repair or a doctor’s bill. Any amount counts, and none is fine too. Alon uses it to show your options when something comes up.') +
       `<section class="stack gap10 mt20">${choice('some', 'Yes, some', 'In savings, or cash you keep for this')}${choice('none', 'Not yet', 'You can start small here, or later')}</section>
       ${o.fund ? `<section class="stack gap14 mt20">
         ${o.fund === 'some' ? money_('ob-fund', 'fundSaved', 'About how much? A rough number is fine.', o.fundSaved) : ''}
@@ -6800,7 +6843,7 @@ function screenOb() {
     body = `<section class="stack gap14" style="margin-top:8vh">
       <span style="width:10px;height:10px;border-radius:5px;background:var(--royal);box-shadow:0 0 0 6px var(--tint)"></span>
       <h1 class="h1" style="font-size:34px">I have enough to help you begin.</h1>
-      <p class="body">${esc(inc.name)} (${inc.certainty === 'variable' ? range(inc.low, inc.typical) : money(inc.typical)}${inc.perWeek ? ' a week' : ', ' + freqLabel(inc.freq).toLowerCase()}), ${nb} bill${nb === 1 ? '' : 's'}${seed.everydayUnknown ? ', everyday spending not set yet' : seed.everyday ? `, and about ${money(seed.everyday)} a week for everyday things` : ', and nothing for everyday things'}${seed.bills.some(b => b.plan) ? `, ${seed.bills.filter(b => b.plan).length} paid in parts` : ''}${fd ? `, and a surprise fund${fd.saved ? ` with ${money(fd.saved)}` : ''}${fd.paused ? '' : ` getting ${money(fd.per)} each ${seed.meta.unit}`}` : ''}. Everything is an estimate you can change anytime.</p>
+      <p class="body">${esc(inc.name)} (${inc.certainty === 'variable' ? range(inc.low, inc.typical) : money(inc.typical)}${inc.perWeek ? ' a week' : ', ' + freqLabel(inc.freq).toLowerCase()}), ${nb} bill${nb === 1 ? '' : 's'}${seed.everydayUnknown ? ', everyday spending not set yet' : seed.everyday ? `, and about ${money(seed.everyday)} a week for everyday things` : ', and nothing for everyday things'}${seed.bills.some(b => b.plan) ? `, ${seed.bills.filter(b => b.plan).length} with split payments or a plan` : ''}${fd ? `, and an emergency fund${fd.saved ? ` with ${money(fd.saved)}` : ''}${fd.paused ? '' : ` getting ${money(fd.per)} each ${seed.meta.unit}`}` : ''}. Everything is an estimate you can change anytime.</p>
       ${seed.sources.length > 1 ? `<p class="small">Plus ${listJoin(seed.sources.slice(1).map(x => esc(x.name)))}: each counted on its own, in one forecast.</p>` : ''}
       ${(() => { const c = sameDayCluster(seed.bills, o.clusterOk); return c ? clusterCard(c, 'ob') : ''; })()}
     </section>
@@ -7125,7 +7168,7 @@ function sheetHtml() {
 const whyWindows = () => computeWindows(null, carouselCount());
 /* A decision the person made about a paycheck ("I've got it covered"). It stays until the gap
    grows by more than $25, then Alon asks again, because what they agreed to has changed. */
-const DECISION_HOW = [['savings', 'My savings'], ['work', 'Extra work'], ['help', 'Help from family or friends'], ['other', 'Something else']];
+const DECISION_HOW = [['savings', 'My savings'], ['work', 'Extra work'], ['help', 'Help from family or friends'], ['other', 'Other']];
 function decisionFor(w) {
   const d = (state.decisions || []).find(x => x.win === iso(w.start));
   if (!d) return null;
@@ -7326,6 +7369,7 @@ const TERMS = {
   status: ['Covered, tight and short', () => `<p><strong>Covered:</strong> ${money(bufferAmt())} or more left after that ${unitWord2()}’s bills (your buffer).</p><p><strong>Tight:</strong> above $0 but under your ${money(bufferAmt())} buffer. Fine, but there’s not much room. You can change the buffer on “What if?”.</p><p><strong>Short:</strong> more going out than coming in. It’s usually timing, not overspending, and seeing it early is the point.</p><p>${state.sources.some(s => s.certainty !== 'fixed') ? 'Alon decides using your lighter pay, to be safe.' : 'Alon decides using your confirmed pay.'}</p>`],
   estimate: ['Estimates (~)', () => `<p>A number you told Alon is roughly right. A <strong>~</strong> marks it. Confirm it when the real bill comes and the forecast gets more accurate.</p><p>Everyday spending is always an estimate: about ${money(state.everydayPerWeek)} a week.</p>`],
   rough: ['Grey dates', () => `<p>Paychecks more than about 3 months out. Bills and pay can change by then, so treat them as a rough look, not a promise.</p>`],
+  biweekly: ['“Biweekly” means every 2 weeks', () => `<p>On pay stubs, <strong>biweekly</strong> or <strong>bi-weekly</strong> means every 2 weeks: 26 paychecks a year, so two months each year have three. Alon says “Every 2 weeks” because “biweekly” can also mean twice a week.</p><p><strong>Semimonthly</strong> is different: twice a month on set days, like the 1st and the 15th. That’s “Twice a month” in Alon.</p>`],
   paycheck: ['Why paychecks, not months', () => `<p>Bills come by the month, but money comes by the ${unitWord2()}. A month can look fine while the ${unitWord2()} that has to pay rent can’t.</p><p>So Alon shows each ${unitWord2()} on its own. Money left from one isn’t carried into the next unless you keep it, which is what <strong>Prepare</strong> and the <strong>tide pool</strong> do.</p>`]
 };
 const term = (text, key) => `<button type="button" class="term" data-term="${key}">${text}</button>`;
@@ -7729,7 +7773,7 @@ app.addEventListener('click', e => {
   }
   if (ds.spreadno) { state.spreadDismissed = Object.assign({}, state.spreadDismissed, { [ds.spreadno]: true }); return render(true); }
   if (ds.action === 'ob-start') { state.ob = freshOb(); state.menuOpen = false; return go('ob'); }
-  if (ds.obcardfreq || ds.obcardestimate || ds.obcardstyle || ds.obspendon || ds.obbillfreq || ds.ob || ds.obwhen || ds.obgrace !== undefined || ds.obway || ds.obfreq || ds.obadd || ds.obdel || ds.obamt || ds.obfund || ds.obfeekind || ds.obn || ds.obmode || ds.obextra || ds.obfees !== undefined || ds.obfundper !== undefined || ds.obhouse || ds.obescrow || ds.obstyle || ds.obhcfreq || ds.obhcparts || ds.obsaved || ds.obset) return obClick(ds);
+  if (ds.obcardfreq || ds.obcardestimate || ds.obcardstyle || ds.obspendon || ds.obbillfreq || ds.ob || ds.obwhen || ds.obgrace !== undefined || ds.obway || ds.obfreq || ds.obadd || ds.obdel || ds.obamt || ds.obfund || ds.obfeekind || ds.obn || ds.obmode || ds.obextra || ds.obgo || ds.obfees !== undefined || ds.obfundper !== undefined || ds.obhouse || ds.obescrow || ds.obstyle || ds.obhcfreq || ds.obhcparts || ds.obsaved || ds.obset) return obClick(ds);
   if (ds.recent && ds.ans) {
     const A = recentAnswers(), a = A[ds.recent] = A[ds.recent] || {};
     a.ans = ds.ans;
@@ -8153,7 +8197,8 @@ function ask() {
   }
   // the tutor first: how it works, and what a word means
   if (/how does (alon|this|it) work|how (do i|to) read|walk me through|show me around|tour|tutorial|explain (this|alon|the app)/.test(q)) { input.value = ''; state.railHint = false; if (state.screen !== 'now') go('now'); state.tour = 0; return render(false, true); }
-  const termQ = /paychecks?,? not months|not by month|why (paychecks|weeks|windows)/.test(q) ? 'paycheck'
+  const termQ = /\bbi-?weekly\b|semi-?monthly|every other week|fortnight/.test(q) ? 'biweekly'
+    : /paychecks?,? not months|not by month|why (paychecks|weeks|windows)/.test(q) ? 'paycheck'
     : /(mean|what is|what's|whats|define)/.test(q) ? (/spoken/.test(q) ? 'spoken' : /\broom\b/.test(q) ? 'room' : /set aside|reserved/.test(q) ? 'reserved' : /\bleft\b/.test(q) ? 'left' : /estimate|~|tilde/.test(q) ? 'estimate' : /gr[ae]y|rough/.test(q) ? 'rough' : /covered|tight|short|colou?rs?|status/.test(q) ? 'status' : null) : null;
   if (termQ) { input.value = ''; state.termOpen = termQ; return render(); }
   if (/how am i doing|am i (ok|okay|good|fine)|how('?s| is) (it|everything|my money) (looking|going)|overview|where do i stand|what could (this|the|my) room|explore|extra room|more room/.test(q) && persona().unit === 'paycheck' && heroModel(computeWindows()[0])) {
