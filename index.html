@@ -305,6 +305,26 @@
   .row-card .line-item { position: relative; padding: 14px 24px; border-bottom: 0; }
   .row-card .line-item:not(:last-child)::after { content: ''; position: absolute; left: 76px; right: 0; bottom: 0; height: 1px; background: var(--line); }
   .row-card .line-item:active, .next-up:active { background: rgba(22,89,208,.06); }
+  .mdial-wrap { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .mdial { position: relative; width: 280px; height: 280px; touch-action: none; user-select: none; -webkit-user-select: none; outline: none; border-radius: 50%; }
+  .mdial:focus-visible { box-shadow: 0 0 0 3px var(--ivory), 0 0 0 5px var(--royal); }
+  .mdial > svg { width: 100%; height: 100%; display: block; cursor: grab; }
+  .mdial.spinning > svg { cursor: grabbing; }
+  .mdial-rot { transform-origin: 140px 140px; }
+  .mdial-slice { transition: opacity .2s ease; }
+  .mdial-slice.dim { opacity: .38; }
+  .mdial-tick { stroke: var(--line); stroke-width: 1.5; stroke-linecap: round; }
+  .mdial-tick.major { stroke: var(--chip-line); stroke-width: 2; }
+  .mdial-center { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 160px; display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center; background: none; border: 0; padding: 8px; border-radius: 24px; }
+  button.mdial-center { cursor: pointer; }
+  button.mdial-center:active { background: rgba(22,89,208,.06); }
+  .mdial-name { font-size: 15px; font-weight: 700; color: var(--royal); display: inline-flex; align-items: center; gap: 4px; max-width: 150px; }
+  .mdial-name span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mdial-center:not(button) .mdial-name { color: var(--navy); }
+  .mdial-amt { font-size: 34px; font-weight: 800; letter-spacing: -0.02em; color: var(--navy); line-height: 1.1; }
+  .mdial-about { font-size: 15px; font-weight: 700; color: var(--muted); letter-spacing: 0; margin-right: 4px; }
+  .mdial-share { font-size: 13px; color: var(--muted); line-height: 1.35; }
+  .mdial-hint { font-size: 13px; color: var(--muted); margin: 0; }
   .bill-group { position: relative; }
   .bill-group:not(:last-child)::after { content: ''; position: absolute; left: 76px; right: 0; bottom: 0; height: 1px; background: var(--line); }
   .bill-group > .line-item { width: 100%; }
@@ -516,7 +536,7 @@ const DAY = 86400000;
 const ALPHA = true;
 const FEEDBACK_EMAIL = '';      // optional fallback
 const FEEDBACK_FORM = { url: '', fields: { screen: '', build: '', feedback: '' } };
-const BUILD = 'v10.16 · Nov 17';
+const BUILD = 'v10.17 · Nov 23';
 const STORE = ALPHA ? 'alon-alpha-v1' : 'alon-proto-v4';
 const DEMO_START = Date.UTC(2026, 9, 30);       // Fri, Oct 30, 2026
 let TODAY = DEMO_START;                         // moves forward with the demo's skip-ahead
@@ -4901,6 +4921,144 @@ function spreadOffer(list) {
     <button class="linkish" style="text-align:center;padding:2px 0" data-spreadno="${c.b.id}">Not now</button>
   </div>`;
 }
+const DIAL_COLORS = ['#1659D0', '#2E8A6A', '#C98A1E', '#5B6FB3', '#3E8FB0', '#A0663A'];
+const DIAL_OTHER = '#9AA5B1';
+function monthlyShare(b) {
+  if (b.surprise || b.purchase || b.freq === 'once' && !b.plan) return 0;
+  const r = regularMonthly(b);
+  if (r) return r;
+  const m = { quarterly: 3, semiannual: 6, yearly: 12 }[b.freq];
+  return m && nextDue(b) ? cents(Number(b.amount) / m) : 0;
+}
+function dialSlices() {
+  const items = state.bills.map(b => ({ id: b.id, name: b.name, amt: monthlyShare(b), about: !['monthly', 'days'].includes(b.freq) || b.status === 'estimate', bill: true }))
+    .filter(x => x.amt > 0);
+  const every = state.everydayUnknown ? 0 : cents(everydayWeekly() * 52 / 12);
+  if (every > 0) items.push({ id: 'everyday', name: 'Everyday things', amt: every, about: true, bill: false });
+  items.sort((a, c) => c.amt - a.amt);
+  const top = items.length > 7 ? items.slice(0, 6) : items;
+  const rest = items.length > 7 ? items.slice(6) : [];
+  if (rest.length) top.push({ id: 'other', name: 'Everything else', amt: cents(sum(rest, x => x.amt)), about: true, bill: false, count: rest.length });
+  const total = sum(top, x => x.amt);
+  let a = 0;
+  return top.map((x, i) => { const sweep = 360 * x.amt / total, sl = Object.assign({}, x, { from: a, to: a + sweep, mid: a + sweep / 2, share: x.amt / total, color: x.id === 'other' ? DIAL_OTHER : DIAL_COLORS[i % DIAL_COLORS.length] }); a += sweep; return sl; });
+}
+const shareWords = s => s >= 0.5 ? 'more than half' : s >= 0.4 ? 'almost half' : s >= 0.3 ? 'about a third' : s >= 0.22 ? 'about a quarter' : s >= 0.17 ? 'about a fifth' : s >= 0.08 ? 'about a tenth' : 'a small part';
+const dialMoney = x => `${x.about ? 'about ' : ''}$${Math.ceil(x.amt).toLocaleString('en-US')}`;   // money going out rounds up
+function dialArc(from, to) {   // a ring segment, 0° at the top, clockwise; a 1.2° gap between slices
+  const R = 128, r = 92, c = 140, g = Math.min(1.2, (to - from) / 4);
+  const pt = (deg, rad) => { const t = (deg - 90) * Math.PI / 180; return [c + rad * Math.cos(t), c + rad * Math.sin(t)]; };
+  const a0 = from + g / 2, a1 = Math.max(a0 + 0.01, to - g / 2), large = a1 - a0 > 180 ? 1 : 0;
+  if (to - from >= 359.9) return `M${c} ${c - R}A${R} ${R} 0 1 1 ${c - 0.01} ${c - R}L${c - 0.01} ${c - r}A${r} ${r} 0 1 0 ${c} ${c - r}Z`;
+  const [x0, y0] = pt(a0, R), [x1, y1] = pt(a1, R), [x2, y2] = pt(a1, r), [x3, y3] = pt(a0, r);
+  return `M${x0.toFixed(2)} ${y0.toFixed(2)}A${R} ${R} 0 ${large} 1 ${x1.toFixed(2)} ${y1.toFixed(2)}L${x2.toFixed(2)} ${y2.toFixed(2)}A${r} ${r} 0 ${large} 0 ${x3.toFixed(2)} ${y3.toFixed(2)}Z`;
+}
+function dialCenterHtml(sl) {
+  const words = sl.id === 'other' ? `a month · ${sl.count} smaller bills` : `a month · ${shareWords(sl.share)} of what goes out`;
+  const inner = `<span class="mdial-name"><span>${esc(sl.name)}</span>${sl.bill ? '<svg width="9" height="14" viewBox="0 0 9 14" aria-hidden="true"><path d="M1.5 1.5 7 7l-5.5 5.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>' : ''}</span>
+    <span class="mdial-amt">${sl.about ? '<span class="mdial-about">about</span>' : ''}$${Math.ceil(sl.amt).toLocaleString('en-US')}</span><span class="mdial-share">${words}</span>`;
+  return sl.bill ? `<button class="mdial-center" data-dialopen="${esc(sl.id)}" aria-label="${esc(sl.name)}: ${dialMoney(sl)} a month. Open this bill">${inner}</button>` : `<div class="mdial-center">${inner}</div>`;
+}
+function moneyDialHtml() {
+  const sl = dialSlices(); if (sl.length < 2) return '';
+  const i = Math.max(0, Math.min(sl.length - 1, sl.findIndex(x => x.id === state.dialId)));
+  const cur = sl[i], rot = -cur.mid, total = sum(sl, x => x.amt);
+  const ticks = Array.from({ length: 72 }, (_, k) => { const t = (k * 5 - 90) * Math.PI / 180, major = k % 6 === 0, r0 = major ? 133 : 134.5, r1 = 139;
+    return `<line class="mdial-tick${major ? ' major' : ''}" x1="${(140 + r0 * Math.cos(t)).toFixed(1)}" y1="${(140 + r0 * Math.sin(t)).toFixed(1)}" x2="${(140 + r1 * Math.cos(t)).toFixed(1)}" y2="${(140 + r1 * Math.sin(t)).toFixed(1)}"/>`; }).join('');
+  return `<section class="pad mt24 mdial-wrap" aria-label="Where your money goes">
+    <h2 class="h2" style="font-size:18px;align-self:flex-start;margin:0">Where your money goes</h2>
+    <p class="mdial-hint" style="align-self:flex-start">About $${Math.ceil(total).toLocaleString('en-US')} a month. Spin to see each one.</p>
+    <div class="mdial mt8" id="mdial" tabindex="0" role="slider" aria-label="Where your money goes" aria-valuemin="1" aria-valuemax="${sl.length}" aria-valuenow="${i + 1}" aria-valuetext="${esc(cur.name)}, ${dialMoney(cur)} a month, ${shareWords(cur.share)} of what goes out">
+      <svg viewBox="0 0 280 280" aria-hidden="true">
+        <g class="mdial-rot" id="mdial-rot" style="transform:rotate(${rot.toFixed(2)}deg)">
+          ${ticks}
+          ${sl.map((x, k) => `<path class="mdial-slice${k === i ? '' : ' dim'}" data-k="${k}" d="${dialArc(x.from, x.to)}" fill="${x.color}"/>`).join('')}
+        </g>
+        <path d="M132 2 L148 2 L140 15 Z" fill="var(--navy)"/>
+      </svg>
+      <div id="mdial-center">${dialCenterHtml(cur)}</div>
+    </div>
+  </section>`;
+}
+const DIAL = { rot: 0, drag: null, raf: 0, k: -1 };
+const dialReduce = () => { try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } };
+function dialPick(rot, sl) { const a = ((-rot % 360) + 360) % 360; const k = sl.findIndex(x => a >= x.from && a < x.to); return k < 0 ? sl.length - 1 : k; }
+function dialShow(rot, settle) {
+  const g = document.getElementById('mdial-rot'), sl = dialSlices(); if (!g || !sl.length) return;
+  DIAL.rot = rot; g.style.transform = `rotate(${rot.toFixed(2)}deg)`;
+  const k = dialPick(rot, sl);
+  if (k !== DIAL.k) {
+    DIAL.k = k; state.dialId = sl[k].id;
+    g.querySelectorAll('.mdial-slice').forEach(p => p.classList.toggle('dim', Number(p.dataset.k) !== k));
+    const c = document.getElementById('mdial-center'); if (c) c.innerHTML = dialCenterHtml(sl[k]);
+    const d = document.getElementById('mdial'); if (d) { d.setAttribute('aria-valuenow', k + 1); d.setAttribute('aria-valuetext', `${sl[k].name}, ${dialMoney(sl[k])} a month, ${shareWords(sl[k].share)} of what goes out`); }
+    if (!settle) { try { navigator.vibrate && navigator.vibrate(3); } catch (e) {} }   // a light tick, like a safe dial, where the phone allows it
+  }
+}
+function dialSettle(k) {   // ease the ring so slice k sits under the marker
+  cancelAnimationFrame(DIAL.raf);
+  const sl = dialSlices(); if (!sl[k]) return;
+  let target = -sl[k].mid; while (target - DIAL.rot > 180) target -= 360; while (target - DIAL.rot < -180) target += 360;
+  if (dialReduce()) { dialShow(target, true); return; }
+  const from = DIAL.rot, t0 = performance.now(), dur = 280;
+  const step = now => { const p = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - p, 3); dialShow(from + (target - from) * e, true); if (p < 1) DIAL.raf = requestAnimationFrame(step); };
+  DIAL.raf = requestAnimationFrame(step);
+}
+function dialAngle(ev, el) { const r = el.getBoundingClientRect(); return Math.atan2(ev.clientY - (r.top + r.height / 2), ev.clientX - (r.left + r.width / 2)) * 180 / Math.PI; }
+document.addEventListener('pointerdown', ev => {
+  const d = ev.target.closest && ev.target.closest('#mdial'); if (!d || ev.target.closest('.mdial-center')) return;
+  cancelAnimationFrame(DIAL.raf);
+  const g = document.getElementById('mdial-rot'); if (!g) return;
+  const m = /rotate\(([-\d.]+)deg\)/.exec(g.style.transform || ''); DIAL.rot = m ? Number(m[1]) : 0; DIAL.k = dialPick(DIAL.rot, dialSlices());
+  DIAL.drag = { id: ev.pointerId, last: dialAngle(ev, d), x: ev.clientX, y: ev.clientY, moved: 0, samples: [{ t: performance.now(), r: DIAL.rot }] };
+  try { d.setPointerCapture(ev.pointerId); } catch (e) {}
+  d.classList.add('spinning');
+});
+document.addEventListener('pointermove', ev => {
+  const dr = DIAL.drag; if (!dr || ev.pointerId !== dr.id) return;
+  const d = document.getElementById('mdial'); if (!d) return;
+  const a = dialAngle(ev, d); let delta = a - dr.last; if (delta > 180) delta -= 360; if (delta < -180) delta += 360;
+  dr.last = a; dr.moved = Math.max(dr.moved, Math.hypot(ev.clientX - dr.x, ev.clientY - dr.y));
+  dialShow(DIAL.rot + delta);
+  dr.samples.push({ t: performance.now(), r: DIAL.rot }); if (dr.samples.length > 6) dr.samples.shift();
+});
+function dialRelease(ev) {
+  const dr = DIAL.drag; if (!dr || ev.pointerId !== dr.id) return;
+  DIAL.drag = null;
+  const d = document.getElementById('mdial'); if (d) d.classList.remove('spinning');
+  const sl = dialSlices();
+  if (dr.moved < 6) {   // a tap on the ring: bring the slice under the finger to the marker
+    if (d) { const deg = dialAngle(ev, d) + 90; dialSettle(dialPick(DIAL.rot - deg, sl)); }
+    return;
+  }
+  const s = dr.samples, a = s[0], b = s[s.length - 1], dt = Math.max(1, b.t - a.t);
+  let v = (b.r - a.r) / dt;   // degrees per millisecond
+  if (dialReduce() || Math.abs(v) < 0.25) { dialSettle(dialPick(DIAL.rot, sl)); return; }
+  v = Math.max(-2.5, Math.min(2.5, v));
+  let t0 = performance.now();
+  const glide = now => { const dt2 = now - t0; t0 = now; dialShow(DIAL.rot + v * dt2); v *= Math.pow(0.94, dt2 / 16);
+    if (Math.abs(v) > 0.03) DIAL.raf = requestAnimationFrame(glide); else dialSettle(dialPick(DIAL.rot, dialSlices())); };
+  DIAL.raf = requestAnimationFrame(glide);
+}
+document.addEventListener('pointerup', dialRelease);
+document.addEventListener('pointercancel', dialRelease);
+document.addEventListener('keydown', ev => {
+  if (!ev.target || ev.target.id !== 'mdial') return;
+  const sl = dialSlices(), g = document.getElementById('mdial-rot');
+  const m = g && /rotate\(([-\d.]+)deg\)/.exec(g.style.transform || ''); DIAL.rot = m ? Number(m[1]) : 0;
+  const cur = dialPick(DIAL.rot, sl);
+  const next = { ArrowRight: cur + 1, ArrowDown: cur + 1, ArrowLeft: cur - 1, ArrowUp: cur - 1, Home: 0, End: sl.length - 1 }[ev.key];
+  if (next == null) return;
+  ev.preventDefault();
+  dialSettle((next + sl.length) % sl.length);
+});
+document.addEventListener('click', ev => {   // the center opens that bill below
+  const t = ev.target.closest && ev.target.closest('[data-dialopen]'); if (!t) return;
+  ev.preventDefault(); ev.stopPropagation();
+  const id = t.dataset.dialopen; state.billOpen = id; render(true);
+  const g = document.querySelector(`[data-billgroup="${CSS.escape(id)}"]`);
+  if (g) { g.scrollIntoView({ behavior: dialReduce() ? 'auto' : 'smooth', block: 'center' }); const b = g.querySelector('[data-billopen]'); if (b) b.focus({ preventScroll: true }); }
+}, true);
 function screenBills(panel, head) {
   if (!panel && state.moneySide === 'in') return screenMoneyIn();
   const horizon = addDays(TODAY, 45);
@@ -4988,6 +5146,7 @@ function screenBills(panel, head) {
     </div>`;
   };
   const safeGroup = (b, list, nd) => { try { return group(b, list, nd); } catch (err) { try { console.error(err); } catch (e) {} return row(b, list[0] ? dayWord(list[0].date) : nd ? withYear(nd) : '', b.amount, null); } };
+  const dialHtml = panel ? '' : moneyDialHtml();
   const byBill = new Map(); evs.forEach(x => { if (!byBill.has(x.bill.id)) byBill.set(x.bill.id, []); byBill.get(x.bill.id).push(x); });
   return `${head || header()}
   <main>
@@ -4997,6 +5156,7 @@ function screenBills(panel, head) {
       ${panel ? '' : (() => { const u = uncertainItems(); return (u.cluster ? clusterCard(u.cluster, 'bills') : '') + (u.dates.length || u.amounts.length ? `<button class="tint tap row mt8" style="border:0;text-align:left" data-action="review"><span class="stack gap4"><span style="font-size:15px;font-weight:700">${listJoin([u.dates.length ? `${u.dates.length} date${u.dates.length > 1 ? 's' : ''} not set` : '', u.amounts.length ? `${u.amounts.length} amount${u.amounts.length > 1 ? 's' : ''} not confirmed` : ''].filter(Boolean))}</span><span class="small">Confirming them makes your forecast more accurate.</span></span><span class="see" style="font-weight:700;color:var(--royal)">Review</span></button>` : ''); })()}
     </section>
     ${panel || ''}
+    ${dialHtml}
     <section class="pad stack mt24"><h2 class="h2" style="font-size:18px;margin-bottom:8px">Next few weeks</h2>
       ${byBill.size ? '<div class="row-card">' + [...byBill.values()].map(list => safeGroup(list[0].bill, list)).join('') + '</div>' : '<p class="small">Nothing in the next few weeks.</p>'}
     </section>
