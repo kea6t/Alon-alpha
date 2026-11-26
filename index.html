@@ -305,6 +305,24 @@
   .row-card .line-item { position: relative; padding: 14px 24px; border-bottom: 0; }
   .row-card .line-item:not(:last-child)::after { content: ''; position: absolute; left: 76px; right: 0; bottom: 0; height: 1px; background: var(--line); }
   .row-card .line-item:active, .next-up:active { background: rgba(22,89,208,.06); }
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+  .hello-card { background: #fff; border: 1px solid var(--line); border-radius: 20px; padding: 20px 20px 18px; box-shadow: 0 6px 22px rgba(14,36,64,.07); display: flex; flex-direction: column; gap: 4px; }
+  .hello-card .eyebrow { margin-bottom: 4px; }
+  .hello-amt { font-size: 48px; font-weight: 800; letter-spacing: -0.03em; line-height: 1; color: var(--navy); }
+  .hello-sub { font-size: 16px; color: var(--muted); }
+  .hello-ok { display: inline-flex; align-items: center; gap: 8px; margin-top: 12px; font-size: 14px; font-weight: 600; color: var(--navy); }
+  .hello-ok::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--ok-dot); }
+  .hello-fine { font-size: 13px; color: var(--muted); text-align: center; margin: 0; line-height: 1.5; }
+  .hello-fine button { font: inherit; color: var(--royal); font-weight: 700; background: none; border: 0; padding: 0; text-decoration: underline; cursor: pointer; }
+  .hello-tip summary { cursor: pointer; font-size: 14px; font-weight: 700; color: var(--navy); list-style: none; text-align: center; }
+  .hello-tip summary::-webkit-details-marker { display: none; }
+  .hello-tip p { margin: 8px 0 0; }
+  .ob-tally { margin-top: 18px; padding: 12px 16px; border-radius: 16px; background: var(--tint); color: var(--navy); display: flex; flex-direction: column; gap: 2px; }
+  .ob-tally .k { font-size: 13px; color: var(--muted); }
+  .ob-tally .v { font-size: 17px; font-weight: 700; }
+  .ob-tally .big { font-size: 30px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.15; }
+  .example-bar { margin: 0 16px 8px; padding: 10px 12px 10px 14px; border-radius: 14px; background: var(--tint); color: var(--navy); display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 14px; }
+  .example-bar button { flex: none; min-height: 40px; padding: 0 14px; border-radius: 999px; border: 0; background: var(--royal); color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
   .mdial-wrap { display: flex; flex-direction: column; align-items: center; gap: 4px; }
   .mdial { position: relative; width: 280px; height: 280px; touch-action: none; user-select: none; -webkit-user-select: none; outline: none; border-radius: 50%; }
   .mdial:focus-visible { box-shadow: 0 0 0 3px var(--ivory), 0 0 0 5px var(--royal); }
@@ -536,7 +554,7 @@ const DAY = 86400000;
 const ALPHA = true;
 const FEEDBACK_EMAIL = '';      // optional fallback
 const FEEDBACK_FORM = { url: '', fields: { screen: '', build: '', feedback: '' } };
-const BUILD = 'v10.17 · Nov 23';
+const BUILD = 'v10.18 · Nov 26';
 const STORE = ALPHA ? 'alon-alpha-v1' : 'alon-proto-v4';
 const DEMO_START = Date.UTC(2026, 9, 30);       // Fri, Oct 30, 2026
 let TODAY = DEMO_START;                         // moves forward with the demo's skip-ahead
@@ -2019,7 +2037,7 @@ function header(backTo, backLabel) {
     </nav>` : '';
   return `<header class="top">${left}
     <button class="dots" aria-label="Open menu" aria-expanded="${state.menuOpen}" data-action="menu"><span></span><span></span><span></span><span></span></button>
-    ${menu}</header>`;
+    ${menu}</header>${exampleBar()}`;
 }
 
 function itemRow(x, opts = {}) {
@@ -6438,6 +6456,32 @@ function obOtherSource(x, i, o) {
   if (src.freq === 'semimonthly') src.day2 = x.kind === 'military' ? milDay2(x.next, x.day2) : dayOf(x.day2);
   return obApplyWindowKeep(src, x);
 }
+function obPreview(o) {
+  const saved = state;
+  try {
+    const oc = clone(o); state = Object.assign({}, saved, { ob: oc }); obQuickFill(oc);
+    const seed = obSeed();
+    state = Object.assign(freshState('custom', seed), { ackTerms: true });
+    state.horizon = obBeforePay(oc) ? { until: obQuestionPayday(oc), complete: false } : null;
+    const w0 = computeWindows()[0], hm = heroModel(w0);
+    if (!hm || hm.h.basis !== 'spendable') return null;
+    const h = hm.h, st0 = h.now || hm.f.heroBalance.start, td = iso(TODAY);
+    const bills = hm.f.heroBalance.rows.filter(r => r.dir === 'out' && r.date >= td && r.date < h.until).reduce((n, r) => n + Math.round(r.amount * 100), 0) / 100;
+    return { amount: h.amount, until: h.until, cash: st0.cash, reserved: st0.reserved > 0 && hm.f.heroBalance.reservedInBalance !== false ? st0.reserved : 0, bills };
+  } catch (e) { return null; } finally { state = saved; }
+}
+function obTallyHtml(o, st) {
+  const have = obNum(o.onHand);
+  if (have == null || o.skippedOnHand || st === 'onhand' || st === 'way') return '';
+  if (st === 'review') {
+    const p = obPreview(o); if (!p) return '';
+    const neg = p.amount < 0;
+    return `<div class="ob-tally" role="status"><span class="k">Your number</span><span class="big">${neg ? `${money(-p.amount)} short` : money(p.amount)}</span>
+      <span class="k">${money(p.cash)} you have${p.reserved ? ` − ${money(p.reserved)} set aside` : ''} − ${money(p.bills)} in bills before ${long(parse(p.until))}</span></div>`;
+  }
+  const until = o.next && obBeforePay(o) && st === 'bills' ? long(parse(obQuestionPayday(o))) : null;
+  return `<div class="ob-tally" role="status"><span class="k">So far</span><span class="v">${money(have)} you have now${until ? `, until ${until}` : ''}</span></div>`;
+}
 function obSeed() {
   const o = state.ob, unit = o.way === 'gig' ? 'week' : o.way === 'benefit' ? 'month' : 'paycheck';
   let src;
@@ -6689,10 +6733,13 @@ function screenOb() {
     ${!o.extra && showN ? `<div class="pad" style="display:flex;gap:6px;margin-top:4px" aria-hidden="true">${dashes}</div>` : ''}`;
   const q = (title, sub) => `<section class="stack gap8 mt24"><h1 class="h1" style="font-size:30px">${title}</h1>${sub ? `<p class="body">${sub}</p>` : ''}</section>`;
   const money_ = (id, path, label, val, ph) => `<div class="field"><label for="${id}">${label}</label><input class="input" id="${id}" data-obf="${path}" inputmode="decimal" value="${esc(val)}" placeholder="${ph || '$0'}" autocomplete="off"></div>`;
+  // the question above is the label people see; the field keeps a name for screen readers
+  const moneyQ_ = (id, path, label, val) => `<div class="field"><label class="sr-only" for="${id}">${label}</label><input class="input" id="${id}" data-obf="${path}" inputmode="decimal" value="${esc(val)}" placeholder="$0" autocomplete="off" style="font-size:22px;font-weight:700"></div>`;
   const date_ = (id, path, label, val) => `<div class="field"><label for="${id}">${label}</label><input class="input" id="${id}" type="date" data-obf="${path}" value="${esc(val)}"></div>`;
   const foot = (extra) => `<div class="ob-foot stack gap10">${o.extra ? `<button class="secondary" data-ob="skip">Not now</button>` : extra || ''}${o.quick && !o.extra && st === 'review' ? `<button class="primary" id="ob-next" data-ob="finish">See my number</button>`
       : o.quick && !o.extra && st === 'bills' ? `<button class="primary" id="ob-next" data-ob="next" ${obValid() ? '' : 'disabled'}>${!obBeforePay(o) ? (obQuickHasBills(o) ? 'Next: review' : 'No regular bills') : obQuickHasBills(o) ? `That’s everything before ${short(parse(obQuestionPayday(o)))}` : `Nothing comes out before ${short(parse(obQuestionPayday(o)))}`}</button>` : `<button class="primary" id="ob-next" data-ob="next" ${obValid() ? '' : 'disabled'}>${o.extra ? 'Done' : obNextLabel()}</button>`}${obStepProblem(o, st) ? `<p class="small" role="status" style="margin:0">${obStepProblem(o, st)}</p>` : ''}</div>`;
   let body = '', footer = foot();
+  const tally = o.quick && !o.extra ? obTallyHtml(o, st) : '';
   const payLabel = o.way === 'benefit' ? 'When does it arrive next?' : o.way === 'free' || o.mainKind === 'rental' ? 'About when does the next one arrive?' : o.mainKind === 'military' && o.freq === 'semimonthly' ? 'Next payday (the 1st or the 15th)' : 'When is your next payday?';
   const segRow = (path, cur, opts) => `<div class="seg" style="grid-template-columns:repeat(${opts.length},minmax(0,1fr))">${opts.map(([v, l]) => `<button type="button" class="${String(cur) === String(v) ? 'on' : ''}" aria-pressed="${String(cur) === String(v)}" data-obset="${path}=${v}">${l}</button>`).join('')}</div>`;
   const spreadQ = (pre, x) => `<fieldset style="border:0;padding:0;margin:0" class="stack gap8"><legend class="legend" style="margin-bottom:8px">Does it come on that exact day?</legend>${segRow(pre + 'spread', Number(x.spread) || 0, [[0, 'Yes, exactly'], [5, 'Give or take a few days'], [10, 'It varies more']])}${Number(x.spread) ? '<p class="small" style="margin:0">Alon counts it on the later day, so nothing depends on it arriving early.</p>' : ''}</fieldset>`;
@@ -6771,21 +6818,21 @@ function screenOb() {
     }).filter(Boolean);
     if ((o.plans || []).length) billLines.push(`${o.plans.length} payment plan${o.plans.length > 1 ? 's' : ''}`);
     body = q('Does this look right?', 'Change anything here. You won’t have to go through the other questions again.') +
-      `<section class="mt14">${row('Checking today', obNum(o.onHand) != null ? money(obNum(o.onHand)) : 'Not entered', 'onhand')}
+      `<section class="mt14">${row('Money you have now', obNum(o.onHand) != null ? money(obNum(o.onHand)) : 'Not entered', 'onhand')}
       ${row('Income', payLine + ((o.others || []).length ? ` + ${o.others.length} more` : ''), 'income')}
       ${row(obBeforePay(o) ? `Before ${short(parse(obQuestionPayday(o)))}` : 'Bills', billLines.length ? billLines.join('<br>') : 'Nothing', 'bills')}</section>
       <p class="small mt14">Everything else (everyday spending, bills a few times a year, savings) comes later, one question at a time.</p>`;
   } else if (st === 'onhand' && o.quick) {
-    body = q('How much is in your checking account right now?', 'A rough number is fine. You can change it anytime.') +
-      `<section class="stack gap14 mt20">${money_('ob-onhand', 'onHand', 'Checking today', o.onHand)}
-      <p class="tint small" style="margin:0;color:var(--navy)">Alon never connects to your bank. What you type is saved in this browser on this phone, not in an account, so clearing this browser’s data erases it. <em>Your data</em> in the menu can save a copy.</p></section>`;
+    body = q('How much money do you have right now?', 'Look at the account you pay bills from. A rough number is fine.') +
+      `<section class="stack gap14 mt20">${moneyQ_('ob-onhand', 'onHand', 'Money you have now', o.onHand)}
+      <p class="small" style="margin:0">Alon never connects to your bank. Your numbers stay on this ${deviceWord()}.</p></section>`;
     footer = foot(`<button class="secondary" data-ob="skip">Skip for now</button>`);
   } else if (st === 'onhand') {
     const until = o.way === 'gig' ? 'this week' : o.way === 'free' ? 'the next few months' : `until ${long(parse(o.next))}`;
-    body = q('What’s in your account right now?', obPaydayToday()
+    body = q('How much money do you have right now?', obPaydayToday()
       ? 'Your paycheck lands today, so this is optional. If you add it, Alon counts it along with today’s pay.'
       : `Alon uses this to cover the days ${until}. A rough number is fine.`) +
-      `<section class="stack gap14 mt20">${money_('ob-onhand', 'onHand', 'In your account now', o.onHand)}</section>`;
+      `<section class="stack gap14 mt20">${moneyQ_('ob-onhand', 'onHand', 'Money you have now', o.onHand)}</section>`;
     footer = foot(`<button class="secondary" data-ob="skip">${obPaydayToday() ? 'Skip' : 'Skip for now'}</button>`);
   } else if (st === 'home') {
     const sp = o.rentSplit, n = obRentN(o);
@@ -6925,33 +6972,40 @@ function screenOb() {
       ? `<div class="ob-foot"><p class="small" style="text-align:center;margin:0">Answer the question about the ${ordinal(sameDayCluster(seed.bills, o.clusterOk).day)} first, so your first forecast is right.</p></div>`
       : `<div class="ob-foot"><button class="primary" data-ob="finish">Show me what’s coming</button></div>`;
   }
-  return `${head}<main><div class="pad">${body}</div></main>${footer}`;
+  return `${head}<main><div class="pad">${tally}${body}</div></main>${footer}`;
 }
 
+function helloUntil() { let d = addDays(TODAY, 5); while (new Date(d).getUTCDay() !== 5) d = addDays(d, 1); return d; }   // a Friday about a week out
 function screenWelcome() {
-  const point = (title, text) => `<div class="stack gap4" style="padding:14px 0;border-bottom:1px solid var(--line)"><span style="font-size:16px;font-weight:700">${title}</span><span class="body">${text}</span></div>`;
+  const tip = ALPHA && !isStandalone() ? `<details class="hello-tip mt8"><summary>Tip: add Alon to your Home Screen first ›</summary>
+      <p class="small">${isIOS() ? 'In Safari, tap Share, then “Add to Home Screen.” Open Alon from the new icon and start there; it keeps your numbers saved.' : 'In your browser’s menu, tap “Add to Home screen” or “Install app.” Open Alon from the new icon; it keeps your numbers saved.'}</p></details>` : '';
   return `<header class="top"><div class="brand">${icon.wave}<span>alon</span></div></header>
   <main class="pad">
-    <section class="stack gap8 mt24">
-      <span class="eyebrow">Before you start</span>
-      <h1 class="h1" style="font-size:32px">See what your money needs to cover.</h1><p class="body">Bills coming up, money left until payday, and what a purchase would change.</p>
+    <section class="stack gap10 mt24">
+      <h1 class="h1" style="font-size:32px">Know what’s left to spend until your next paycheck.</h1>
+      <p class="body" style="margin:0">Alon looks at your money, your payday and your bills, and gives you one clear number.</p>
     </section>
-    <section class="stack mt14">
-      ${point('Alon teaches. It doesn’t advise.', 'Alon helps you understand your money. It isn’t a bank or a financial advisor, and it doesn’t give financial, tax or legal advice.')}
-      ${point('Alon never holds or moves your money.', 'Set aside means marking money for a bill, a goal, or a lighter paycheck. Alon only records your plan. You move or save the money yourself; it does not invest it.')}
-      ${point('Numbers come from what you share.', 'Estimates are marked with ~ and can be wrong. Check important amounts against your bank and your bills.')}
-      ${ALPHA ? point('This is an early preview.', 'You type your numbers in. They stay on this ' + deviceWord() + '; nothing is sent anywhere. To keep them safe, save a backup now and then from the menu. Photos, files and bank connections come later, and each will be optional.') + homeScreenTip(true)
-              : point('How you share is up to you.', 'Type it in, take a photo of a bill, upload a file, or connect a bank. Every one is optional. Alon works fully without a bank connection.')}
-      ${point('Your decisions are yours.', 'Alon shows what a choice changes. What you do is always up to you.')}
+    <section class="hello-card mt20" aria-label="Example">
+      <span class="eyebrow">Example</span>
+      <span class="hello-amt">$412</span>
+      <span class="hello-sub">left to spend until ${long(helloUntil())}</span>
+      <span class="hello-ok">Rent and car payment are covered</span>
     </section>
     <div class="stack gap10 mt24">
-      <button class="primary" data-action="ack">I understand</button>
-      <button class="linkish" style="text-align:center" data-go="about">Read the full disclaimers</button>
-      ${ALPHA ? `<label class="linkish" style="text-align:center;cursor:pointer">Already set up? Restore from a backup<input type="file" accept=".json,application/json" data-restore-file hidden></label>` : ''}
+      <button class="primary" data-action="ack">Get started</button>
+      <p class="small" style="margin:-2px 0 0;text-align:center">3 quick questions · about 2 minutes</p>
+      <button class="secondary" data-action="example">Look at an example first</button>
     </div>
+    <p class="hello-fine mt20">Alon teaches; it doesn’t give financial advice. ${ALPHA ? `Your numbers stay on this ${deviceWord()}.` : 'It never moves your money.'} <button data-go="about">Details</button></p>
+    ${tip}
+    ${ALPHA ? `<label class="linkish mt8" style="display:block;text-align:center;cursor:pointer">Already set up? Restore from a backup<input type="file" accept=".json,application/json" data-restore-file hidden></label>` : ''}
   </main>`;
 }
-
+const EXAMPLE_PERSONA = 'salaried';
+function exampleBar() {
+  if (!state.example || SHEET_MODE) return '';
+  return `<div class="example-bar" role="note"><span>This is an example. Your own number takes 3 questions.</span><button data-action="example-exit">Set up mine</button></div>`;
+}
 let pendingRestore = null;   // a backup picked but not yet applied; kept out of saved state
 const isStandalone = () => { try { return !!(navigator.standalone || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)); } catch (e) { return false; } };
 const isIOS = () => /iPhone|iPad|iPod/.test(navigator.userAgent || '') || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -7438,6 +7492,12 @@ function askSuggestions() {
   if (state.screen === 'detail') return ['What can I spend?'];
   return ['Why paychecks, not months?'];
 }
+function tourMath(hm) {   // the first reveal shows the actual math once, with their own numbers
+  const st0 = hm.h.now || hm.f.heroBalance.start, td = iso(TODAY);
+  const bills = hm.f.heroBalance.rows.filter(r => r.dir === 'out' && r.date >= td && r.date < hm.h.until).reduce((n, r) => n + Math.round(r.amount * 100), 0) / 100;
+  const res = st0.reserved > 0 && hm.f.heroBalance.reservedInBalance !== false ? ` − ${money(st0.reserved)} set aside` : '';
+  return `<b>${money(st0.cash)}${res} − ${money(bills)} in bills = ${money(hm.h.amount)}.</b> `;
+}
 function tourSteps() {
   const ws = whyWindows(), w0 = ws[0], u = unitWord2();
   const sh = ws.findIndex(w => w.i > 0 && w.roomLow < 0);
@@ -7445,7 +7505,7 @@ function tourSteps() {
     w0.cashUnknown ? { sel: '.hero-q', title: 'First, one number', text: `You’re between paydays. Tell Alon what’s in your account and it shows what’s really left until ${long(w0.end)}.` } : (() => { const hm = heroModel(computeWindows()[0]); if (!hm) return { sel: '.hero.big', title: `${range(w0.roomLow, w0.roomTyp)} is what’s left`, text: `${w0.roomLow < 0 ? 'This is how short this ' + u + ' could be' : 'This is what this ' + u + ' has'} after the bills due before ${long(w0.end)} and your everyday spending.` };
       const h = hm.h, until = long(parse(h.until));
       return h.basis === 'spendable'
-        ? { sel: '.hero.big', title: h.amount < 0 ? `${money(-h.amount)} short before ${until}` : `${money(h.amount)} available`, text: `What’s in your account, minus money set aside and the bills due before your paycheck on ${until}. Tap the number anytime to see how it adds up.` }
+        ? { sel: '.hero.big', title: h.amount < 0 ? `${money(-h.amount)} short before ${until}` : `${money(h.amount)} available`, text: `${tourMath(hm)}That’s what you have${tourMath(hm).includes('set aside') ? ', minus money set aside' : ''}, minus the bills due before your paycheck on ${until}. Tap the number anytime to see this again.` }
         : { sel: '.hero.big', title: `${money(h.amount)} is what’s left`, text: `What your ${short(w0.start)} paycheck has after the bills due before ${until}. Tap the number anytime to see how it adds up.` }; })(),
     { sel: '.now-wave', title: 'The water is your money', text: `It rises on payday and dips for bills. A deep dip is a big bill coming. Below the line, a ${u} could come up short. Tap it to see why.` }
   ];
@@ -7694,6 +7754,8 @@ app.addEventListener('click', e => {
   syncToday();
 
   if (ds.action === 'ack') { state.ackTerms = true; state.ob = freshOb(); return go('ob'); }
+  if (ds.action === 'example') { const keep = { hsDismissed: state.hsDismissed }; state = Object.assign(freshState(EXAMPLE_PERSONA), keep, { example: true, railHint: false }); syncToday(); go('now'); state.tour = 0; return render(false, true); }
+  if (ds.action === 'example-exit') { const keep = { hsDismissed: state.hsDismissed }; state = Object.assign(freshState(null), keep, { ackTerms: true, ob: freshOb(), screen: 'ob' }); save(); return render(false, true); }
   if (ds.escrow) {
     const inTax = ds.escrow === 'both' || ds.escrow === 'tax', inIns = ds.escrow === 'both' || ds.escrow === 'ins';
     state.home.escrow = Object.assign({}, state.home.escrow, { tax: inTax, ins: inIns });
